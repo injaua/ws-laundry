@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield("title", "Masuk") - {{ config("app.name", "LaundryKu") }}</title>
+    <title>@yield("title", __('app.login')) - {{ config("app.name", "WS Clean & Laundry Serviços, Lda") }}</title>
+    <link rel="icon" href="{{ asset("images/logo.png") }}">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -22,19 +23,22 @@
             display: flex; width: 100%; max-width: 920px; min-height: 580px;
             border-radius: 20px; background: #fff;
             box-shadow: 0 12px 40px rgba(0,0,0,0.06); overflow: hidden;
+            position: relative;
         }
         .auth-side {
             width: 380px; background: linear-gradient(165deg, var(--brand) 0%, #0d1b4a 100%);
             padding: 3rem 2rem; display: flex; flex-direction: column;
             justify-content: center; color: #fff; flex-shrink: 0;
         }
-        .auth-side .brand-icon { font-size: 2.5rem; color: #90caf9; margin-bottom: 1rem; }
+        .auth-side .brand-logo { width: 100%; max-width: 200px; height: auto; margin-bottom: 1.25rem; }
         .auth-side h2 { font-weight: 700; font-size: 1.5rem; margin-bottom: 0.5rem; letter-spacing: -0.02em; }
         .auth-side p { font-size: 0.875rem; color: rgba(255,255,255,0.7); line-height: 1.5; }
         .auth-side .features { margin-top: 2rem; display: flex; flex-direction: column; gap: 0.75rem; }
         .auth-side .feature-item { display: flex; align-items: center; gap: 0.625rem; font-size: 0.8rem; color: rgba(255,255,255,0.65); }
         .auth-side .feature-item i { font-size: 0.9rem; color: #64b5f6; }
-        .auth-main { flex: 1; padding: 3rem 2.5rem; display: flex; flex-direction: column; justify-content: center; }
+        .auth-main { flex: 1; padding: 3rem 2.5rem; display: flex; flex-direction: column; justify-content: center; position: relative; }
+        .auth-main .auth-logo { height: 60px; width: auto; align-self: center; margin-bottom: 1.25rem; }
+        .auth-lang-switcher { position: absolute; top: 1.5rem; right: 1.5rem; }
         .auth-main .auth-header { margin-bottom: 1.75rem; }
         .auth-main .auth-header h4 { font-weight: 700; color: #1a1a2e; font-size: 1.25rem; margin-bottom: 0.25rem; }
         .auth-main .auth-header p { font-size: 0.85rem; color: #6b7280; }
@@ -59,16 +63,26 @@
 <body>
     <div class="auth-wrapper">
         <div class="auth-side">
-            <div class="brand-icon"><i class="bi bi-droplet-half"></i></div>
-            <h2>LaundryKu</h2>
-            <p>Kelola usaha laundry dengan mudah, cepat, dan profesional.</p>
+            <img class="brand-logo" src="{{ asset("images/logo-light.png") }}" alt="{{ config("app.name", "WS Clean & Laundry") }}">
+            <h2>WS Clean & Laundry Serviços, Lda</h2>
+            <p>{{ __('app.auth_sidebar_title') }}</p>
             <div class="features">
-                <div class="feature-item"><i class="bi bi-check2"></i><span>Manajemen pelanggan & layanan</span></div>
-                <div class="feature-item"><i class="bi bi-check2"></i><span>Tracking status order real-time</span></div>
-                <div class="feature-item"><i class="bi bi-check2"></i><span>Laporan pendapatan & grafik</span></div>
+                <div class="feature-item"><i class="bi bi-check2"></i><span>{{ __('app.auth_feature_1') }}</span></div>
+                <div class="feature-item"><i class="bi bi-check2"></i><span>{{ __('app.auth_feature_2') }}</span></div>
+                <div class="feature-item"><i class="bi bi-check2"></i><span>{{ __('app.auth_feature_3') }}</span></div>
             </div>
         </div>
         <div class="auth-main">
+            <div class="auth-lang-switcher dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-translate"></i> {{ strtoupper(app()->getLocale()) }}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item {{ app()->getLocale() == 'pt' ? 'active' : '' }}" href="{{ route('language.switch', 'pt') }}">🇵🇹 Português</a></li>
+                    <li><a class="dropdown-item {{ app()->getLocale() == 'en' ? 'active' : '' }}" href="{{ route('language.switch', 'en') }}">🇬🇧 English</a></li>
+                </ul>
+            </div>
+            <img class="auth-logo" src="{{ asset("images/logo.png") }}" alt="{{ config("app.name", "WS Clean & Laundry") }}">
             <div class="auth-header">
                 @hasSection("auth_title")
                     <h4>@yield("auth_title")</h4>
@@ -81,5 +95,18 @@
             @yield("content")
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function togglePw(id, btn) {
+            var input = document.getElementById(id);
+            if (!input) return;
+            var show = input.type === "password";
+            input.type = show ? "text" : "password";
+            var icon = btn.querySelector("i");
+            if (icon) icon.className = show ? "bi bi-eye-slash" : "bi bi-eye";
+            btn.setAttribute("aria-pressed", String(show));
+        }
+    </script>
+    @stack("scripts")
 </body>
 </html>

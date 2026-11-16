@@ -1,12 +1,12 @@
 @extends("layouts.admin")
-@section("title", "Pelanggan")
-@section("page_title", "Data Pelanggan")
+@section("title", __('app.customers'))
+@section("page_title", __('app.customers'))
 
 @section("content")
 <div class="page-title">
-    <span>Total: {{ $customers->total() }} pelanggan</span>
+    <span>{{ __('app.total_customers_label', ['count' => $customers->total()]) }}</span>
     <a href="{{ route("customers.create") }}" class="btn btn-primary">
-        <i class="bi bi-plus-lg"></i> Tambah Pelanggan
+        <i class="bi bi-plus-lg"></i> {{ __('app.add_customer') }}
     </a>
 </div>
 
@@ -17,12 +17,12 @@
                 <div class="col-md-4">
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" name="search" class="form-control" placeholder="Cari nama atau telepon..." value="{{ request("search") }}">
+                        <input type="text" name="search" class="form-control" placeholder="{{ __('app.search_name_phone') }}" value="{{ request("search") }}">
                     </div>
                 </div>
                 <div class="col-auto">
-                    <button class="btn btn-outline-primary" type="submit">Cari</button>
-                    <a href="{{ route("customers.index") }}" class="btn btn-outline-secondary">Reset</a>
+                    <button class="btn btn-outline-primary" type="submit">{{ __('app.search') }}</button>
+                    <a href="{{ route("customers.index") }}" class="btn btn-outline-secondary">{{ __('app.reset') }}</a>
                 </div>
             </form>
         </div>
@@ -32,40 +32,42 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Nama</th>
-                        <th>No. Telepon</th>
-                        <th>Alamat</th>
-                        <th>Total Order</th>
-                        <th>Bergabung</th>
-                        <th class="text-center">Aksi</th>
+                        <th>{{ __('app.customer_name') }}</th>
+                        <th>{{ __('app.phone') }}</th>
+                        <th>{{ __('app.address') }}</th>
+                        <th>{{ __('app.total_orders') }}</th>
+                        <th>{{ __('app.joined') }}</th>
+                        <th class="text-center">{{ __('app.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($customers as $customer)
                     <tr>
                         <td>{{ $loop->iteration + ($customers->currentPage() - 1) * $customers->perPage() }}</td>
-                        <td class="fw-medium"><a href="{{ route("customers.show", $customer) }}" class="text-decoration-none">{{ $customer->nama }}</a></td>
-                        <td>{{ $customer->no_telp }}</td>
-                        <td class="text-muted small">{{ Str::limit($customer->alamat, 40) ?? "-" }}</td>
+                        <td class="fw-medium"><a href="{{ route("customers.show", $customer) }}" class="text-decoration-none">{{ $customer->name }}</a></td>
+                        <td>{{ $customer->phone }}</td>
+                        <td class="text-muted small">{{ Str::limit($customer->address, 40) ?? "-" }}</td>
                         <td><span class="badge bg-secondary">{{ $customer->orders_count ?? 0 }}</span></td>
                         <td class="small text-muted">{{ $customer->created_at->format("d/m/Y") }}</td>
                         <td class="text-center">
-                            <a href="{{ route("customers.edit", $customer) }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                            @if(!auth()->user()->isCashier())
+                            <a href="{{ route("customers.edit", $customer) }}" class="btn btn-sm btn-outline-primary" title="{{ __('app.edit') }}">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <form action="{{ route("customers.destroy", $customer) }}" method="POST" class="d-inline" onsubmit="return confirm("Hapus pelanggan ini?")">
+                            <form action="{{ route("customers.destroy", $customer) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.confirm_delete') }}')">
                                 @csrf @method("DELETE")
-                                <button class="btn btn-sm btn-outline-danger" title="Hapus">
+                                <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
+                            @endif
                         </td>
                     </tr>
                     @empty
                     <tr>
                         <td colspan="7" class="text-center py-4 text-muted">
                             <i class="bi bi-people fs-1 d-block mb-2"></i>
-                            Belum ada pelanggan. <a href="{{ route("customers.create") }}">Tambah sekarang</a>.
+                            {{ __('app.no_customers') }} <a href="{{ route("customers.create") }}">{{ __('app.no_customers_yet') }}</a>.
                         </td>
                     </tr>
                     @endforelse

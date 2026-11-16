@@ -11,10 +11,10 @@ return new class extends Migration
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('order_id')->constrained()->cascadeOnDelete();
-            $table->date('tgl_bayar');
-            $table->decimal('jumlah', 12, 2);
-            $table->enum('metode', ['tunai', 'transfer']);
-            $table->text('keterangan')->nullable();
+            $table->date('paid_at');
+            $table->decimal('amount', 12, 2);
+            $table->enum('method', ['cash', 'transfer']);
+            $table->text('note')->nullable();
             $table->timestamps();
         });
     }

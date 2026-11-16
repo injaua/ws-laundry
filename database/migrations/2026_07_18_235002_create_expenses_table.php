@@ -10,11 +10,11 @@ return new class extends Migration
     {
         Schema::create("expenses", function (Blueprint $table) {
             $table->id();
-            $table->string("judul");
-            $table->text("deskripsi")->nullable();
-            $table->string("kategori", 50);
-            $table->decimal("jumlah", 12, 0);
-            $table->date("tgl_pengeluaran");
+            $table->string("title");
+            $table->text("description")->nullable();
+            $table->string("category", 50);
+            $table->decimal("amount", 12, 0);
+            $table->date("expense_date");
             $table->foreignId("user_id")->nullable()->constrained()->nullOnDelete();
             $table->timestamps();
         });

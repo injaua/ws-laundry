@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\OrderExport;
 use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\Order;
 use App\Models\Payment;
 use Carbon\Carbon;
@@ -18,20 +19,20 @@ class ReportController extends Controller
         $to = $request->to ? Carbon::parse($request->to) : today();
 
         $orders = Order::with("customer")
-            ->whereBetween("tgl_masuk", [$from, $to])
-            ->orderBy("tgl_masuk")
+            ->whereBetween("received_at", [$from, $to])
+            ->orderBy("received_at")
             ->get();
 
         $totalOrders = $orders->count();
 
-        // Revenue dihitung dari orders dalam range tgl_masuk, bukan dari payment date
+        // Revenue is computed from orders within the received_at range, not from payment date
         $orderIds = $orders->pluck('id');
         $payments = Payment::whereIn('order_id', $orderIds)->get();
-        $totalRevenue = $payments->sum('jumlah');
+        $totalRevenue = $payments->sum('amount');
 
         $avgOrder = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
 
-        // Chart data by date — revenue dari orders yang tgl_masuk pada tanggal tersebut
+        // Chart data by date — revenue from orders received on that date
         $chartLabels = [];
         $chartData = [];
         $paymentsByOrderId = $payments->groupBy('order_id');
@@ -39,10 +40,10 @@ class ReportController extends Controller
         while ($period->lte($to)) {
             $chartLabels[] = $period->format("d M");
             $dateKey = $period->format('Y-m-d');
-            $dayOrders = $orders->filter(fn($o) => $o->tgl_masuk->format('Y-m-d') === $dateKey);
+            $dayOrders = $orders->filter(fn($o) => $o->received_at->format('Y-m-d') === $dateKey);
             $total = 0;
             foreach ($dayOrders as $order) {
-                $total += ($paymentsByOrderId->get($order->id) ?? collect())->sum('jumlah');
+                $total += ($paymentsByOrderId->get($order->id) ?? collect())->sum('amount');
             }
             $chartData[] = (float) $total;
             $period->addDay();
@@ -60,7 +61,7 @@ class ReportController extends Controller
         $from = $request->from ? Carbon::parse($request->from) : today()->startOfMonth();
         $to = $request->to ? Carbon::parse($request->to) : today();
 
-        return Excel::download(new OrderExport($from, $to), "laporan-laundry-{$from->format("Y-m-d")}-{$to->format("Y-m-d")}.xlsx");
+        return Excel::download(new OrderExport($from, $to), "report-laundry-{$from->format("Y-m-d")}-{$to->format("Y-m-d")}.xlsx");
     }
 
 
@@ -70,21 +71,24 @@ class ReportController extends Controller
         $from = $request->from ? Carbon::parse($request->from) : today()->startOfMonth();
         $to = $request->to ? Carbon::parse($request->to) : today();
 
-        // Revenue dari orders dalam range
-        $orders = Order::whereBetween("tgl_masuk", [$from, $to])->get();
-        $totalRevenue = $orders->sum("total_harga");
+        // Revenue from orders within the range (net of VAT, like the accounting DR)
+        $orders = Order::whereBetween("received_at", [$from, $to])->get();
+        $totalRevenue = $orders->sum(fn ($o) => (float) ($o->subtotal ?? $o->total_price));
         $totalOrders = $orders->count();
 
-        // Pengeluaran dalam range
-        $expenses = Expense::whereBetween("tgl_pengeluaran", [$from, $to])->get();
-        $totalExpenses = $expenses->sum("jumlah");
+        // Expenses within the range
+        $expenses = Expense::whereBetween("expense_date", [$from, $to])->get();
+        $totalExpenses = $expenses->sum("amount");
 
         $netProfit = $totalRevenue - $totalExpenses;
         $margin = $totalRevenue > 0 ? round(($netProfit / $totalRevenue) * 100, 1) : 0;
 
         // Group expenses by category for chart
-        $expenseCategories = $expenses->groupBy("kategori")->map(fn($g) => $g->sum("jumlah"));
-        $expCatLabels = $expenseCategories->keys()->toArray();
+        $categoryNames = ExpenseCategory::pluck("name", "key");
+        $expenseCategories = $expenses->groupBy("category")->map(fn($g) => $g->sum("amount"));
+        $expCatLabels = $expenseCategories->keys()
+            ->map(fn($key) => $categoryNames[$key] ?? $key)
+            ->toArray();
         $expCatValues = $expenseCategories->values()->toArray();
 
         // Daily revenue vs expense for chart
@@ -96,11 +100,11 @@ class ReportController extends Controller
             $dateKey = $period->format("Y-m-d");
             $chartLabels[] = $period->format("d M");
 
-            $dayOrders = $orders->filter(fn($o) => $o->tgl_masuk->format("Y-m-d") === $dateKey);
-            $chartRevenue[] = (float) $dayOrders->sum("total_harga");
+            $dayOrders = $orders->filter(fn($o) => $o->received_at->format("Y-m-d") === $dateKey);
+            $chartRevenue[] = (float) $dayOrders->sum(fn ($o) => (float) ($o->subtotal ?? $o->total_price));
 
-            $dayExpense = $expenses->filter(fn($e) => $e->tgl_pengeluaran->format("Y-m-d") === $dateKey);
-            $chartExpense[] = (float) $dayExpense->sum("jumlah");
+            $dayExpense = $expenses->filter(fn($e) => $e->expense_date->format("Y-m-d") === $dateKey);
+            $chartExpense[] = (float) $dayExpense->sum("amount");
 
             $period->addDay();
         }
@@ -109,6 +113,39 @@ class ReportController extends Controller
             "totalRevenue", "totalOrders", "totalExpenses", "netProfit", "margin",
             "expCatLabels", "expCatValues", "chartLabels", "chartRevenue", "chartExpense",
             "expenses", "from", "to"
+        ));
+    }
+
+    public function paymentMethods(Request $request)
+    {
+        $from = $request->from ? Carbon::parse($request->from) : today()->startOfMonth();
+        $to = $request->to ? Carbon::parse($request->to) : today();
+
+        $payments = Payment::whereBetween("paid_at", [$from, $to])->get();
+        $totalReceived = (float) $payments->sum("amount");
+        $totalCount = $payments->count();
+
+        $rows = [];
+        $pieLabels = [];
+        $pieValues = [];
+        foreach (Payment::METHODS as $method) {
+            $group = $payments->where("method", $method);
+            if ($group->isEmpty()) {
+                continue;
+            }
+            $amount = (float) $group->sum("amount");
+            $rows[] = [
+                "method" => $method,
+                "count" => $group->count(),
+                "amount" => $amount,
+                "share" => $totalReceived > 0 ? round($amount / $totalReceived * 100, 1) : 0,
+            ];
+            $pieLabels[] = __("app.$method");
+            $pieValues[] = $amount;
+        }
+
+        return view("reports.payment-methods", compact(
+            "rows", "pieLabels", "pieValues", "totalReceived", "totalCount", "from", "to"
         ));
     }
 

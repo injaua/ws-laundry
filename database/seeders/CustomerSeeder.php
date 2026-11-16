@@ -10,22 +10,22 @@ class CustomerSeeder extends Seeder
     public function run(): void
     {
         $customers = [
-            ["nama" => "Budi Santoso", "no_telp" => "081234567890", "alamat" => "Jl. Merdeka No. 10, Jakarta"],
-            ["nama" => "Siti Rahmawati", "no_telp" => "082345678901", "alamat" => "Jl. Sudirman No. 25, Bandung"],
-            ["nama" => "Ahmad Hidayat", "no_telp" => "083456789012", "alamat" => "Jl. Gatot Subroto No. 5, Surabaya"],
-            ["nama" => "Dewi Lestari", "no_telp" => "084567890123", "alamat" => "Jl. Diponegoro No. 12, Yogyakarta"],
-            ["nama" => "Rudi Hermawan", "no_telp" => "085678901234", "alamat" => "Jl. Pahlawan No. 8, Semarang"],
-            ["nama" => "Nurul Aini", "no_telp" => "086789012345", "alamat" => "Jl. Cendana No. 3, Malang"],
-            ["nama" => "Agus Prasetyo", "no_telp" => "087890123456", "alamat" => "Jl. Kenanga No. 15, Solo"],
-            ["nama" => "Rina Wulandari", "no_telp" => "088901234567", "alamat" => "Jl. Melati No. 7, Denpasar"],
-            ["nama" => "Bayu Saputra", "no_telp" => "089012345678", "alamat" => "Jl. Anggrek No. 20, Medan"],
-            ["nama" => "Fitri Handayani", "no_telp" => "080123456789", "alamat" => "Jl. Mawar No. 9, Makassar"],
+            ["name" => "Domingo Sitoe", "phone" => "+258841000100", "address" => "Av. Julius Nyerere No. 10, Maputo"],
+            ["name" => "Lurdes Matsinhe", "phone" => "+258842000200", "address" => "Av. 24 de Julho No. 25, Maputo"],
+            ["name" => "Carlos Machava", "phone" => "+258843000300", "address" => "Av. do Brasil No. 5, Matola"],
+            ["name" => "Isabel Mondlane", "phone" => "+258844000400", "address" => "Rua da Missão No. 12, Maputo"],
+            ["name" => "Joaquim Tembe", "phone" => "+258845000500", "address" => "Av. Moisés Goulart No. 8, Beira"],
+            ["name" => "Amélia Cumbe", "phone" => "+258846000600", "address" => "Rua Consentino No. 3, Nampula"],
+            ["name" => "Nelson Cossa", "phone" => "+258847000700", "address" => "Av. Edgar Mondlane No. 15, Xai-Xai"],
+            ["name" => "Sónia Macuácua", "phone" => "+258848000800", "address" => "Rua da Solidariedade No. 7, Tete"],
+            ["name" => "Paulo Zucula", "phone" => "+258849000900", "address" => "Av. das Indústrias No. 20, Matola"],
+            ["name" => "Verónica Chipala", "phone" => "+258841001001", "address" => "Rua Kim Pa No. 9, Quelimane"],
         ];
 
         foreach ($customers as $c) {
             Customer::create($c);
         }
 
-        $this->command->info("10 pelanggan berhasil dibuat.");
+        $this->command->info("10 customers created.");
     }
 }

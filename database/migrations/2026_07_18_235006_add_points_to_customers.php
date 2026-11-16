@@ -9,15 +9,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table("customers", function (Blueprint $table) {
-            $table->integer("poin")->default(0)->after("alamat");
-            $table->integer("total_transaksi")->default(0)->after("poin");
+            $table->integer("points")->default(0)->after("address");
+            $table->integer("total_transactions")->default(0)->after("points");
         });
     }
 
     public function down(): void
     {
         Schema::table("customers", function (Blueprint $table) {
-            $table->dropColumn(["poin", "total_transaksi"]);
+            $table->dropColumn(["points", "total_transactions"]);
         });
     }
 };

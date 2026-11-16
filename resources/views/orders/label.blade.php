@@ -1,47 +1,53 @@
+@php
+    $thermal = request("type") === "thermal";
+    $labelW = $thermal ? "40" : "148";
+@endphp
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{{ app()->getLocale() }}">
 <head>
     <meta charset="utf-8">
-    <title>Label - {{ $order->no_order }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ $thermal ? __('app.thermal_label') : __('app.print_label') }} - {{ $order->order_number }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        @if($thermal)
+        @@page { size: {{ $labelW }}mm auto; margin: 0; }
+        @endif
         body {
             font-family: "Inter", "Segoe UI", Arial, sans-serif;
-            font-size: 11px;
+            font-size: {{ $thermal ? "8.5px" : "11px" }};
             line-height: 1.4;
-            color: #1a237e;
+            color: {{ $thermal ? "#000" : "#1a237e" }};
+            background: #fff;
         }
         .label-container {
-            width: 148mm; /* A5 width */
-            min-height: 105mm; /* A5 height / 2 roughly */
-            padding: 8mm;
+            width: {{ $thermal ? "40mm" : "148mm" }};
+            @if(!$thermal) min-height: 105mm; @endif
+            padding: {{ $thermal ? "1.5mm" : "8mm" }};
             margin: 0 auto;
         }
         .label-box {
-            border: 2px solid #1a237e;
-            border-radius: 8px;
-            padding: 12px;
+            border: {{ $thermal ? "1px solid #000" : "2px solid #1a237e" }};
+            border-radius: {{ $thermal ? "0" : "8px" }};
+            padding: {{ $thermal ? "5px" : "12px" }};
             text-align: center;
             position: relative;
         }
         .label-box .brand {
-            font-size: 16px;
+            font-size: {{ $thermal ? "8px" : "16px" }};
             font-weight: 700;
-            color: #1a237e;
-            margin-bottom: 4px;
-        }
-        .label-box .brand i {
-            font-style: normal;
+            color: {{ $thermal ? "#000" : "#1a237e" }};
+            margin-bottom: 2px;
         }
         .label-box .no-order {
-            font-size: 22px;
+            font-size: {{ $thermal ? "13px" : "22px" }};
             font-weight: 800;
             letter-spacing: 1px;
-            color: #1a237e;
-            margin: 6px 0;
+            color: {{ $thermal ? "#000" : "#1a237e" }};
+            margin: {{ $thermal ? "2px 0" : "6px 0" }};
         }
         .label-box .barcode-wrapper {
-            margin: 8px auto;
+            margin: {{ $thermal ? "3px auto" : "8px auto" }};
             display: flex;
             justify-content: center;
         }
@@ -51,11 +57,17 @@
         }
         .label-box .barcode-text {
             font-family: "Courier New", monospace;
-            font-size: 14px;
+            font-size: {{ $thermal ? "9px" : "14px" }};
             letter-spacing: 2px;
             color: #333;
             margin-top: 2px;
         }
+        @if($thermal)
+        .label-box .info-row { margin-top: 4px; padding-top: 4px; border-top: 1px dashed #000; }
+        .label-box .info-line { display: flex; justify-content: space-between; gap: 6px; }
+        .label-box .info-line .key { text-transform: uppercase; font-size: 7.5px; color: #444; white-space: nowrap; }
+        .label-box .info-line .value { font-weight: 700; font-size: 9px; text-align: right; overflow-wrap: anywhere; }
+        @else
         .label-box .info-row {
             display: flex;
             justify-content: space-between;
@@ -78,6 +90,7 @@
             font-size: 8px;
             text-transform: uppercase;
         }
+        @endif
         .cut-line {
             text-align: center;
             margin: 4px 0;
@@ -87,55 +100,91 @@
         .cut-line span {
             letter-spacing: 4px;
         }
+        .toolbar {
+            text-align: center;
+            padding: 10px;
+            background: #f5f7fa;
+            margin-bottom: 10px;
+            font-family: "Inter", Arial, sans-serif;
+            font-size: 12px;
+        }
+        .toolbar a {
+            display: inline-block;
+            padding: 8px 24px;
+            border-radius: 6px;
+            border: 1px solid #1a237e;
+            background: #1a237e;
+            color: #fff;
+            text-decoration: none;
+            margin: 0 4px;
+            font-weight: 600;
+        }
+        .toolbar .alt { background: #fff; color: #1a237e; }
+        .toolbar .on { background: #64b5f6; border-color: #64b5f6; color: #000; }
         @@media print {
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .no-print { display: none; }
+            .toolbar, .cut-line { display: none; }
         }
     </style>
 </head>
 <body>
-    <div class="no-print" style="text-align:center;padding:10px;background:#f5f7fa;margin-bottom:10px">
-        <button onclick="window.print()" style="padding:8px 24px;background:#1a237e;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600">
-            <i>🖨</i> Cetak Label
-        </button>
-        <a href="{{ route("orders.show", $order) }}" style="padding:8px 24px;background:#6c757d;color:white;border:none;border-radius:6px;text-decoration:none;margin-left:8px;font-weight:600">
-            Kembali
-        </a>
+    <div class="toolbar no-print">
+        <a href="{{ request()->fullUrlWithQuery(["print" => 1]) }}">&#128424; {{ $thermal ? __('app.thermal_label') : __('app.print_label') }}</a>
+        <a class="{{ $thermal ? "alt" : "on" }}" href="{{ url()->current() }}">{{ __('app.a5_sheet') }}</a>
+        <a class="{{ $thermal ? "on" : "alt" }}" href="{{ request()->fullUrlWithQuery(["type" => "thermal", "print" => null]) }}">{{ __('app.thermal_40') }}</a>
+        <a href="{{ route("orders.show", $order) }}" style="background:#6c757d;border-color:#6c757d">{{ __('app.back') }}</a>
     </div>
 
     <div class="label-container">
         <div class="label-box">
-            <div class="brand">☁ LaundryKu</div>
-            <div class="no-order">{{ $order->no_order }}</div>
+            <div class="brand">{{ $thermal ? "WS Clean & Laundry" : "☁ WS Clean & Laundry Serviços, Lda" }}</div>
+            <div class="no-order">{{ $order->order_number }}</div>
 
             <div class="barcode-wrapper">
                 @if(isset($barcodeSvg))
                     {!! $barcodeSvg !!}
                 @else
-                    <div class="barcode-text">{{ $order->no_order }}</div>
+                    <div class="barcode-text">{{ $order->order_number }}</div>
                 @endif
             </div>
 
-            <div class="info-row">
-                <div class="label-item">
-                    <div class="key">Pelanggan</div>
-                    <div class="value">{{ $order->customer->nama }}</div>
+            @if($thermal)
+                <div class="info-row">
+                    <div class="info-line"><span class="key">{{ __('app.customer') }}</span><span class="value">{{ $order->customer->name }}</span></div>
+                    <div class="info-line"><span class="key">{{ __('app.entry_date') }}</span><span class="value">{{ $order->received_at->format("d/m/Y") }}</span></div>
+                    <div class="info-line"><span class="key">{{ __('app.qty') }}</span><span class="value">{{ $order->items->sum("amount") }} it / {{ number_format($order->items->where("type", "by_weight")->sum("weight"), 1) }} kg</span></div>
+                    <div class="info-line"><span class="key">{{ __('app.total') }}</span><span class="value">{{ number_format($order->total_price, 0, ".", ",") }} Mts</span></div>
                 </div>
-                <div class="label-item">
-                    <div class="key">Tgl Masuk</div>
-                    <div class="value">{{ $order->tgl_masuk->format("d/m/Y") }}</div>
+            @else
+                <div class="info-row">
+                    <div class="label-item">
+                        <div class="key">{{ __('app.customer') }}</div>
+                        <div class="value">{{ $order->customer->name }}</div>
+                    </div>
+                    <div class="label-item">
+                        <div class="key">{{ __('app.entry_date') }}</div>
+                        <div class="value">{{ $order->received_at->format("d/m/Y") }}</div>
+                    </div>
+                    <div class="label-item">
+                        <div class="key">{{ __('app.qty') }}</div>
+                        <div class="value">{{ $order->items->sum("amount") }} item / {{ number_format($order->items->where("type", "by_weight")->sum("weight"), 1) }} kg</div>
+                    </div>
+                    <div class="label-item">
+                        <div class="key">{{ __('app.total') }}</div>
+                        <div class="value">{{ number_format($order->total_price, 0, ".", ",") }} Mts</div>
+                    </div>
                 </div>
-                <div class="label-item">
-                    <div class="key">Qty Item</div>
-                    <div class="value">{{ $order->items->sum("jumlah") }} item / {{ number_format($order->items->where("jenis", "kiloan")->sum("berat"), 1) }} kg</div>
-                </div>
-                <div class="label-item">
-                    <div class="key">Total</div>
-                    <div class="value">Rp {{ number_format($order->total_harga, 0, ",", ".") }}</div>
-                </div>
-            </div>
+            @endif
         </div>
+        @if(!$thermal)
         <div class="cut-line"><span>• • • • • • • • • • • • • • • • • • • •</span></div>
+        @endif
     </div>
+
+    <script>
+        @if(request("print"))
+        window.addEventListener("load", function () { setTimeout(function () { window.print(); }, 250); });
+        @endif
+    </script>
 </body>
 </html>

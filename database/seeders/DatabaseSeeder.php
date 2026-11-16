@@ -11,37 +11,37 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         User::factory()->create([
-            "name" => "Admin Laundry",
-            "email" => "admin@laundryku.com",
+            "name" => "Laundry Admin",
+            "email" => "admin@ws-cleanlaundry.example",
             "password" => bcrypt("password"),
             "role" => "admin",
         ]);
 
         User::factory()->create([
-            "name" => "Kasir Laundry",
-            "email" => "kasir@laundryku.com",
+            "name" => "Laundry Cashier",
+            "email" => "cashier@ws-cleanlaundry.example",
             "password" => bcrypt("password"),
-            "role" => "kasir",
+            "role" => "cashier",
         ]);
 
         User::factory()->create([
-            "name" => "Owner Laundry",
-            "email" => "owner@laundryku.com",
+            "name" => "Laundry Owner",
+            "email" => "owner@ws-cleanlaundry.example",
             "password" => bcrypt("password"),
             "role" => "owner",
         ]);
 
         // Default site settings for landing page
         $defaults = [
-            "hero_title" => "Laundry Terpercaya di Kota Anda",
-            "hero_subtitle" => "Kami siap membantu pakaian Anda bersih, wangi, dan rapi dengan layanan profesional.",
-            "hero_cta_text" => "Pesan Sekarang",
-            "hero_cta_url" => "https://wa.me/6281234567890",
-            "about_title" => "Tentang LaundryKu",
-            "about_content" => "LaundryKu adalah jasa laundry profesional yang melayani cuci kering, setrika, dan cuci express. Kami berkomitmen memberikan hasil terbaik untuk pakaian kesayangan Anda dengan pelayanan ramah dan harga terjangkau.",
-            "whatsapp_number" => "6281234567890",
-            "address" => "Jl. Contoh No. 123, Kota Anda",
-            "footer_text" => "\u00a9 " . date("Y") . " LaundryKu. All rights reserved.",
+            "hero_title" => "A lavandaria de confiança na sua cidade",
+            "hero_subtitle" => "A sua roupa limpa, perfumada e bem tratada, com serviços profissionais.",
+            "hero_cta_text" => "Encomendar",
+            "hero_cta_url" => "https://wa.me/258867314502",
+            "about_title" => "Sobre a WS Clean & Laundry Serviços, Lda",
+            "about_content" => "A WS Clean & Laundry Serviços, Lda é um serviço de lavandaria profissional que oferece lavagem a seco, engomadoria e lavagem expresso. Comprometemo-nos a proporcionar o melhor resultado para as suas peças preferidas, com um atendimento simpático e preços acessíveis.",
+            "whatsapp_number" => "258867314502",
+            "address" => "Matola, Bairro da Matola Gare, Avenida Josina Machel",
+            "footer_text" => "\u00a9 " . date("Y") . " WS Clean & Laundry Serviços, Lda. All rights reserved.",
         ];
 
         foreach ($defaults as $key => $value) {
@@ -51,6 +51,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ServiceSeeder::class,
             CustomerSeeder::class,
+            EmployeeSeeder::class,
         ]);
     }
 }

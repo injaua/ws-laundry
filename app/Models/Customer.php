@@ -10,9 +10,9 @@ class Customer extends Model
 {
     use HasFactory, Loggable;
 
-    protected $fillable = ['nama', 'no_telp', 'alamat'];
+    protected $fillable = ['name', 'phone', 'address'];
 
-    protected $appends = ['poin', 'total_transaksi'];
+    protected $appends = ['points', 'total_transactions'];
 
     public function orders()
     {
@@ -26,40 +26,40 @@ class Customer extends Model
 
     /**
      * Earn loyalty points when order is completed.
-     * 1 point per Rp 1,000 (or 10 points per Rp 10,000).
+     * 1 point per 1,000 Mts (or 10 points per 10,000 Mts).
      */
     public function earnPoints(Order $order): void
     {
-        $pointsEarned = floor($order->total_harga / 1000);
+        $pointsEarned = floor($order->total_price / 1000);
 
         if ($pointsEarned > 0) {
             LoyaltyPoint::create([
                 "customer_id" => $this->id,
                 "points" => $pointsEarned,
                 "type" => "earned",
-                "keterangan" => "Transaksi #" . $order->no_order,
+                "note" => "Order #" . $order->order_number,
                 "source_type" => Order::class,
                 "source_id" => $order->id,
             ]);
 
-            $this->increment("poin", $pointsEarned);
+            $this->increment("points", $pointsEarned);
         }
     }
 
     /**
      * Redeem loyalty points for discount.
-     * 100 points = Rp 5,000 discount.
+     * 100 points = 5,000 Mts discount.
      */
     public function redeemPoints(int $points, Order $order): int
     {
-        if ($this->poin < $points) {
-            throw new \Exception("Poin tidak mencukupi. Tersedia: " . $this->poin);
+        if ($this->points < $points) {
+            throw new \Exception(__('app.insufficient_points', ['available' => $this->points]));
         }
 
         $discount = floor($points / 100) * 5000;
 
-        if ($discount > $order->total_harga) {
-            $discount = $order->total_harga;
+        if ($discount > $order->total_price) {
+            $discount = $order->total_price;
             $points = ceil($discount / 5000) * 100;
         }
 
@@ -67,23 +67,23 @@ class Customer extends Model
             "customer_id" => $this->id,
             "points" => -$points,
             "type" => "redeemed",
-            "keterangan" => "Redeem untuk transaksi #" . $order->no_order . " (diskon Rp " . number_format($discount, 0, ",", ".") . ")",
+            "note" => "Points redeemed for order #" . $order->order_number . " (discount " . number_format($discount, 0, ".", ",") . " Mts)",
             "source_type" => Order::class,
             "source_id" => $order->id,
         ]);
 
-        $this->decrement("poin", $points);
-        $order->decrement("total_harga", $discount);
+        $this->decrement("points", $points);
+        $order->decrement("total_price", $discount);
 
         return $discount;
     }
 
-    public function getPoinAttribute(): int
+    public function getPointsAttribute(): int
     {
-        return $this->attributes["poin"] ?? 0;
+        return $this->attributes["points"] ?? 0;
     }
 
-    public function getTotalTransaksiAttribute(): int
+    public function getTotalTransactionsAttribute(): int
     {
         return $this->orders()->count();
     }

@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId("customer_id")->constrained()->cascadeOnDelete();
             $table->integer("points")->default(0);
             $table->string("type", 20); // earned / redeemed
-            $table->text("keterangan")->nullable();
+            $table->text("note")->nullable();
             $table->morphs("source"); // order_id or anything
             $table->timestamps();
         });

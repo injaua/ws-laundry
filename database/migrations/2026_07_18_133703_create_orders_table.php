@@ -10,16 +10,16 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->string('no_order', 20)->unique();
+            $table->string('order_number', 20)->unique();
             $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
-            $table->date('tgl_masuk');
-            $table->date('tgl_selesai')->nullable();
+            $table->date('received_at');
+            $table->date('completed_at')->nullable();
             $table->enum('status', [
-                'diterima', 'dicuci', 'dikeringkan', 'disetrika',
-                'dilipat', 'siap', 'diantar', 'selesai'
-            ])->default('diterima');
-            $table->decimal('total_harga', 12, 2)->default(0);
-            $table->text('catatan')->nullable();
+                'received', 'washing', 'drying', 'ironing',
+                'folding', 'ready', 'delivering', 'completed'
+            ])->default('received');
+            $table->decimal('total_price', 12, 2)->default(0);
+            $table->text('notes')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

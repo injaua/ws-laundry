@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Traits\Loggable;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -10,12 +11,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role'])]
+#[Fillable(['name', 'email', 'password', 'role', 'is_active', 'created_by'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, Loggable;
 
     /**
      * Get the attributes that should be cast.
@@ -27,7 +28,18 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * Whether the given user may edit or delete this account.
+     * Owners can only manage cashiers whose account they created.
+     */
+    public function manageableBy(User $actor): bool
+    {
+        return $actor->isAdmin()
+            || ($actor->isOwner() && $this->role === "cashier" && (int) $this->created_by === $actor->id);
     }
 
     /**
@@ -48,11 +60,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is kasir.
+     * Check if user is cashier.
      */
-    public function isKasir(): bool
+    public function isCashier(): bool
     {
-        return $this->role === 'kasir';
+        return $this->role === 'cashier';
     }
 
     /**
@@ -61,5 +73,35 @@ class User extends Authenticatable
     public function isOwner(): bool
     {
         return $this->role === 'owner';
+    }
+
+    /**
+     * Self-registration is only open while the system has no admin.
+     */
+    public static function hasAdmin(): bool
+    {
+        return static::where('role', 'admin')->exists();
+    }
+
+    /**
+     * The employee record linked to this account, if any.
+     */
+    public function employee(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Employee::class);
+    }
+
+    /**
+     * Check if this user is the only active admin left.
+     */
+    public function isLastActiveAdmin(): bool
+    {
+        if (!$this->isAdmin() || !$this->is_active) {
+            return false;
+        }
+
+        return static::where('role', 'admin')->where('is_active', true)
+            ->whereKeyNot($this->id)
+            ->doesntExist();
     }
 }

@@ -1,24 +1,22 @@
 @extends("layouts.admin")
-@section("title", "Profil")
-@section("page_title", "Pengaturan Profil")
+@section("title", __('app.profile'))
+@section("page_title", __('app.profile'))
 
 @section("content")
 <div class="row">
     <div class="col-lg-8">
-        {{-- Informasi Profil --}}
+        {{-- Profile information --}}
         <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-person me-1"></i> Informasi Profil
+                <i class="bi bi-person me-1"></i> {{ __('app.profile_information') }}
             </div>
             <div class="card-body">
-                <p class="text-muted small mb-4">Perbarui informasi profil dan email akun Anda.</p>
-
                 <form method="post" action="{{ route("profile.update") }}" class="mb-0">
                     @csrf
                     @method("patch")
 
                     <div class="mb-3">
-                        <label for="name" class="form-label">Nama</label>
+                        <label for="name" class="form-label">{{ __('app.name') }}</label>
                         <input id="name" name="name" type="text"
                             class="form-control @error("name", "updateProfileInformation") is-invalid @enderror"
                             value="{{ old("name", $user->name) }}" required autofocus autocomplete="name">
@@ -28,7 +26,7 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
+                        <label for="email" class="form-label">{{ __('app.email') }}</label>
                         <input id="email" name="email" type="email"
                             class="form-control @error("email", "updateProfileInformation") is-invalid @enderror"
                             value="{{ old("email", $user->email) }}" required autocomplete="username">
@@ -39,11 +37,11 @@
 
                     <div class="d-flex align-items-center gap-2">
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-save me-1"></i> Simpan
+                            <i class="bi bi-save me-1"></i> {{ __('app.save') }}
                         </button>
                         @if (session("status") === "profile-updated")
                             <span class="text-success small">
-                                <i class="bi bi-check-circle"></i> Tersimpan.
+                                <i class="bi bi-check-circle"></i> {{ __('app.save') }}!
                             </span>
                         @endif
                     </div>
@@ -54,17 +52,15 @@
         {{-- Update Password --}}
         <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-shield-lock me-1"></i> Ganti Password
+                <i class="bi bi-shield-lock me-1"></i> {{ __('app.update_password') }}
             </div>
             <div class="card-body">
-                <p class="text-muted small mb-4">Pastikan akun Anda menggunakan password yang panjang dan acak untuk keamanan.</p>
-
                 <form method="post" action="{{ route("password.update") }}" class="mb-0">
                     @csrf
                     @method("put")
 
                     <div class="mb-3">
-                        <label for="current_password" class="form-label">Password Saat Ini</label>
+                        <label for="current_password" class="form-label">{{ __('app.current_password') }}</label>
                         <input id="current_password" name="current_password" type="password"
                             class="form-control @error("current_password", "updatePassword") is-invalid @enderror"
                             autocomplete="current-password">
@@ -74,7 +70,7 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="password" class="form-label">Password Baru</label>
+                        <label for="password" class="form-label">{{ __('app.password') }}</label>
                         <input id="password" name="password" type="password"
                             class="form-control @error("password", "updatePassword") is-invalid @enderror"
                             autocomplete="new-password">
@@ -84,7 +80,7 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="password_confirmation" class="form-label">Konfirmasi Password</label>
+                        <label for="password_confirmation" class="form-label">{{ __('app.confirm_password') }}</label>
                         <input id="password_confirmation" name="password_confirmation" type="password"
                             class="form-control @error("password_confirmation", "updatePassword") is-invalid @enderror"
                             autocomplete="new-password">
@@ -95,11 +91,11 @@
 
                     <div class="d-flex align-items-center gap-2">
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-save me-1"></i> Simpan
+                            <i class="bi bi-save me-1"></i> {{ __('app.save') }}
                         </button>
                         @if (session("status") === "password-updated")
                             <span class="text-success small">
-                                <i class="bi bi-check-circle"></i> Tersimpan.
+                                <i class="bi bi-check-circle"></i> {{ __('app.save') }}!
                             </span>
                         @endif
                     </div>
@@ -109,10 +105,10 @@
     </div>
 
     <div class="col-lg-4">
-        {{-- Informasi Akun --}}
+        {{-- Account information --}}
         <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-info-circle me-1"></i> Info Akun
+                <i class="bi bi-info-circle me-1"></i> {{ __('app.account') }}
             </div>
             <div class="card-body text-center">
                 <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3"
@@ -124,31 +120,28 @@
                 <hr>
                 <div class="text-start small">
                     <div class="d-flex justify-content-between mb-1">
-                        <span class="text-muted">Bergabung</span>
+                        <span class="text-muted">{{ __('app.joined') }}</span>
                         <span>{{ $user->created_at->format("d/m/Y") }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- Hapus Akun --}}
+        {{-- Delete account --}}
         <div class="card border-danger">
             <div class="card-header text-danger">
-                <i class="bi bi-exclamation-triangle me-1"></i> Hapus Akun
+                <i class="bi bi-exclamation-triangle me-1"></i> {{ __('app.delete_account') }}
             </div>
             <div class="card-body">
-                <p class="small text-muted mb-3">
-                    Setelah akun dihapus, semua data akan terhapus permanen. Pastikan Anda sudah menyimpan data penting.
-                </p>
                 <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                    <i class="bi bi-trash me-1"></i> Hapus Akun
+                    <i class="bi bi-trash me-1"></i> {{ __('app.delete_account') }}
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-{{-- Modal Hapus Akun --}}
+{{-- Delete account modal --}}
 <div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -156,25 +149,24 @@
                 @csrf
                 @method("delete")
                 <div class="modal-header">
-                    <h5 class="modal-title">Hapus Akun</h5>
+                    <h5 class="modal-title">{{ __('app.delete_account') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <p class="small text-muted mb-3">
-                        Yakin ingin menghapus akun? Semua data akan terhapus permanen.
-                        Masukkan password Anda untuk konfirmasi.
+                        {{ __('app.confirm_delete') }}
                     </p>
                     <div class="mb-0">
                         <input type="password" name="password" class="form-control @error("password", "userDeletion") is-invalid @enderror"
-                            placeholder="Password">
+                            placeholder="{{ __('app.password') }}" required>
                         @error("password", "userDeletion")
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-danger">Hapus Akun</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('app.cancel') }}</button>
+                    <button type="submit" class="btn btn-danger">{{ __('app.delete_account') }}</button>
                 </div>
             </form>
         </div>

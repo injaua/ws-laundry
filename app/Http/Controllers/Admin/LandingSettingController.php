@@ -30,6 +30,6 @@ class LandingSettingController extends Controller
         }
 
         return redirect()->route("admin.landing-settings.index")
-            ->with("success", "Pengaturan landing page berhasil disimpan.");
+            ->with("success", __('app.landing_settings_saved'));
     }
 }

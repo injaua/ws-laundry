@@ -12,7 +12,7 @@ class PackageController extends Controller
         $query = Package::query();
 
         if ($search = $request->search) {
-            $query->where("nama", "like", "%{$search}%");
+            $query->where("name", "like", "%{$search}%");
         }
 
         $packages = $query->latest()->paginate(15);
@@ -27,19 +27,19 @@ class PackageController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            "nama" => "required|string|max:100",
-            "deskripsi" => "nullable|string",
-            "berat_kg" => "required|numeric|min:0.1",
-            "harga" => "required|numeric|min:0",
-            "aktif" => "nullable|boolean",
+            "name" => "required|string|max:100",
+            "description" => "nullable|string",
+            "weight_kg" => "required|numeric|min:0.1",
+            "price" => "required|numeric|min:0|max:10000",
+            "is_active" => "nullable|boolean",
         ]);
 
-        $validated["aktif"] = $request->boolean("aktif", true);
+        $validated["is_active"] = $request->boolean("is_active", true);
 
         Package::create($validated);
 
         return redirect()->route("packages.index")
-            ->with("success", "Paket berhasil ditambahkan.");
+            ->with("success", __('app.package_added'));
     }
 
     public function edit(Package $package)
@@ -50,25 +50,25 @@ class PackageController extends Controller
     public function update(Request $request, Package $package)
     {
         $validated = $request->validate([
-            "nama" => "required|string|max:100",
-            "deskripsi" => "nullable|string",
-            "berat_kg" => "required|numeric|min:0.1",
-            "harga" => "required|numeric|min:0",
-            "aktif" => "nullable|boolean",
+            "name" => "required|string|max:100",
+            "description" => "nullable|string",
+            "weight_kg" => "required|numeric|min:0.1",
+            "price" => "required|numeric|min:0|max:10000",
+            "is_active" => "nullable|boolean",
         ]);
 
-        $validated["aktif"] = $request->boolean("aktif", true);
+        $validated["is_active"] = $request->boolean("is_active", true);
 
         $package->update($validated);
 
         return redirect()->route("packages.index")
-            ->with("success", "Paket berhasil diupdate.");
+            ->with("success", __('app.package_updated'));
     }
 
     public function destroy(Package $package)
     {
         $package->delete();
         return redirect()->route("packages.index")
-            ->with("success", "Paket berhasil dihapus.");
+            ->with("success", __('app.package_deleted'));
     }
 }

@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Equipment;
+use App\Models\InventoryItem;
+use App\Models\MaintenanceJob;
 use App\Models\Order;
 use App\Models\Payment;
 use Carbon\Carbon;
@@ -13,36 +16,63 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $totalPelanggan = Customer::count();
-        $pelangganBaru = Customer::whereMonth("created_at", now()->month)->count();
-        $orderHariIni = Order::whereDate("tgl_masuk", today())->count();
-        $orderProses = Order::whereNotIn("status", ["selesai", "diantar"])->count();
-        $orderSiap = Order::where("status", "siap")->count();
+        $isManager = auth()->user()->isAdmin() || auth()->user()->isOwner();
 
-        $pendapatanHariIni = Payment::whereDate("tgl_bayar", today())->sum("jumlah");
-        $pendapatanBulanIni = Payment::whereMonth("tgl_bayar", now()->month)
-            ->whereYear("tgl_bayar", now()->year)
-            ->sum("jumlah");
+        $totalCustomers = Customer::count();
+        $newCustomers = Customer::whereMonth("created_at", now()->month)->count();
+        $todayOrders = Order::whereDate("received_at", today())->count();
+        $processingOrders = Order::whereNotIn("status", ["completed", "delivering"])->count();
+        $readyOrders = Order::where("status", "ready")->count();
 
-        $ordersTerbaru = Order::with("customer")
+        $todayRevenueQuery = Payment::whereDate("paid_at", today());
+        if (! $isManager) {
+            $todayRevenueQuery->where("user_id", auth()->id());
+        }
+        $todayRevenue = $todayRevenueQuery->sum("amount");
+
+        $monthRevenue = 0;
+        $chartLabels = [];
+        $chartData = [];
+
+        if ($isManager) {
+            $monthRevenue = Payment::whereMonth("paid_at", now()->month)
+                ->whereYear("paid_at", now()->year)
+                ->sum("amount");
+
+            // 7 days chart
+            for ($i = 6; $i >= 0; $i--) {
+                $date = today()->subDays($i);
+                $chartLabels[] = $date->format("d M");
+                $total = Payment::whereDate("paid_at", $date)->sum("amount");
+                $chartData[] = (float) $total;
+            }
+        }
+
+        $latestOrders = Order::with("customer")
             ->latest()
             ->take(5)
             ->get();
 
-        // 7 days chart
-        $chartLabels = [];
-        $chartData = [];
-        for ($i = 6; $i >= 0; $i--) {
-            $date = today()->subDays($i);
-            $chartLabels[] = $date->format("d M");
-            $total = Payment::whereDate("tgl_bayar", $date)->sum("jumlah");
-            $chartData[] = (float) $total;
+        $resourceAlerts = null;
+        if ($isManager) {
+            $resourceAlerts = [
+                "low_stock" => InventoryItem::where("is_active", true)
+                    ->where("min_stock_qty", ">", 0)
+                    ->whereColumn("stock_qty", "<=", "min_stock_qty")
+                    ->count(),
+                "faulty" => Equipment::whereIn("status", ["faulty", "in_maintenance"])->count(),
+                "due_maintenance" => MaintenanceJob::where("kind", "preventive")
+                    ->whereNotIn("status", ["completed", "cancelled"])
+                    ->whereNotNull("next_service_date")
+                    ->whereDate("next_service_date", "<=", now()->addDays(7)->toDateString())
+                    ->count(),
+            ];
         }
 
         return view("dashboard", compact(
-            "totalPelanggan", "pelangganBaru", "orderHariIni", "orderProses",
-            "orderSiap", "pendapatanHariIni", "pendapatanBulanIni",
-            "ordersTerbaru", "chartLabels", "chartData"
+            "isManager", "totalCustomers", "newCustomers", "todayOrders", "processingOrders",
+            "readyOrders", "todayRevenue", "monthRevenue",
+            "latestOrders", "chartLabels", "chartData", "resourceAlerts"
         ));
     }
 }

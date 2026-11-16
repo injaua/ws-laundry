@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Gallery;
 use App\Models\Order;
+use App\Models\Package;
 use App\Models\Service;
 use App\Models\SiteSetting;
 use App\Models\Testimonial;
@@ -14,24 +15,28 @@ class LandingPageController extends Controller
     public function index()
     {
         $settings = SiteSetting::allAsArray();
-        $services = Service::orderBy("nama")->get();
+        $services = Service::orderBy("name")->get();
+        $packages = Package::where("is_active", true)->orderBy("name")->get();
         $testimonials = Testimonial::active()->get();
         $galleries = Gallery::active()->get();
 
         return view("landing.index", compact(
-            "settings", "services", "testimonials", "galleries"
+            "settings", "services", "packages", "testimonials", "galleries"
         ));
     }
 
-    public function cekStatus(Request $request)
+    public function checkStatus(Request $request)
     {
         $settings = SiteSetting::allAsArray();
         $order = null;
         $notFound = false;
 
-        if ($noOrder = $request->query("no_order")) {
-            $order = Order::with(["customer", "items.service", "payments"])
-                ->where("no_order", $noOrder)
+        $raw = $request->query("order_number");
+        $orderNumber = is_string($raw) ? strtoupper(preg_replace('/\s+/', "", $raw)) : "";
+
+        if ($orderNumber !== "") {
+            $order = Order::with(["customer", "items.service", "items.package", "payments"])
+                ->whereRaw("upper(order_number) = ?", [$orderNumber])
                 ->first();
 
             if (!$order) {
@@ -39,8 +44,8 @@ class LandingPageController extends Controller
             }
         }
 
-        return view("landing.cek-status", compact(
-            "settings", "order", "notFound"
+        return view("landing.order-status", compact(
+            "settings", "order", "notFound", "orderNumber"
         ));
     }
 }

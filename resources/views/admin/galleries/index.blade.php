@@ -1,18 +1,13 @@
 @extends("layouts.admin")
-@section("title", "Galeri")
-@section("page_title", "Galeri Foto")
-@section("page_subtitle", "Kelola foto untuk landing page")
+@section("title", __('app.gallery'))
+@section("page_title", __('app.gallery'))
 
 @section("content")
-@if(session("success"))
-    <div class="alert alert-success alert-dismissible py-2 small">{{ session("success") }}<button type="button" class="btn-close py-2" data-bs-dismiss="alert"></button></div>
-@endif
-
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-images me-1"></i> Foto</span>
+        <span><i class="bi bi-images me-1"></i> {{ __('app.gallery') }}</span>
         <a href="{{ route("admin.galleries.create") }}" class="btn btn-primary btn-sm">
-            <i class="bi bi-plus-lg"></i> Upload
+            <i class="bi bi-plus-lg"></i> {{ __('app.upload') }}
         </a>
     </div>
     <div class="card-body">
@@ -25,16 +20,16 @@
                             <p class="small mb-1 text-truncate">{{ $g->caption ?? "—" }}</p>
                             <div class="d-flex justify-content-between align-items-center">
                                 <span class="badge bg-{{ $g->is_active ? "success" : "secondary" }} small">
-                                    {{ $g->is_active ? "Aktif" : "Nonaktif" }}
+                                    {{ $g->is_active ? __('app.active') : __('app.no') }}
                                 </span>
                                 <div>
-                                    <a href="{{ route("admin.galleries.edit", $g) }}" class="btn btn-sm btn-outline-primary">
+                                    <a href="{{ route("admin.galleries.edit", $g) }}" class="btn btn-sm btn-outline-primary" title="{{ __('app.edit') }}">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     <form action="{{ route("admin.galleries.destroy", $g) }}" method="POST" class="d-inline"
-                                        onsubmit="return confirm("Hapus foto ini?")">
+                                        onsubmit="return confirm('{{ __('app.confirm_delete') }}')">
                                         @csrf @method("DELETE")
-                                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                        <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}"><i class="bi bi-trash"></i></button>
                                     </form>
                                 </div>
                             </div>
@@ -42,7 +37,7 @@
                     </div>
                 </div>
             @empty
-                <div class="col-12 text-center text-muted py-4">Belum ada foto</div>
+                <div class="col-12 text-center text-muted py-4">{{ __('app.no_photos') }}</div>
             @endforelse
         </div>
     </div>

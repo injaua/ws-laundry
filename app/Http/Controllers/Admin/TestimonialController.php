@@ -39,7 +39,7 @@ class TestimonialController extends Controller
         Testimonial::create($data);
 
         return redirect()->route("admin.testimonials.index")
-            ->with("success", "Testimoni berhasil ditambahkan.");
+            ->with("success", __('app.testimonial_added'));
     }
 
     public function edit(Testimonial $testimonial)
@@ -67,13 +67,13 @@ class TestimonialController extends Controller
         $testimonial->update($data);
 
         return redirect()->route("admin.testimonials.index")
-            ->with("success", "Testimoni berhasil diubah.");
+            ->with("success", __('app.testimonial_updated'));
     }
 
     public function destroy(Testimonial $testimonial)
     {
         $testimonial->delete();
         return redirect()->route("admin.testimonials.index")
-            ->with("success", "Testimoni berhasil dihapus.");
+            ->with("success", __('app.testimonial_deleted'));
     }
 }

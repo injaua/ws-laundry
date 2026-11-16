@@ -10,10 +10,10 @@ return new class extends Migration
     {
         Schema::create('services', function (Blueprint $table) {
             $table->id();
-            $table->string('nama', 100);
-            $table->enum('tipe', ['kiloan', 'satuan']);
-            $table->decimal('harga', 12, 2);
-            $table->integer('estimasi_hari')->default(2);
+            $table->string('name', 100);
+            $table->enum('type', ['by_weight', 'by_piece']);
+            $table->decimal('price', 12, 2);
+            $table->integer('estimated_days')->default(2);
             $table->timestamps();
         });
     }

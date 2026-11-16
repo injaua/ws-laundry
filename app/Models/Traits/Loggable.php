@@ -37,12 +37,12 @@ trait Loggable
     protected static function generateDescription(Model $model, string $action): string
     {
         $modelName = class_basename($model);
-        $identifier = $model->name ?? $model->nama ?? $model->no_order ?? $model->id;
+        $identifier = $model->name ?? $model->title ?? $model->order_number ?? $model->id;
 
         return match ($action) {
-            'created' => "{$modelName} baru dibuat: {$identifier}",
-            'updated' => "{$modelName} diubah: {$identifier}",
-            'deleted' => "{$modelName} dihapus: {$identifier}",
+            'created' => "{$modelName} created: {$identifier}",
+            'updated' => "{$modelName} updated: {$identifier}",
+            'deleted' => "{$modelName} deleted: {$identifier}",
             default => "{$modelName} {$action}: {$identifier}",
         };
     }

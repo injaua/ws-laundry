@@ -10,7 +10,7 @@ class Service extends Model
 {
     use HasFactory, Loggable;
 
-    protected $fillable = ['nama', 'tipe', 'harga', 'estimasi_hari'];
+    protected $fillable = ['name', 'type', 'price', 'estimated_days', 'photo'];
 
     public function orderItems()
     {

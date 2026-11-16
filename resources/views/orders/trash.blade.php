@@ -1,13 +1,13 @@
 @extends("layouts.admin")
-@section("title", "Trash Order")
-@section("page_title", "Order Terhapus")
+@section("title", __('app.trash_orders'))
+@section("page_title", __('app.trash_orders'))
 
 @section("content")
 <div class="page-title">
-    <span>Total: {{ $orders->total() }} order dihapus</span>
+    <span>{{ __('app.total_deleted_orders', ['count' => $orders->total()]) }}</span>
     <div>
         <a href="{{ route("orders.index") }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Kembali
+            <i class="bi bi-arrow-left"></i> {{ __('app.back') }}
         </a>
     </div>
 </div>
@@ -19,27 +19,27 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>No. Order</th>
-                        <th>Pelanggan</th>
-                        <th>Status</th>
-                        <th>Total</th>
-                        <th>Dihapus</th>
-                        <th class="text-center">Aksi</th>
+                        <th>{{ __('app.order_number') }}</th>
+                        <th>{{ __('app.customer') }}</th>
+                        <th>{{ __('app.status') }}</th>
+                        <th>{{ __('app.total') }}</th>
+                        <th>{{ __('app.deleted_at') }}</th>
+                        <th class="text-center">{{ __('app.actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($orders as $order)
                     <tr>
                         <td>{{ $loop->iteration + ($orders->currentPage() - 1) * $orders->perPage() }}</td>
-                        <td class="fw-medium">{{ $order->no_order }}</td>
-                        <td>{{ $order->customer->nama ?? "-" }}</td>
-                        <td><span class="badge bg-secondary">{{ ucfirst($order->status) }}</span></td>
-                        <td>Rp {{ number_format($order->total_harga, 0, ",", ".") }}</td>
+                        <td class="fw-medium">{{ $order->order_number }}</td>
+                        <td>{{ $order->customer->name ?? "-" }}</td>
+                        <td><span class="badge bg-secondary">{{ $order->status_label }}</span></td>
+                        <td>{{ number_format($order->total_price, 0, ".", ",") }} Mts</td>
                         <td class="small text-muted">{{ $order->deleted_at->format("d/m/Y H:i") }}</td>
                         <td class="text-center">
-                            <form action="{{ route("orders.restore", $order->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Kembalikan order ini?')">
+                            <form action="{{ route("orders.restore", $order->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.restore_order_confirm') }}')">
                                 @csrf @method("PATCH")
-                                <button class="btn btn-sm btn-success" title="Restore"><i class="bi bi-arrow-counterclockwise"></i> Restore</button>
+                                <button class="btn btn-sm btn-success" title="{{ __('app.restore') }}"><i class="bi bi-arrow-counterclockwise"></i> {{ __('app.restore') }}</button>
                             </form>
                         </td>
                     </tr>
@@ -47,7 +47,7 @@
                     <tr>
                         <td colspan="7" class="text-center py-4 text-muted">
                             <i class="bi bi-trash fs-1 d-block mb-2"></i>
-                            Tidak ada order yang dihapus.
+                            {{ __('app.no_deleted_orders') }}
                         </td>
                     </tr>
                     @endforelse

@@ -1,47 +1,47 @@
 @extends("layouts.admin")
-@section("title", "Edit Paket")
-@section("page_title", "Edit Paket Laundry")
+@section("title", __('app.edit_package'))
+@section("page_title", __('app.edit_package'))
 
 @section("content")
 <div class="row justify-content-center">
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header"><i class="bi bi-pencil me-1"></i> Form Edit Paket</div>
+            <div class="card-header"><i class="bi bi-pencil me-1"></i> {{ __('app.edit_package') }}</div>
             <div class="card-body">
                 <form action="{{ route("packages.update", $package) }}" method="POST">
                     @csrf @method("PUT")
                     <div class="mb-3">
-                        <label class="form-label">Nama Paket <span class="text-danger">*</span></label>
-                        <input type="text" name="nama" class="form-control @error("nama") is-invalid @enderror" value="{{ old("nama", $package->nama) }}" required>
-                        @error("nama") <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        <label class="form-label">{{ __('app.package_name') }} <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control @error("name") is-invalid @enderror" value="{{ old("name", $package->name) }}" required>
+                        @error("name") <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Deskripsi</label>
-                        <textarea name="deskripsi" class="form-control @error("deskripsi") is-invalid @enderror" rows="3">{{ old("deskripsi", $package->deskripsi) }}</textarea>
-                        @error("deskripsi") <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        <label class="form-label">{{ __('app.description') }}</label>
+                        <textarea name="description" class="form-control @error("description") is-invalid @enderror" rows="3">{{ old("description", $package->description) }}</textarea>
+                        @error("description") <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Berat (Kg) <span class="text-danger">*</span></label>
-                        <input type="number" name="berat_kg" class="form-control @error("berat_kg") is-invalid @enderror" value="{{ old("berat_kg", $package->berat_kg) }}" required min="0.1" step="0.5">
-                        @error("berat_kg") <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        <label class="form-label">{{ __('app.package_weight') }} <span class="text-danger">*</span></label>
+                        <input type="number" name="weight_kg" class="form-control @error("weight_kg") is-invalid @enderror" value="{{ old("weight_kg", $package->weight_kg) }}" required min="0.1" step="0.5">
+                        @error("weight_kg") <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Harga <span class="text-danger">*</span></label>
+                        <label class="form-label">{{ __('app.price') }} <span class="text-danger">*</span></label>
                         <div class="input-group">
-                            <span class="input-group-text">Rp</span>
-                            <input type="number" name="harga" class="form-control @error("harga") is-invalid @enderror" value="{{ old("harga", $package->harga) }}" required min="0">
-                            @error("harga") <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <input type="number" name="price" class="form-control @error("price") is-invalid @enderror" value="{{ old("price", $package->price) }}" required min="0" max="10000">
+                            <span class="input-group-text">Mts</span>
+                            @error("price") <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
                     <div class="mb-3">
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" name="aktif" id="aktif" value="1" {{ old("aktif", $package->aktif) ? "checked" : "" }}>
-                            <label class="form-check-label" for="aktif">Aktif</label>
+                            <input class="form-check-input" type="checkbox" name="is_active" id="is_active" value="1" {{ old("is_active", $package->is_active) ? "checked" : "" }}>
+                            <label class="form-check-label" for="is_active">{{ __('app.active') }}</label>
                         </div>
                     </div>
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Update</button>
-                        <a href="{{ route("packages.index") }}" class="btn btn-outline-secondary">Batal</a>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> {{ __('app.update') }}</button>
+                        <a href="{{ route("packages.index") }}" class="btn btn-outline-secondary">{{ __('app.cancel') }}</a>
                     </div>
                 </form>
             </div>

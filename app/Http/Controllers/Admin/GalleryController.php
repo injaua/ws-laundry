@@ -34,7 +34,7 @@ class GalleryController extends Controller
         Gallery::create($data);
 
         return redirect()->route("admin.galleries.index")
-            ->with("success", "Foto berhasil ditambahkan.");
+            ->with("success", __('app.gallery_added'));
     }
 
     public function edit(Gallery $gallery)
@@ -60,13 +60,13 @@ class GalleryController extends Controller
         $gallery->update($data);
 
         return redirect()->route("admin.galleries.index")
-            ->with("success", "Foto berhasil diubah.");
+            ->with("success", __('app.gallery_updated'));
     }
 
     public function destroy(Gallery $gallery)
     {
         $gallery->delete();
         return redirect()->route("admin.galleries.index")
-            ->with("success", "Foto berhasil dihapus.");
+            ->with("success", __('app.gallery_deleted'));
     }
 }

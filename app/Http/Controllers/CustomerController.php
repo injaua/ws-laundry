@@ -14,8 +14,8 @@ class CustomerController extends Controller
         $query = Customer::query();
 
         if ($search = $request->search) {
-            $query->where("nama", "like", "%{$search}%")
-                  ->orWhere("no_telp", "like", "%{$search}%");
+            $query->where("name", "like", "%{$search}%")
+                  ->orWhere("phone", "like", "%{$search}%");
         }
 
         $customers = $query->withCount("orders")
@@ -45,15 +45,15 @@ class CustomerController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            "nama" => "required|string|max:100",
-            "no_telp" => "required|string|max:20|unique:customers",
-            "alamat" => "nullable|string",
+            "name" => "required|string|max:100",
+            "phone" => "required|string|max:20|unique:customers",
+            "address" => "nullable|string",
         ]);
 
         Customer::create($validated);
 
         return redirect()->route("customers.index")
-            ->with("success", "Pelanggan berhasil ditambahkan.");
+            ->with("success", __('app.customer_added'));
     }
 
     public function edit(Customer $customer)
@@ -64,26 +64,26 @@ class CustomerController extends Controller
     public function update(Request $request, Customer $customer)
     {
         $validated = $request->validate([
-            "nama" => "required|string|max:100",
-            "no_telp" => ["required", "string", "max:20", Rule::unique("customers")->ignore($customer->id)],
-            "alamat" => "nullable|string",
+            "name" => "required|string|max:100",
+            "phone" => ["required", "string", "max:20", Rule::unique("customers")->ignore($customer->id)],
+            "address" => "nullable|string",
         ]);
 
         $customer->update($validated);
 
         return redirect()->route("customers.index")
-            ->with("success", "Pelanggan berhasil diupdate.");
+            ->with("success", __('app.customer_updated'));
     }
 
     public function destroy(Customer $customer)
     {
         if ($customer->orders()->exists()) {
             return redirect()->route("customers.index")
-                ->with("error", "Pelanggan memiliki transaksi aktif, tidak bisa dihapus.");
+                ->with("error", __('app.customer_delete_blocked'));
         }
 
         $customer->delete();
         return redirect()->route("customers.index")
-            ->with("success", "Pelanggan berhasil dihapus.");
+            ->with("success", __('app.customer_deleted'));
     }
 }

@@ -1,7 +1,7 @@
 <div align="center">
   <br>
-  <h1>🧺 LaundryKu</h1>
-  <p><strong>Sistem Manajemen Laundry Modern</strong> — Aplikasi manajemen laundry berbasis Laravel 11, dirancang untuk efisiensi operasional usaha laundry kecil & menengah.</p>
+  <h1>🧺 WS Clean & Laundry Serviços, Lda</h1>
+  <p><strong>Modern Laundry Management System</strong> — a Laravel-based laundry management app designed to keep small and medium laundry businesses running efficiently.</p>
   <p>
     <img src="https://img.shields.io/badge/Laravel-11-FF2D20?logo=laravel" alt="Laravel 11">
     <img src="https://img.shields.io/badge/PHP-8.3-777BB4?logo=php" alt="PHP 8.3">
@@ -12,44 +12,44 @@
   <br>
 </div>
 
-## 📖 Tentang LaundryKu
-LaundryKu adalah solusi digital terintegrasi untuk bisnis laundry. Sistem ini mencakup manajemen operasional lengkap, tracking status real-time, sistem poin loyalitas, serta pelaporan keuangan yang akurat untuk mendukung pengambilan keputusan bisnis.
+## 📖 About WS Clean & Laundry Serviços, Lda
+WS Clean & Laundry Serviços, Lda is an integrated digital solution for laundry businesses. The system covers full operational management, real-time status tracking, a loyalty points system, and accurate financial reporting to support business decisions.
 
-## 📋 Daftar Isi
+## 📋 Table of Contents
 
-- [Fitur Utama](#-fitur)
-- [Prasyarat](#-prasyarat)
-- [Instalasi](#-instalasi)
-- [Login Default](#-login-default)
-- [Struktur Database](#-struktur-database)
-- [Lisensi](#-lisensi)
-
----
-
-## ✨ Fitur
-
-| Fitur | Keterangan |
-|-------|------------|
-| 👥 **Manajemen Pelanggan** | CRUD pelanggan, detail riwayat transaksi, & sistem **Loyalty Points** (earn & redeem) |
-| 🛠️ **Manajemen Layanan** | Kelola layanan kiloan/satuan & **Paket Laundry** |
-| 📋 **Transaksi (Order)** | Tracking status (8 alur), **auto-lock saat selesai**, & **cetak barcode label** |
-| 🔍 **Cek Status Publik** | Halaman tracking mandiri untuk pelanggan via nomor order |
-| 💰 **Keuangan & Laporan** | Laporan laba-rugi (Chart.js), export Excel (.xlsx), & manajemen pengeluaran |
-| 🛡️ **Stability & Safety** | **Activity log** audit, multi-role (Admin/Kasir/Owner), backup otomatis, & **double-submit prevention** |
-| 🌗 **UI/UX Modern** | Bootstrap 5.3, **Dark Mode** persisten, & desain responsif |
+- [Key Features](#-features)
+- [Prerequisites](#-prerequisites)
+- [Installation](#-installation)
+- [Default Logins](#-default-logins)
+- [Database Structure](#-database-structure)
+- [License](#-license)
 
 ---
 
-## 🚀 Prasyarat
+## ✨ Features
+
+| Feature | Description |
+|---------|-------------|
+| 👥 **Customer Management** | Customer CRUD, order history details, and a **loyalty points** system (earn & redeem) |
+| 🛠️ **Service Management** | Manage by-weight / by-piece services and **laundry packages** |
+| 📋 **Orders** | Status tracking (8-step forward-only flow), **auto-lock on completion**, and **barcode label printing** |
+| 🔍 **Public Status Check** | Self-service tracking page for customers via order number |
+| 💰 **Finance & Reports** | Profit-and-loss reports (Chart.js), Excel export (.xlsx), and expense management |
+| 🛡️ **Stability & Safety** | Audit **activity log**, multi-role (Admin/Cashier/Owner), automatic backups, and **double-submit prevention** |
+| 🌗 **Modern UI/UX** | Bootstrap 5.3, persistent **dark mode**, and a responsive design |
+
+---
+
+## 🚀 Prerequisites
 
 - **PHP** 8.1+
 - **Composer** 2.x
 - **Database** SQLite (dev) / MySQL 5.7+ (prod)
-- **Ekstensi PHP**: `bcmath`, `ctype`, `fileinfo`, `json`, `mbstring`, `openssl`, `pdo`, `xml`
+- **PHP extensions**: `bcmath`, `ctype`, `fileinfo`, `json`, `mbstring`, `openssl`, `pdo`, `xml`
 
 ---
 
-## 🛠️ Instalasi
+## 🛠️ Installation
 
 ```bash
 git clone https://github.com/afdhalpower/laravel-laundry.git
@@ -64,20 +64,20 @@ php artisan serve
 
 ---
 
-## 🔐 Login Default
+## 🔐 Default Logins
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | `admin@laundryku.com` | `password` |
-| Kasir | `kasir@laundryku.com` | `password` |
-| Owner | `owner@laundryku.com` | `password` |
+| Admin | `admin@ws-cleanlaundry.example` | `password` |
+| Cashier | `cashier@ws-cleanlaundry.example` | `password` |
+| Owner | `owner@ws-cleanlaundry.example` | `password` |
 
 ---
 
-## 🗂️ Struktur Database
+## 🗂️ Database Structure
 `users`, `customers`, `orders`, `order_items`, `services`, `payments`, `expenses`, `packages`, `loyalty_points`, `activity_logs`
 
 ---
 
-## 📄 Lisensi
+## 📄 License
 **MIT License** — © 2026 [afdhalpower](https://github.com/afdhalpower)

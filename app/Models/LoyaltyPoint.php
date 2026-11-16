@@ -11,7 +11,7 @@ class LoyaltyPoint extends Model
 {
     use HasFactory;
 
-    protected $fillable = ["customer_id", "points", "type", "keterangan", "source_type", "source_id"];
+    protected $fillable = ["customer_id", "points", "type", "note", "source_type", "source_id"];
 
     public function customer(): BelongsTo
     {

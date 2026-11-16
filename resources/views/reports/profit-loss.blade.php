@@ -1,21 +1,21 @@
 @extends("layouts.admin")
-@section("title", "Laporan Laba-Rugi")
-@section("page_title", "Laporan Laba-Rugi")
+@section("title", __('app.profit_loss_report'))
+@section("page_title", __('app.profit_loss_report'))
 
 @section("content")
 <div class="card mb-3">
     <div class="card-body">
         <form action="{{ route("reports.profit-loss") }}" method="GET" class="row g-2 align-items-end">
             <div class="col-md-3">
-                <label class="form-label">Dari</label>
+                <label class="form-label">{{ __('app.from_date') }}</label>
                 <input type="date" name="from" class="form-control" value="{{ $from->format("Y-m-d") }}">
             </div>
             <div class="col-md-3">
-                <label class="form-label">Sampai</label>
+                <label class="form-label">{{ __('app.to_date') }}</label>
                 <input type="date" name="to" class="form-control" value="{{ $to->format("Y-m-d") }}">
             </div>
             <div class="col-auto">
-                <button class="btn btn-primary"><i class="bi bi-search"></i> Tampilkan</button>
+                <button class="btn btn-primary"><i class="bi bi-search"></i> {{ __('app.show') }}</button>
             </div>
         </form>
     </div>
@@ -25,27 +25,27 @@
     <div class="col-md-3">
         <div class="card border-start border-4 border-success">
             <div class="card-body">
-                <div class="text-muted small">Pendapatan</div>
-                <div class="fs-4 fw-bold text-success">Rp {{ number_format($totalRevenue, 0, ",", ".") }}</div>
-                <small class="text-muted">{{ $totalOrders }} transaksi</small>
+                <div class="text-muted small">{{ __('app.revenue') }}</div>
+                <div class="fs-4 fw-bold text-success">{{ number_format($totalRevenue, 0, ".", ",") }} Mts</div>
+                <small class="text-muted">{{ __('app.total_transactions', ['count' => $totalOrders]) }}</small>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card border-start border-4 border-danger">
             <div class="card-body">
-                <div class="text-muted small">Pengeluaran</div>
-                <div class="fs-4 fw-bold text-danger">Rp {{ number_format($totalExpenses, 0, ",", ".") }}</div>
-                <small class="text-muted">{{ $expenses->count() ?? 0 }} pengeluaran</small>
+                <div class="text-muted small">{{ __('app.expenses') }}</div>
+                <div class="fs-4 fw-bold text-danger">{{ number_format($totalExpenses, 0, ".", ",") }} Mts</div>
+                <small class="text-muted">{{ __('app.total_count', ['count' => $expenses->count() ?? 0]) }}</small>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card border-start border-4 {{ $netProfit >= 0 ? "border-primary" : "border-warning" }}">
             <div class="card-body">
-                <div class="text-muted small">Laba / Rugi</div>
+                <div class="text-muted small">{{ __('app.net_profit_loss') }}</div>
                 <div class="fs-4 fw-bold {{ $netProfit >= 0 ? "text-primary" : "text-warning" }}">
-                    Rp {{ number_format($netProfit, 0, ",", ".") }}
+                    {{ number_format($netProfit, 0, ".", ",") }} Mts
                 </div>
             </div>
         </div>
@@ -53,9 +53,9 @@
     <div class="col-md-3">
         <div class="card border-start border-4 border-info">
             <div class="card-body">
-                <div class="text-muted small">Margin</div>
+                <div class="text-muted small">Margem</div>
                 <div class="fs-4 fw-bold text-info">{{ $margin }}%</div>
-                <small class="text-muted">{{ $netProfit >= 0 ? "Untung" : "Rugi" }}</small>
+                <small class="text-muted">{{ $netProfit >= 0 ? __('app.net_profit') : __('app.net_loss') }}</small>
             </div>
         </div>
     </div>
@@ -64,7 +64,7 @@
 <div class="row g-3">
     <div class="col-md-8">
         <div class="card">
-            <div class="card-header"><i class="bi bi-bar-chart-line"></i> Pendapatan vs Pengeluaran</div>
+            <div class="card-header"><i class="bi bi-bar-chart-line"></i> {{ __('app.revenue') }} vs {{ __('app.expenses') }}</div>
             <div class="card-body">
                 <canvas id="profitChart" height="200"></canvas>
             </div>
@@ -72,7 +72,7 @@
     </div>
     <div class="col-md-4">
         <div class="card">
-            <div class="card-header"><i class="bi bi-pie-chart"></i> Kategori Pengeluaran</div>
+            <div class="card-header"><i class="bi bi-pie-chart"></i> {{ __('app.category') }} ({{ __('app.expenses') }})</div>
             <div class="card-body">
                 <canvas id="expensePieChart" height="200"></canvas>
             </div>
@@ -88,8 +88,8 @@ new Chart(document.getElementById("profitChart"), {
     data: {
         labels: @json($chartLabels),
         datasets: [
-            { label: "Pendapatan", data: @json($chartRevenue), backgroundColor: "rgba(40,167,69,0.7)", borderColor: "#28a745", borderWidth: 1 },
-            { label: "Pengeluaran", data: @json($chartExpense), backgroundColor: "rgba(220,53,69,0.7)", borderColor: "#dc3545", borderWidth: 1 },
+            { label: "{{ __('app.revenue') }}", data: @json($chartRevenue), backgroundColor: "rgba(40,167,69,0.7)", borderColor: "#28a745", borderWidth: 1 },
+            { label: "{{ __('app.expenses') }}", data: @json($chartExpense), backgroundColor: "rgba(220,53,69,0.7)", borderColor: "#dc3545", borderWidth: 1 },
         ]
     },
     options: {

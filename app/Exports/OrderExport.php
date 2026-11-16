@@ -24,25 +24,25 @@ class OrderExport implements FromQuery, WithHeadings, WithMapping
     public function query()
     {
         return Order::query()
-            ->with(["customer", "items.service", "payments"])
-            ->whereBetween("tgl_masuk", [$this->from, $this->to])
-            ->orderBy("tgl_masuk");
+            ->with(["customer", "items.service", "items.package", "payments"])
+            ->whereBetween("received_at", [$this->from, $this->to])
+            ->orderBy("received_at");
     }
 
     public function headings(): array
     {
-        return ["No. Order", "Pelanggan", "Tanggal Masuk", "Status", "Total Harga", "Dibayar"];
+        return ["Order Number", "Customer", "Received Date", "Status", "Total Price", "Paid"];
     }
 
     public function map($order): array
     {
         return [
-            $order->no_order,
-            $order->customer->nama ?? "-",
-            $order->tgl_masuk->format("d/m/Y"),
+            $order->order_number,
+            $order->customer->name ?? "-",
+            $order->received_at->format("d/m/Y"),
             ucfirst($order->status),
-            (float) $order->total_harga,
-            (float) $order->payments->sum("jumlah"),
+            (float) $order->total_price,
+            (float) $order->payments->sum("amount"),
         ];
     }
 }

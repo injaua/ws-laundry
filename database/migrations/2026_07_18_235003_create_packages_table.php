@@ -10,11 +10,11 @@ return new class extends Migration
     {
         Schema::create("packages", function (Blueprint $table) {
             $table->id();
-            $table->string("nama", 100);
-            $table->text("deskripsi")->nullable();
-            $table->decimal("berat_kg", 8, 2);
-            $table->decimal("harga", 12, 0);
-            $table->boolean("aktif")->default(true);
+            $table->string("name", 100);
+            $table->text("description")->nullable();
+            $table->decimal("weight_kg", 8, 2);
+            $table->decimal("price", 12, 0);
+            $table->boolean("is_active")->default(true);
             $table->timestamps();
         });
     }

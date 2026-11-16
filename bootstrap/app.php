@@ -13,6 +13,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->web(append: [
+            \App\Http\Middleware\SetLocale::class,
+            \App\Http\Middleware\EnsureUserIsActive::class,
+        ]);
         $middleware->alias([
             'role' => CheckRole::class,
         ]);

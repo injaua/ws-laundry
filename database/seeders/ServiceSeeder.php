@@ -10,22 +10,22 @@ class ServiceSeeder extends Seeder
     public function run(): void
     {
         $services = [
-            ["nama" => "Cuci Kering", "tipe" => "kiloan", "harga" => 5000, "estimasi_hari" => 2],
-            ["nama" => "Cuci Kering Setrika", "tipe" => "kiloan", "harga" => 8000, "estimasi_hari" => 2],
-            ["nama" => "Cuci Basah", "tipe" => "kiloan", "harga" => 4000, "estimasi_hari" => 1],
-            ["nama" => "Setrika saja", "tipe" => "kiloan", "harga" => 5000, "estimasi_hari" => 1],
-            ["nama" => "Baju/Kemeja", "tipe" => "satuan", "harga" => 10000, "estimasi_hari" => 2],
-            ["nama" => "Celana", "tipe" => "satuan", "harga" => 8000, "estimasi_hari" => 2],
-            ["nama" => "Selimut", "tipe" => "satuan", "harga" => 15000, "estimasi_hari" => 3],
-            ["nama" => "Jas/Blazer", "tipe" => "satuan", "harga" => 25000, "estimasi_hari" => 3],
-            ["nama" => "Bed Cover", "tipe" => "satuan", "harga" => 20000, "estimasi_hari" => 3],
-            ["nama" => "Karpet", "tipe" => "kiloan", "harga" => 12000, "estimasi_hari" => 4],
+            ["name" => "Dry Cleaning", "type" => "by_weight", "price" => 5000, "estimated_days" => 2],
+            ["name" => "Dry Cleaning + Ironing", "type" => "by_weight", "price" => 8000, "estimated_days" => 2],
+            ["name" => "Wet Wash", "type" => "by_weight", "price" => 4000, "estimated_days" => 1],
+            ["name" => "Ironing Only", "type" => "by_weight", "price" => 5000, "estimated_days" => 1],
+            ["name" => "Shirt", "type" => "by_piece", "price" => 10000, "estimated_days" => 2],
+            ["name" => "Trousers", "type" => "by_piece", "price" => 8000, "estimated_days" => 2],
+            ["name" => "Blanket", "type" => "by_piece", "price" => 15000, "estimated_days" => 3],
+            ["name" => "Suit / Blazer", "type" => "by_piece", "price" => 25000, "estimated_days" => 3],
+            ["name" => "Duvet Cover", "type" => "by_piece", "price" => 20000, "estimated_days" => 3],
+            ["name" => "Carpet", "type" => "by_weight", "price" => 12000, "estimated_days" => 4],
         ];
 
         foreach ($services as $svc) {
             Service::create($svc);
         }
 
-        $this->command->info("10 layanan berhasil dibuat.");
+        $this->command->info("10 services created.");
     }
 }

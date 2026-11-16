@@ -10,9 +10,9 @@ return new class extends Migration
     {
         Schema::create('customers', function (Blueprint $table) {
             $table->id();
-            $table->string('nama', 100);
-            $table->string('no_telp', 20)->unique();
-            $table->text('alamat')->nullable();
+            $table->string('name', 100);
+            $table->string('phone', 20)->unique();
+            $table->text('address')->nullable();
             $table->timestamps();
         });
     }

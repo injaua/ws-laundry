@@ -9,14 +9,14 @@ class Package extends Model
 {
     use HasFactory;
 
-    protected $fillable = ["nama", "deskripsi", "berat_kg", "harga", "aktif"];
+    protected $fillable = ["name", "description", "weight_kg", "price", "is_active"];
 
     protected function casts(): array
     {
         return [
-            "berat_kg" => "decimal:2",
-            "harga" => "decimal:0",
-            "aktif" => "boolean",
+            "weight_kg" => "decimal:2",
+            "price" => "decimal:0",
+            "is_active" => "boolean",
         ];
     }
 }
