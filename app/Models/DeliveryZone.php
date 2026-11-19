@@ -4,9 +4,12 @@ namespace App\Models;
 
 use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
+use App\Support\CurrentStore;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
 
 /** Area served by the couriers, with the fee charged per trip (pickup or delivery). */
 class DeliveryZone extends Model
@@ -33,6 +36,17 @@ class DeliveryZone extends Model
     public function customers(): HasMany
     {
         return $this->hasMany(Customer::class);
+    }
+
+    /**
+     * Validation rule: a zone of the current store (each store has its own zones and fees),
+     * optionally only an active one (new trips, website requests).
+     */
+    public static function existsRule(bool $activeOnly = false): Exists
+    {
+        $rule = Rule::exists("delivery_zones", "id")->where("store_id", CurrentStore::id());
+
+        return $activeOnly ? $rule->where("is_active", true) : $rule;
     }
 
     public function scopeActive(Builder $query): Builder

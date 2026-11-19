@@ -1677,6 +1677,7 @@ return [
     'free' => 'Free',
     'zone_active_hint' => 'Active (available for new trips and on the website)',
     'no_zones' => 'No zones yet. Create one to offer home pickup on the website.',
+    'zones_of_store' => 'Zones of the :store store (each store has its own zones and fees)',
     'zone_saved' => 'Zone saved.',
     'zone_deleted' => 'Zone deleted.',
     'zone_deactivated' => 'The zone already has trips, so it was deactivated instead of deleted.',

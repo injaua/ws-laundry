@@ -1677,6 +1677,7 @@ return [
     'free' => 'Grátis',
     'zone_active_hint' => 'Ativa (disponível para novas viagens e no site)',
     'no_zones' => 'Ainda não há zonas. Crie uma para oferecer recolha ao domicílio no site.',
+    'zones_of_store' => 'Zonas da loja :store (cada loja tem as suas zonas e taxas)',
     'zone_saved' => 'Zona guardada.',
     'zone_deleted' => 'Zona eliminada.',
     'zone_deactivated' => 'A zona já tem viagens, por isso foi desativada em vez de eliminada.',

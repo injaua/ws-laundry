@@ -1,7 +1,7 @@
 @extends("layouts.admin")
 @section("title", __('app.delivery_zones'))
 @section("page_title", __('app.delivery_zones'))
-@section("page_subtitle", __('app.delivery_zones_subtitle'))
+@section("page_subtitle", __('app.delivery_zones_subtitle') . " · " . __('app.zones_of_store', ["store" => \App\Support\CurrentStore::store()?->name]))
 
 @section("content")
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">

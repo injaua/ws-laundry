@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Customer;
+use App\Models\DeliveryZone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -22,7 +23,7 @@ class CustomerRequest extends FormRequest
             "name" => "required|string|max:100",
             "phone" => ["required", "string", "max:20", Rule::unique("customers")->ignore($customer?->id)],
             "address" => "nullable|string",
-            "delivery_zone_id" => "nullable|exists:delivery_zones,id",
+            "delivery_zone_id" => ["nullable", DeliveryZone::existsRule()],
             "address_reference" => "nullable|string|max:255",
             "is_credit_customer" => "boolean",
             "whatsapp_opt_out" => "nullable|boolean",

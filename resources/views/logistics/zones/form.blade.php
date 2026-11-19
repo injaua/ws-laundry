@@ -1,6 +1,7 @@
 @extends("layouts.admin")
 @section("title", $zone->exists ? __('app.edit_zone') : __('app.new_zone'))
 @section("page_title", $zone->exists ? __('app.edit_zone') : __('app.new_zone'))
+@section("page_subtitle", __('app.zones_of_store', ["store" => \App\Support\CurrentStore::store()?->name]))
 
 @section("content")
 <div class="row justify-content-center">

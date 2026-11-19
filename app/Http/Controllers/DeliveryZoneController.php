@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\DeliveryZone;
+use App\Support\CurrentStore;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class DeliveryZoneController extends Controller
 {
@@ -33,7 +35,7 @@ class DeliveryZoneController extends Controller
 
     public function update(Request $request, DeliveryZone $deliveryZone)
     {
-        $deliveryZone->update($this->validated($request));
+        $deliveryZone->update($this->validated($request, $deliveryZone));
 
         return redirect()->route("delivery-zones.index")->with("success", __("app.zone_saved"));
     }
@@ -52,10 +54,11 @@ class DeliveryZoneController extends Controller
         return redirect()->route("delivery-zones.index")->with("success", __("app.zone_deleted"));
     }
 
-    private function validated(Request $request): array
+    private function validated(Request $request, ?DeliveryZone $zone = null): array
     {
         $data = $request->validate([
-            "name" => "required|string|max:100",
+            // Names repeat across stores (each store keeps its own zones), never within one.
+            "name" => ["required", "string", "max:100", Rule::unique("delivery_zones")->where("store_id", CurrentStore::id())->ignore($zone?->id)],
             "description" => "nullable|string|max:1000",
             "fee" => "required|numeric|min:0|max:1000000",
             "free_from" => "nullable|numeric|min:0|max:100000000",

@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\Account;
 use App\Models\ActivityLog;
+use App\Models\CourierJob;
 use App\Models\Customer;
+use App\Models\DeliveryZone;
 use App\Models\ExpenseCategory;
 use App\Models\Order;
 use App\Models\Service;
@@ -227,5 +229,53 @@ class MultiStoreTest extends TestCase
         $this->get(route("orders.check-status", ["order_number" => "ORD999", "phone_last4" => "2222"]))
             ->assertOk()->assertSee("ORD999")->assertSee("Cliente B");
         $this->assertSame($this->second->id, $order->store_id);
+    }
+
+    public function test_each_store_has_its_own_delivery_zones(): void
+    {
+        $mainZone = CurrentStore::run($this->main, fn () => DeliveryZone::create(["name" => "Polana", "fee" => 150, "is_active" => true]));
+        $secondZone = CurrentStore::run($this->second, fn () => DeliveryZone::create(["name" => "Fomento", "fee" => 200, "is_active" => true]));
+        $owner = $this->ownerOf($this->second);
+
+        // The zones page lists only the store's own zones.
+        $this->actingAs($owner)->get(route("delivery-zones.index"))
+            ->assertOk()->assertSee("Fomento")->assertDontSee("Polana")->assertSee("Loja da Matola");
+        $this->actingAs($owner)->get(route("delivery-zones.edit", $mainZone))->assertNotFound();
+
+        // The same name may exist in two stores, but only once within a store.
+        $this->actingAs($owner)->post(route("delivery-zones.store"), ["name" => "Polana", "fee" => 300, "is_active" => 1])
+            ->assertRedirect(route("delivery-zones.index"));
+        $this->actingAs($owner)->post(route("delivery-zones.store"), ["name" => "Fomento", "fee" => 10, "is_active" => 1])
+            ->assertSessionHasErrors("name");
+        $this->assertSame(300.0, (float) CurrentStore::run($this->second, fn () => DeliveryZone::where("name", "Polana")->value("fee")));
+        $this->assertSame(150.0, (float) $mainZone->fresh()->fee);
+
+        // Another store's zone is refused on customers and trips.
+        $this->actingAs($owner)->post(route("customers.store"), ["name" => "Rui", "phone" => "+258843333333", "delivery_zone_id" => $mainZone->id])
+            ->assertSessionHasErrors("delivery_zone_id");
+        $this->actingAs($owner)->post(route("customers.store"), ["name" => "Rui", "phone" => "+258843333333", "delivery_zone_id" => $secondZone->id])
+            ->assertSessionHasNoErrors();
+        $this->assertSame($secondZone->id, CurrentStore::run($this->second, fn () => Customer::where("name", "Rui")->value("delivery_zone_id")));
+    }
+
+    public function test_website_pickup_uses_the_chosen_store_zones(): void
+    {
+        $mainZone = CurrentStore::run($this->main, fn () => DeliveryZone::create(["name" => "Polana", "fee" => 150, "is_active" => true]));
+        $secondZone = CurrentStore::run($this->second, fn () => DeliveryZone::create(["name" => "Fomento", "fee" => 200, "is_active" => true]));
+
+        $this->get(route("home", ["store" => $this->second->id]))->assertOk()->assertSee("Fomento")->assertDontSee("Polana");
+        $this->get(route("home", ["store" => $this->main->id]))->assertOk()->assertSee("Polana")->assertDontSee("Fomento");
+
+        $request = [
+            "store" => $this->second->id, "contact_name" => "Ana", "contact_phone" => "84 123 4567", "address" => "Rua 1",
+            "scheduled_date" => today()->toDateString(), "time_window" => "any",
+        ];
+        // A zone of another store is refused...
+        $this->post(route("pickup-requests.store"), $request + ["delivery_zone_id" => $mainZone->id])->assertSessionHasErrors("delivery_zone_id", null, "pickup");
+        // ...the store's own zone is accepted, and the request lands in that store.
+        $this->post(route("pickup-requests.store"), $request + ["delivery_zone_id" => $secondZone->id])->assertSessionHasNoErrors();
+        $job = CourierJob::acrossStores()->where("contact_name", "Ana")->sole();
+        $this->assertSame($this->second->id, $job->store_id);
+        $this->assertSame(200.0, (float) $job->fee);
     }
 }

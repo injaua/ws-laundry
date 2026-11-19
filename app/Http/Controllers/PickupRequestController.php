@@ -23,7 +23,7 @@ class PickupRequestController extends Controller
             "contact_phone" => ["required", "string", "max:30", "regex:/^[+\d\s()-]{9,}$/"],
             "address" => "required|string|max:255",
             "address_reference" => "nullable|string|max:255",
-            "delivery_zone_id" => ["required", Rule::exists("delivery_zones", "id")->where("is_active", true)],
+            "delivery_zone_id" => ["required", DeliveryZone::existsRule(activeOnly: true)],
             "scheduled_date" => "required|date|after_or_equal:today|before_or_equal:" . today()->addDays(30)->toDateString(),
             "time_window" => ["required", Rule::in(CourierJob::WINDOWS)],
             "notes" => "nullable|string|max:500",
