@@ -82,7 +82,7 @@
             <div class="col-md-2">
                 <label class="form-label small">{{ __('app.unit_cost') }}</label>
                 <div class="input-group">
-                    <input type="number" name="unit_cost" id="m-unit-cost" data-required-if="direction=in" class="form-control" min="0" step="1" value="{{ old("unit_cost", $item->unit_cost > 0 ? (int) $item->unit_cost : "") }}">
+                    <input type="number" name="unit_cost" id="m-unit-cost" data-required-if="direction=in" class="form-control" min="0" step="0.01" value="{{ old("unit_cost", $item->unit_cost > 0 ? (float) $item->unit_cost : "") }}">
                     <span class="input-group-text">{{ currency_symbol() }}</span>
                 </div>
             </div>

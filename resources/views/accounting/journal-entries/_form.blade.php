@@ -40,7 +40,7 @@
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <input type="number" name="pairs[{{ $i }}][debit_amount]" class="form-control" value="{{ old("pairs.$i.debit_amount", $defaults[$i]["debit_amount"] ?? "") }}" min="1" step="1" placeholder="{{ __('app.debit') }}">
+                            <input type="number" name="pairs[{{ $i }}][debit_amount]" class="form-control" value="{{ old("pairs.$i.debit_amount", $defaults[$i]["debit_amount"] ?? "") }}" min="1" step="0.01" placeholder="{{ __('app.debit') }}">
                         </div>
                         <div class="col-md-1 text-center text-muted"><i class="bi bi-arrow-left-right"></i></div>
                         <div class="col-md-3">
@@ -52,7 +52,7 @@
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <input type="number" name="pairs[{{ $i }}][credit_amount]" class="form-control" value="{{ old("pairs.$i.credit_amount", $defaults[$i]["credit_amount"] ?? "") }}" min="1" step="1" placeholder="{{ __('app.credit') }}">
+                            <input type="number" name="pairs[{{ $i }}][credit_amount]" class="form-control" value="{{ old("pairs.$i.credit_amount", $defaults[$i]["credit_amount"] ?? "") }}" min="1" step="0.01" placeholder="{{ __('app.credit') }}">
                         </div>
                     </div>
                     @endfor

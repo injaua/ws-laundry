@@ -12,6 +12,7 @@ use App\Models\InventoryItem;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\SiteSetting;
+use App\Support\Money;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -165,9 +166,9 @@ class ManagementIndicators
             $series[] = [
                 "month" => $key,
                 "label" => $month->translatedFormat("M y"),
-                "revenue" => round($revenue),
-                "expenses" => round($spent),
-                "result" => round($revenue - $spent),
+                "revenue" => Money::round($revenue),
+                "expenses" => Money::round($spent),
+                "result" => Money::round($revenue - $spent),
                 "orders" => $monthOrders->count(),
                 "customers" => $monthOrders->pluck("customer_id")->unique()->count(),
                 "on_time" => $monthReady->count() ? round($onTime / $monthReady->count() * 100, 1) : null,
@@ -244,13 +245,13 @@ class ManagementIndicators
         $ratio = fn ($a, $b) => $b > 0 ? round($a / $b * 100, 1) : null;
 
         $values = [
-            "revenue" => round($revenue),
-            "collections" => round($collections),
-            "expenses" => round($expenses),
-            "operating_result" => round($result),
+            "revenue" => Money::round($revenue),
+            "collections" => Money::round($collections),
+            "expenses" => Money::round($expenses),
+            "operating_result" => Money::round($result),
             "operating_margin" => $ratio($result, $revenue),
-            "avg_ticket" => $billed->count() ? round($revenue / $billed->count()) : null,
-            "receivables" => round($receivables["total"]),
+            "avg_ticket" => $billed->count() ? Money::round($revenue / $billed->count()) : null,
+            "receivables" => Money::round($receivables["total"]),
             "overdue_share" => $ratio($receivables["overdue"], $receivables["total"]),
             "dso" => $revenue > 0 ? round($receivables["total"] / ($revenue / $days), 1) : null,
             "orders" => $billed->count(),
@@ -260,7 +261,7 @@ class ManagementIndicators
             "orders_per_customer" => $customerIds->count() ? round($billed->count() / $customerIds->count(), 2) : null,
             "discount_rate" => $ratio($discount, $gross),
             "express_share" => $ratio($billed->where("is_express", true)->count(), $billed->count()),
-            "delivery_revenue" => round((float) $billed->sum("delivery_fee")),
+            "delivery_revenue" => Money::sum($billed->pluck("delivery_fee")),
             "kg_processed" => $prod["output"]["kg"],
             "on_time_rate" => $prod["punctuality"]["rate"],
             "cycle_hours" => $cycleHours,
@@ -268,7 +269,7 @@ class ManagementIndicators
             "complaints_per_100" => $prod["quality"]["complaints_per_100"],
             "late_now" => $prod["output"]["late_now"],
             "headcount" => $headcount,
-            "revenue_per_employee" => $headcount ? round($revenue / $headcount) : null,
+            "revenue_per_employee" => $headcount ? Money::round($revenue / $headcount) : null,
             "kg_per_presence_day" => $present ? round($prod["output"]["kg"] / $present, 1) : null,
             "absenteeism" => $ratio($absent, $scheduled),
             "payroll_ratio" => $ratio($payroll, $revenue),

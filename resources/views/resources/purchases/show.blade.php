@@ -118,7 +118,7 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label small">{{ __('app.unit_cost') }}</label>
-                <input type="number" name="unit_cost" class="form-control form-control-sm" min="0" step="1" placeholder="{{ __('app.po_cost_default') }}">
+                <input type="number" name="unit_cost" class="form-control form-control-sm" min="0" step="0.01" placeholder="{{ __('app.po_cost_default') }}">
             </div>
             <div class="col-md-2">
                 <label class="form-label small">{{ __('app.lot_number') }}</label>

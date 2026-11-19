@@ -134,7 +134,7 @@
                                 <input type="date" name="paid_at" class="form-control form-control-sm" value="{{ $pm->paid_at->format("Y-m-d") }}" required>
                             </div>
                             <div class="col-3">
-                                <input type="number" name="amount" class="form-control form-control-sm" value="{{ $pm->amount }}" step="1" min="1" max="{{ round($order->total_price - ($totalPaid - $pm->amount), 2) }}" required>
+                                <input type="number" name="amount" class="form-control form-control-sm" value="{{ $pm->amount }}" step="0.01" min="1" max="{{ round($order->total_price - ($totalPaid - $pm->amount), 2) }}" required>
                             </div>
                             <div class="col-3">
                                 <select name="method" class="form-select form-select-sm">

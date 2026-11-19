@@ -29,7 +29,7 @@ class Employee extends Model
             "hire_date" => "date",
             "probation_ends_at" => "date",
             "termination_date" => "date",
-            "base_salary" => "decimal:0",
+            "base_salary" => "decimal:2",
         ];
     }
 

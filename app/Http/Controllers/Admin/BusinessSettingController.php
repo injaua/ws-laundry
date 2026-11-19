@@ -32,7 +32,7 @@ class BusinessSettingController extends Controller
             "qc_required" => "nullable|boolean",
             // Payments: who may pay by cheque, and the most cash a till should hold.
             "cheque_policy" => "nullable|in:" . implode(",", Cheque::POLICIES),
-            "cash_till_limit" => "nullable|integer|min:0|max:1000000000",
+            "cash_till_limit" => "nullable|numeric|min:0|max:1000000000",
         ]);
 
         $validated["express_enabled"] = $request->boolean("express_enabled") ? "1" : "0";

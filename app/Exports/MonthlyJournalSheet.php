@@ -4,6 +4,7 @@ namespace App\Exports;
 
 use App\Models\TrialBalanceArchive;
 use App\Support\CurrentStore;
+use App\Support\Money;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -53,8 +54,8 @@ class MonthlyJournalSheet implements FromCollection, WithHeadings, WithTitle
                 $line->description,
                 $line->code,
                 $line->name,
-                (int) $line->debit,
-                (int) $line->credit,
+                Money::round($line->debit),
+                Money::round($line->credit),
             ]);
     }
 }

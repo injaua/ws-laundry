@@ -61,7 +61,7 @@
                         @php($refundTx = $n->mobileRefund)
                         @if($refundTx && in_array($refundTx->status, ['pending', 'processing', 'success'], true))
                             <div class="w-100"><a href="{{ route('mobile-payments.show', $refundTx) }}" class="badge bg-{{ $refundTx->statusColor() }} text-decoration-none"><i class="bi bi-phone"></i> {{ __('app.mm_refund') }}: {{ __('app.mm_status_' . $refundTx->status) }}</a></div>
-                        @elseif(auth()->user()->hasRole(['admin', 'owner']))
+                        @elseif(auth()->user()->can('refund', $n))
                             <form action="{{ route('mobile-payments.refund', $n) }}" method="POST" class="w-100" data-confirm="{{ __('app.mm_refund_confirm') }}">
                                 @csrf
                                 <div class="input-group input-group-sm">

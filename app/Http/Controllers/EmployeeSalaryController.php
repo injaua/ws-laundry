@@ -4,12 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Employee;
 use App\Models\EmployeeSalary;
+use App\Support\Money;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class EmployeeSalaryController extends Controller
 {
     public function index(Request $request)
     {
+        Gate::authorize("viewAny", EmployeeSalary::class);
+
         $query = EmployeeSalary::with("employee");
 
         if ($year = $request->year) {
@@ -33,6 +37,8 @@ class EmployeeSalaryController extends Controller
 
     public function summary(Request $request)
     {
+        Gate::authorize("viewAny", EmployeeSalary::class);
+
         $month = max(1, min(12, (int) ($request->month ?: now()->month)));
         $year = (int) ($request->year ?: now()->year);
 
@@ -43,14 +49,16 @@ class EmployeeSalaryController extends Controller
             ->sortBy(fn (EmployeeSalary $salary) => mb_strtolower($salary->employee->name))
             ->values();
 
-        $totalPaid = (int) $salaries->where("status", "paid")->sum("net_salary");
-        $totalPending = (int) $salaries->where("status", "pending")->sum("net_salary");
+        $totalPaid = Money::sum($salaries->where("status", "paid")->pluck("net_salary"));
+        $totalPending = Money::sum($salaries->where("status", "pending")->pluck("net_salary"));
 
         return view("salaries.summary", compact("salaries", "month", "year", "totalPaid", "totalPending"));
     }
 
     public function create()
     {
+        Gate::authorize("create", EmployeeSalary::class);
+
         $employees = Employee::working()->orderBy("name")->get();
 
         return view("salaries.create", compact("employees"));
@@ -58,6 +66,8 @@ class EmployeeSalaryController extends Controller
 
     public function store(Request $request)
     {
+        Gate::authorize("create", EmployeeSalary::class);
+
         $validated = $this->validatePayslip($request);
 
         if ($this->periodExists($validated)) {
@@ -74,6 +84,8 @@ class EmployeeSalaryController extends Controller
 
     public function edit(EmployeeSalary $salary)
     {
+        Gate::authorize("update", $salary);
+
         if ($salary->isPaid()) {
             return redirect()->route("salaries.index")
                 ->with("error", __("app.cannot_edit_paid_payslip"));
@@ -86,6 +98,8 @@ class EmployeeSalaryController extends Controller
 
     public function update(Request $request, EmployeeSalary $salary)
     {
+        Gate::authorize("update", $salary);
+
         if ($salary->isPaid()) {
             return redirect()->route("salaries.index")
                 ->with("error", __("app.cannot_edit_paid_payslip"));
@@ -107,6 +121,8 @@ class EmployeeSalaryController extends Controller
 
     public function pay(EmployeeSalary $salary)
     {
+        Gate::authorize("pay", $salary);
+
         abort_if($salary->isPaid(), 404);
 
         $salary->markAsPaid();
@@ -116,6 +132,8 @@ class EmployeeSalaryController extends Controller
 
     public function unpay(EmployeeSalary $salary)
     {
+        Gate::authorize("pay", $salary);
+
         abort_unless($salary->isPaid(), 404);
 
         $salary->unpay();
@@ -125,6 +143,8 @@ class EmployeeSalaryController extends Controller
 
     public function destroy(EmployeeSalary $salary)
     {
+        Gate::authorize("delete", $salary);
+
         if ($salary->isPaid()) {
             return back()->with("error", __("app.cannot_delete_paid_payslip"));
         }
@@ -151,6 +171,8 @@ class EmployeeSalaryController extends Controller
 
     public function absenceSuggestion(Request $request)
     {
+        Gate::authorize("create", EmployeeSalary::class);
+
         $validated = $request->validate([
             "employee_id" => "required|exists:employees,id",
             "period_year" => "required|integer|min:2000|max:2100",

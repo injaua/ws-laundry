@@ -14,7 +14,7 @@
                     <div class="mb-3">
                         <label class="form-label">{{ __('app.opening_float') }} <span class="text-danger">*</span></label>
                         <div class="input-group">
-                            <input type="number" name="opening_float" class="form-control @error("opening_float") is-invalid @enderror" value="{{ old("opening_float", 0) }}" min="0" step="1" required autofocus>
+                            <input type="number" name="opening_float" class="form-control @error("opening_float") is-invalid @enderror" value="{{ old("opening_float", 0) }}" min="0" step="0.01" required autofocus>
                             <span class="input-group-text">{{ currency_symbol() }}</span>
                             @error("opening_float") <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>

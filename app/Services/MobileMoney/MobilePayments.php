@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\User;
 use App\Services\WhatsApp\AutomaticNotifications;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -45,7 +46,12 @@ class MobilePayments
             throw ValidationException::withMessages(["amount" => __("app.order_fully_paid")]);
         }
 
-        $amount = round($amount ?? $remaining, 2);
+        // Wallets charge whole meticais: the full balance is pushed without its cents
+        // (paid at the counter), and a typed amount with cents is refused.
+        if ($amount !== null && !self::isWholeAmount($amount)) {
+            throw ValidationException::withMessages(["amount" => __("app.mm_whole_amount")]);
+        }
+        $amount = $amount === null ? floor($remaining) : Money::round($amount);
         if ($amount < 1 || $amount > $remaining + 0.001) {
             throw ValidationException::withMessages(["amount" => __("app.payment_exceeds_remaining", ["amount" => money($remaining)])]);
         }
@@ -103,6 +109,10 @@ class MobilePayments
             throw ValidationException::withMessages(["phone" => __("app.mm_phone_wrong_network", ["provider" => __("app.$provider")])]);
         }
 
+        if (!self::isWholeAmount($creditNote->amount)) {
+            throw ValidationException::withMessages(["amount" => __("app.mm_whole_amount")]);
+        }
+
         $tx = MobileTransaction::create([
             "type" => "b2c",
             "provider" => $provider,
@@ -120,6 +130,14 @@ class MobilePayments
         ProcessMobileTransaction::dispatchAfterResponse($tx->id);
 
         return $tx;
+    }
+
+    /** M-Pesa and e-Mola only move whole meticais. */
+    public static function isWholeAmount(float|int|string|null $amount): bool
+    {
+        $amount = Money::round($amount);
+
+        return Money::equals($amount, round($amount));
     }
 
     /** Sends the request to the operator (runs after the HTTP response). */

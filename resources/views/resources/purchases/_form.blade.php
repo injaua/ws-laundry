@@ -36,7 +36,7 @@
         @include("resources.purchases._lines", ["linesOld" => ($purchase?->items ?? collect())->map(fn ($l) => [
             "inventory_item_id" => $l->inventory_item_id,
             "quantity" => (float) $l->quantity,
-            "unit_cost" => (int) $l->unit_cost,
+            "unit_cost" => (float) $l->unit_cost,
         ])->values()->toArray()])
     </div>
 </div>

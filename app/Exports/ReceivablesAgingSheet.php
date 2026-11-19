@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Support\Money;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -36,15 +37,15 @@ class ReceivablesAgingSheet implements FromArray, WithHeadings, WithTitle
     {
         $rows = $this->aging->map(fn (array $row) => [
             $row["customer"]?->name ?? "-",
-            (int) $row["credit_limit"],
+            Money::round($row["credit_limit"]),
             $row["count"],
-            (int) round($row["buckets"]["current"]),
-            (int) round($row["buckets"]["d1_30"]),
-            (int) round($row["buckets"]["d31_60"]),
-            (int) round($row["buckets"]["d61_90"]),
-            (int) round($row["buckets"]["d90_plus"]),
-            (int) round($row["total"]),
-            (int) round($row["overdue"]),
+            Money::round($row["buckets"]["current"]),
+            Money::round($row["buckets"]["d1_30"]),
+            Money::round($row["buckets"]["d31_60"]),
+            Money::round($row["buckets"]["d61_90"]),
+            Money::round($row["buckets"]["d90_plus"]),
+            Money::round($row["total"]),
+            Money::round($row["overdue"]),
         ])->all();
 
         $totals = array_fill(0, 10, 0);

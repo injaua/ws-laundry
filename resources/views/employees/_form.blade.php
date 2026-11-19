@@ -69,7 +69,7 @@
                     <div class="mb-3">
                         <label class="form-label">{{ __('app.base_salary') }} <span class="text-danger">*</span></label>
                         <div class="input-group">
-                            <input type="number" name="base_salary" class="form-control @error("base_salary") is-invalid @enderror" value="{{ old("base_salary", isset($employee) ? (int) $employee->base_salary : "") }}" required min="0">
+                            <input type="number" step="0.01" name="base_salary" class="form-control @error("base_salary") is-invalid @enderror" value="{{ old("base_salary", isset($employee) ? (float) $employee->base_salary : "") }}" required min="0">
                             <span class="input-group-text">{{ currency_symbol() }}</span>
                             @error("base_salary") <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>

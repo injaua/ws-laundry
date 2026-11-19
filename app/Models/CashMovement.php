@@ -23,7 +23,7 @@ class CashMovement extends Model
 
     protected function casts(): array
     {
-        return ["amount" => "decimal:0"];
+        return ["amount" => "decimal:2"];
     }
 
     public function session(): BelongsTo

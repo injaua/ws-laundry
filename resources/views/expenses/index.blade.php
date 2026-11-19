@@ -74,6 +74,7 @@
                         <td class="small">{{ $expense->expense_date->format(date_fmt()) }}</td>
                         <td class="small">{{ $expense->user?->name ?? "-" }}</td>
                         <td class="text-center">
+                            @can("update", $expense)
                             <a href="{{ route("expenses.edit", $expense) }}" class="btn btn-sm btn-outline-primary" title="{{ __('app.edit') }}">
                                 <i class="bi bi-pencil"></i>
                             </a>
@@ -83,6 +84,9 @@
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
+                            @else
+                            <span class="btn btn-sm btn-outline-secondary disabled" title="{{ __('app.record_of_another_user') }}"><i class="bi bi-lock"></i></span>
+                            @endcan
                         </td>
                     </tr>
                     @empty

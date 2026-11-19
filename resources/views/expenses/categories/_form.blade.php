@@ -63,7 +63,7 @@
                     <div class="mb-3 {{ old("is_fixed", $category->is_fixed ?? false) ? "" : "d-none" }}" id="defaultAmountBox" data-show-if="is_fixed">
                         <label class="form-label">{{ __('app.category_default_amount') }}</label>
                         <div class="input-group">
-                            <input type="number" name="default_amount" class="form-control @error("default_amount") is-invalid @enderror" value="{{ old("default_amount", isset($category) ? (int) $category->default_amount : "") }}" min="0">
+                            <input type="number" step="0.01" name="default_amount" class="form-control @error("default_amount") is-invalid @enderror" value="{{ old("default_amount", isset($category) ? (float) $category->default_amount : "") }}" min="0">
                             <span class="input-group-text">{{ currency_symbol() }}</span>
                             @error("default_amount") <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>

@@ -11,11 +11,14 @@ use App\Models\InventoryMovement;
 use App\Models\JournalEntry;
 use App\Models\MaintenanceJob;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class ExpenseController extends Controller
 {
     public function index(Request $request)
     {
+        Gate::authorize("viewAny", Expense::class);
+
         $query = Expense::with("user");
 
         if ($search = $request->search) {
@@ -37,6 +40,8 @@ class ExpenseController extends Controller
 
     public function create()
     {
+        Gate::authorize("create", Expense::class);
+
         $categories = ExpenseCategory::orderBy("name")->get();
 
         return view("expenses.create", compact("categories"));
@@ -44,6 +49,8 @@ class ExpenseController extends Controller
 
     public function store(ExpenseRequest $request)
     {
+        Gate::authorize("create", Expense::class);
+
         $validated = $request->expenseData();
         AccountingPeriod::assertOpen($validated["expense_date"], "expense_date");
 
@@ -57,6 +64,8 @@ class ExpenseController extends Controller
 
     public function edit(Expense $expense)
     {
+        Gate::authorize("update", $expense);
+
         $categories = ExpenseCategory::orderBy("name")->get();
 
         return view("expenses.edit", compact("expense", "categories"));
@@ -64,6 +73,8 @@ class ExpenseController extends Controller
 
     public function update(ExpenseRequest $request, Expense $expense)
     {
+        Gate::authorize("update", $expense);
+
         $validated = $request->expenseData();
         AccountingPeriod::assertOpen($expense->expense_date, "expense_date");
         AccountingPeriod::assertOpen($validated["expense_date"], "expense_date");
@@ -78,6 +89,8 @@ class ExpenseController extends Controller
 
     public function destroy(Expense $expense)
     {
+        Gate::authorize("delete", $expense);
+
         if ($period = AccountingPeriod::closedOn($expense->expense_date)) {
             return redirect()->route("expenses.index")
                 ->with("error", __("app.period_closed", ["period" => $period->label()]));
@@ -97,6 +110,8 @@ class ExpenseController extends Controller
 
     public function salaryTotal(Request $request)
     {
+        Gate::authorize("create", Expense::class);
+
         $validated = $request->validate([
             "month" => "required|integer|min:1|max:12",
             "year" => "required|integer|min:2000|max:2100",

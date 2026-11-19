@@ -14,6 +14,7 @@ use App\Services\PieceTracker;
 use App\Services\Pricing;
 use App\Services\ProductionPlanner;
 use App\Services\WhatsApp\AutomaticNotifications;
+use App\Support\Money;
 use Carbon\CarbonInterface;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -52,10 +53,10 @@ class CreateOrder
         // Clothes collected at home: the pickup trip is billed on this order.
         $pickup = $this->pickupFor($data, $customer);
         $pickupFee = $pickup ? $this->pickupFee($pickup, $itemsSubtotal) : 0.0;
-        $subtotal = $itemsSubtotal + $expressFee + $pickupFee;
+        $subtotal = Money::round($itemsSubtotal + $expressFee + $pickupFee);
         $vatRate = (float) SiteSetting::get("vat_rate", 16);
-        $vatAmount = round($subtotal * $vatRate / 100);
-        $total = $subtotal + $vatAmount;
+        $vatAmount = Money::percent($subtotal, $vatRate);
+        $total = Money::round($subtotal + $vatAmount);
 
         $deliveryDate = $data["delivery_date"]
             ?? ($isExpress
@@ -156,7 +157,7 @@ class CreateOrder
                     "weight" => $service->type === "by_weight" ? $quantity : null,
                     "amount" => $service->type === "by_piece" ? (int) $quantity : 1,
                     ...$quote,
-                    "subtotal" => round($quote["unit_price"] * $quantity),
+                    "subtotal" => Money::round($quote["unit_price"] * $quantity),
                 ];
 
                 continue;
@@ -173,7 +174,7 @@ class CreateOrder
                 "weight" => round((float) $package->weight_kg * $quantity, 2),
                 "amount" => $quantity,
                 ...$quote,
-                "subtotal" => round($quote["unit_price"] * $quantity),
+                "subtotal" => Money::round($quote["unit_price"] * $quantity),
             ];
         }
 

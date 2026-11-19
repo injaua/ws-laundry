@@ -29,7 +29,7 @@
             </div>
             <div class="col-sm-4">
                 <div class="input-group input-group-sm">
-                    <input type="number" name="amount" min="1" max="{{ $mmRemaining }}" step="1" class="form-control @error('amount') is-invalid @enderror" value="{{ old('amount', $mmRemaining) }}" @isset($job) readonly @endisset>
+                    <input type="number" name="amount" min="1" max="{{ $mmRemaining }}" step="0.01" class="form-control @error('amount') is-invalid @enderror" value="{{ old('amount', $mmRemaining) }}" @isset($job) readonly @endisset>
                     <span class="input-group-text">{{ currency_symbol() }}</span>
                 </div>
                 @error('amount') <div class="text-danger small">{{ $message }}</div> @enderror

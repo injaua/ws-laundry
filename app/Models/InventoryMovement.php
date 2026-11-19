@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,7 +29,7 @@ class InventoryMovement extends Model
     {
         return [
             "quantity" => "decimal:2",
-            "unit_cost" => "decimal:0",
+            "unit_cost" => "decimal:2",
             "moved_at" => "date",
         ];
     }
@@ -58,9 +59,9 @@ class InventoryMovement extends Model
         return ($this->direction === "in" ? 1 : -1) * (float) $this->quantity;
     }
 
-    public function expenseAmount(): int
+    public function expenseAmount(): float
     {
-        return (int) round((float) $this->quantity * (float) $this->unit_cost);
+        return Money::round((float) $this->quantity * (float) $this->unit_cost);
     }
 
     public function wantsExpense(bool $register): bool

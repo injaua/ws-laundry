@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AccountingPeriod;
 use App\Models\TrialBalanceArchive;
 use App\Support\CurrentStore;
+use App\Support\Money;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -68,8 +69,8 @@ class TrialBalanceService
             "month" => $period->month,
             "from_date" => $from->toDateString(),
             "to_date" => $to->toDateString(),
-            "total_debit" => (int) round($totals["debit"]),
-            "total_credit" => (int) round($totals["credit"]),
+            "total_debit" => Money::round($totals["debit"]),
+            "total_credit" => Money::round($totals["credit"]),
             "created_by" => auth()->id(),
         ]);
 
@@ -78,10 +79,10 @@ class TrialBalanceService
                 "account_code" => $row->code,
                 "account_name" => $row->name,
                 "account_type" => $row->type,
-                "total_debit" => (int) round((float) $row->total_debit),
-                "total_credit" => (int) round((float) $row->total_credit),
-                "balance_debit" => (int) round($row->balance_debit),
-                "balance_credit" => (int) round($row->balance_credit),
+                "total_debit" => Money::round($row->total_debit),
+                "total_credit" => Money::round($row->total_credit),
+                "balance_debit" => Money::round($row->balance_debit),
+                "balance_credit" => Money::round($row->balance_credit),
             ]);
         }
 

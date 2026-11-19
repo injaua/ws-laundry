@@ -12,9 +12,9 @@ class CashSessionCount extends Model
     protected function casts(): array
     {
         return [
-            "expected" => "decimal:0",
-            "counted" => "decimal:0",
-            "difference" => "decimal:0",
+            "expected" => "decimal:2",
+            "counted" => "decimal:2",
+            "difference" => "decimal:2",
         ];
     }
 

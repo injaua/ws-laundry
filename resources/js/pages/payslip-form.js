@@ -1,6 +1,6 @@
 // Payslip form: net salary, suggested absence deduction for the period.
 import { pageData } from '../lib/dom';
-import { fmtMoney } from '../lib/money';
+import { fmtMoney, roundMoney } from '../lib/money';
 
 var base = document.getElementById('baseSalary');
 var bonus = document.getElementById('bonusField');
@@ -14,8 +14,10 @@ var year = document.getElementById('periodYear');
 var { suggestionUrl, hintText } = pageData('payslip-form');
 
 function refreshNet() {
-    var value = (Number(base.value) || 0) + (Number(bonus.value) || 0) - (Number(deduction.value) || 0) - (Number(absence.value) || 0);
-    net.value = value.toLocaleString('pt', { maximumFractionDigits: 0 });
+    var value = roundMoney(
+        (Number(base.value) || 0) + (Number(bonus.value) || 0) - (Number(deduction.value) || 0) - (Number(absence.value) || 0),
+    );
+    net.value = value.toLocaleString('pt', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function refreshAbsence() {

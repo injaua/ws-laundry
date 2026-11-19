@@ -53,7 +53,7 @@
             </div>
             <div class="col-5">
                 <div class="input-group input-group-sm">
-                    <input type="number" name="price" min="0" step="1" class="form-control @error("price") is-invalid @enderror" placeholder="{{ __('app.price') }}" required>
+                    <input type="number" name="price" min="0" step="0.01" class="form-control @error("price") is-invalid @enderror" placeholder="{{ __('app.price') }}" required>
                     <button type="submit" class="btn btn-primary"><i class="bi bi-plus"></i></button>
                 </div>
             </div>

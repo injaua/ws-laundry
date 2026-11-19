@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\TrialBalanceArchive;
+use App\Support\Money;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithTitle;
@@ -35,13 +36,13 @@ class TrialBalanceSheet implements FromArray, WithHeadings, WithTitle
             $line->account_code,
             $line->account_name,
             __("app.account_type_" . $line->account_type),
-            (int) $line->total_debit,
-            (int) $line->total_credit,
-            (int) $line->balance_debit,
-            (int) $line->balance_credit,
+            Money::round($line->total_debit),
+            Money::round($line->total_credit),
+            Money::round($line->balance_debit),
+            Money::round($line->balance_credit),
         ])->all();
 
-        $rows[] = ["", "", "", (int) $this->archive->total_debit, (int) $this->archive->total_credit, "", ""];
+        $rows[] = ["", "", "", Money::round($this->archive->total_debit), Money::round($this->archive->total_credit), "", ""];
 
         return $rows;
     }

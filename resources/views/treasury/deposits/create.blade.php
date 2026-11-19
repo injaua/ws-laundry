@@ -18,7 +18,7 @@
                     <input type="text" name="slip_number" maxlength="40" value="{{ old('slip_number') }}" class="form-control mb-2 text-uppercase" placeholder="{{ __('app.deposit_slip_placeholder') }}">
                     <label class="form-label">{{ __('app.deposit_cash_amount') }}</label>
                     <div class="input-group mb-1">
-                        <input type="number" name="cash_amount" min="0" step="1" value="{{ old('cash_amount', 0) }}" class="form-control js-dep-cash @error('cash_amount') is-invalid @enderror">
+                        <input type="number" name="cash_amount" min="0" step="0.01" value="{{ old('cash_amount', 0) }}" class="form-control js-dep-cash @error('cash_amount') is-invalid @enderror">
                         <span class="input-group-text">{{ currency_symbol() }}</span>
                         @error('cash_amount') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>

@@ -14,6 +14,11 @@ class Service extends Model
 
     protected $fillable = ['name', 'type', 'price', 'estimated_days', 'photo'];
 
+    protected function casts(): array
+    {
+        return ['price' => 'decimal:2'];
+    }
+
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);

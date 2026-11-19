@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
+use App\Support\Money;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,11 +23,11 @@ class EmployeeSalary extends Model
     protected function casts(): array
     {
         return [
-            "base_salary" => "decimal:0",
-            "bonus" => "decimal:0",
-            "deduction" => "decimal:0",
-            "absence_deduction" => "decimal:0",
-            "net_salary" => "decimal:0",
+            "base_salary" => "decimal:2",
+            "bonus" => "decimal:2",
+            "deduction" => "decimal:2",
+            "absence_deduction" => "decimal:2",
+            "net_salary" => "decimal:2",
             "paid_at" => "datetime",
             "period_year" => "integer",
             "period_month" => "integer",
@@ -35,9 +36,14 @@ class EmployeeSalary extends Model
 
     protected static function booted(): void
     {
+        // The author decides who may change the payslip (EmployeeSalaryPolicy).
+        static::creating(function (EmployeeSalary $salary) {
+            $salary->created_by ??= auth()->id();
+        });
+
         static::saving(function (EmployeeSalary $salary) {
-            $salary->net_salary = (int) $salary->base_salary + (int) $salary->bonus
-                - (int) $salary->deduction - (int) $salary->absence_deduction;
+            $salary->net_salary = Money::round((float) $salary->base_salary + (float) $salary->bonus
+                - (float) $salary->deduction - (float) $salary->absence_deduction);
         });
     }
 
@@ -46,7 +52,7 @@ class EmployeeSalary extends Model
      * (base salary / working days of the period, Sundays excluded).
      * Approved justifications already became excused records, so they are ignored.
      *
-     * @return array{days: int, daily_rate: int, amount: int}
+     * @return array{days: int, daily_rate: float, amount: float}
      */
     public static function absenceDeductionSuggestion(Employee $employee, int $year, int $month): array
     {
@@ -59,9 +65,9 @@ class EmployeeSalary extends Model
             ->count();
 
         $workingDays = max(1, Vacation::workingDays($start, $end));
-        $dailyRate = (int) round((int) $employee->base_salary / $workingDays);
+        $dailyRate = Money::round((float) $employee->base_salary / $workingDays);
 
-        return ["days" => $days, "daily_rate" => $dailyRate, "amount" => $days * $dailyRate];
+        return ["days" => $days, "daily_rate" => $dailyRate, "amount" => Money::round($days * $dailyRate)];
     }
 
     public function employee(): BelongsTo

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -41,6 +42,7 @@ class Order extends Model
             'materials_consumed_at' => 'datetime',
             'consumed_stages' => 'array',
             'subtotal' => 'decimal:2',
+            'total_price' => 'decimal:2',
             'is_express' => 'boolean',
             'express_fee' => 'decimal:2',
             'delivery_fee' => 'decimal:2',
@@ -247,14 +249,14 @@ class Order extends Model
     {
         $itemsSubtotal = (float) $this->items()->sum("subtotal");
         $deliveryFee = (float) $this->courierJobs()->billable()->sum("fee");
-        $subtotal = $itemsSubtotal + (float) $this->express_fee + $deliveryFee;
-        $vatAmount = round($subtotal * (float) $this->vat_rate / 100);
+        $subtotal = Money::round($itemsSubtotal + (float) $this->express_fee + $deliveryFee);
+        $vatAmount = Money::percent($subtotal, $this->vat_rate);
 
         $this->update([
-            "delivery_fee" => $deliveryFee,
+            "delivery_fee" => Money::round($deliveryFee),
             "subtotal" => $subtotal,
             "vat_amount" => $vatAmount,
-            "total_price" => $subtotal + $vatAmount,
+            "total_price" => Money::round($subtotal + $vatAmount),
         ]);
     }
 
@@ -345,14 +347,7 @@ class Order extends Model
      */
     public function splitGrossAmount(float $amount): array
     {
-        $rate = (float) $this->vat_rate;
-        if ($rate <= 0) {
-            return [round($amount, 2), 0.0];
-        }
-
-        $vat = round($amount * $rate / (100 + $rate));
-
-        return [round($amount - $vat, 2), $vat];
+        return Money::splitGross($amount, $this->vat_rate);
     }
 
     public function paidAmount(): float

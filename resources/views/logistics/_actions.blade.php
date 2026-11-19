@@ -37,7 +37,7 @@
             <div class="row g-2 mb-2">
                 <div class="col-7">
                     <label class="form-label small mb-1" for="amount{{ $job->id }}">{{ __('app.amount_collected') }} ({{ currency_symbol() }})</label>
-                    <input type="number" name="amount" id="amount{{ $job->id }}" min="0" max="{{ $toCollect }}" step="1" class="form-control form-control-sm" value="{{ $toCollect }}" @if($mustPayAll) readonly @endif>
+                    <input type="number" name="amount" id="amount{{ $job->id }}" min="0" max="{{ $toCollect }}" step="0.01" class="form-control form-control-sm" value="{{ $toCollect }}" @if($mustPayAll) readonly @endif>
                 </div>
                 <div class="col-5">
                     <label class="form-label small mb-1" for="method{{ $job->id }}">{{ __('app.payment_method') }}</label>

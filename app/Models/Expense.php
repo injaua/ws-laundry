@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,10 +17,18 @@ class Expense extends Model
 
     protected $fillable = ["title", "description", "category", "period_type", "amount", "expense_date", "user_id", "source_type", "source_id"];
 
+    protected static function booted(): void
+    {
+        // The author decides who may change the expense (ExpensePolicy).
+        static::creating(function (Expense $expense) {
+            $expense->user_id ??= auth()->id();
+        });
+    }
+
     protected function casts(): array
     {
         return [
-            "amount" => "decimal:0",
+            "amount" => "decimal:2",
             "expense_date" => "date",
         ];
     }
@@ -52,13 +61,12 @@ class Expense extends Model
         $vatAccount = $rate > 0 ? Account::findByCode("4.4.3.1")?->id : null;
 
         if ($vatAccount && $cashId) {
-            // Whole-Meticais arithmetic (journal decimals are 0): intdiv would truncate
-            // the rate result, so round then clamp so net + vat always re-sum to the gross.
-            $total = (int) round($amount);
-            $vat = max(0, min($total, (int) round($total * $rate / (100 + $rate))));
+            // Rounded to cents and clamped so net + VAT always re-sum to the gross.
+            $total = Money::round($amount);
+            [$net, $vat] = Money::splitGross($total, $rate);
 
             return JournalEntry::postLines([
-                ["account_id" => $category->account_id, "debit" => $total - $vat, "credit" => 0],
+                ["account_id" => $category->account_id, "debit" => $net, "credit" => 0],
                 ["account_id" => $vatAccount, "debit" => $vat, "credit" => 0],
                 ["account_id" => $cashId, "debit" => 0, "credit" => $total],
             ], $date, $this->title, "expense", $this->id);

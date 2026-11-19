@@ -82,6 +82,11 @@
                         <td class="text-end fw-semibold">{{ num($entry->lines->sum("credit")) }}</td>
                         <td class="small">{{ $entry->poster?->name ?? "-" }}</td>
                         <td class="text-center">
+                            @cannot("update", $entry)
+                                <span class="btn btn-sm btn-outline-secondary disabled" title="{{ __('app.record_of_another_user') }}">
+                                    <i class="bi bi-lock"></i>
+                                </span>
+                            @else
                             @if($entry->isManual())
                                 <a href="{{ route("accounting.journal-entries.edit", $entry) }}" class="btn btn-sm btn-outline-primary" title="{{ __('app.edit') }}">
                                     <i class="bi bi-pencil"></i>
@@ -97,6 +102,7 @@
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
+                            @endcannot
                         </td>
                     </tr>
                     @empty

@@ -20,7 +20,7 @@ class ExpenseCategory extends Model
             "is_fixed" => "boolean",
             "is_salary" => "boolean",
             "is_vat_applicable" => "boolean",
-            "default_amount" => "decimal:0",
+            "default_amount" => "decimal:2",
         ];
     }
 

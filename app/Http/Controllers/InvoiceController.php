@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Services\Invoicing;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class InvoiceController extends Controller
 {
@@ -17,6 +18,8 @@ class InvoiceController extends Controller
 
     public function index(Request $request)
     {
+        Gate::authorize("viewAny", Invoice::class);
+
         $query = Invoice::with(["customer", "orders.payments", "orders.creditNotes"])->latest("id");
 
         if ($request->integer("customer_id")) {
@@ -36,6 +39,8 @@ class InvoiceController extends Controller
     /** Pick customer and period, then tick the orders to bill. */
     public function create(Request $request)
     {
+        Gate::authorize("create", Invoice::class);
+
         $customers = Customer::where("is_credit_customer", true)->orderBy("name")->get();
         $customer = $request->integer("customer_id") ? Customer::find($request->integer("customer_id")) : null;
 
@@ -51,6 +56,8 @@ class InvoiceController extends Controller
 
     public function store(Request $request)
     {
+        Gate::authorize("create", Invoice::class);
+
         $validated = $request->validate([
             "customer_id" => "required|exists:customers,id",
             "period_start" => "required|date",
@@ -74,6 +81,8 @@ class InvoiceController extends Controller
 
     public function show(Invoice $invoice)
     {
+        Gate::authorize("view", $invoice);
+
         $invoice->load(["customer", "orders.payments", "orders.creditNotes", "payments.user", "creator"]);
         $groups = $invoice->payments->groupBy(fn (Payment $p) => $p->group_ref ?? "single-" . $p->id);
 
@@ -82,6 +91,8 @@ class InvoiceController extends Controller
 
     public function print(Invoice $invoice)
     {
+        Gate::authorize("view", $invoice);
+
         abort_if($invoice->isDraft() && !request()->boolean("preview"), 404);
 
         $invoice->load(["customer", "orders.items.service", "orders.items.package", "orders.payments", "orders.creditNotes"]);
@@ -91,6 +102,8 @@ class InvoiceController extends Controller
 
     public function issue(Invoice $invoice)
     {
+        Gate::authorize("update", $invoice);
+
         $this->invoicing->issue($invoice);
 
         return redirect()->route("invoices.show", $invoice)
@@ -99,6 +112,8 @@ class InvoiceController extends Controller
 
     public function removeOrder(Invoice $invoice, Order $order)
     {
+        Gate::authorize("update", $invoice);
+
         $this->invoicing->removeOrder($invoice, $order);
 
         if ($invoice->orders()->doesntExist()) {
@@ -112,6 +127,8 @@ class InvoiceController extends Controller
 
     public function void(Request $request, Invoice $invoice)
     {
+        Gate::authorize("void", $invoice);
+
         $wasDraft = $invoice->isDraft();
         $validated = $request->validate(["void_reason" => ($wasDraft ? "nullable" : "required") . "|string|max:255"]);
 
@@ -128,6 +145,8 @@ class InvoiceController extends Controller
 
     public function pay(Request $request, Invoice $invoice, RecordGroupedPayment $recorder)
     {
+        Gate::authorize("pay", $invoice);
+
         $data = $request->validate([
             "paid_at" => "required|date",
             "amount" => "required|numeric|min:1",

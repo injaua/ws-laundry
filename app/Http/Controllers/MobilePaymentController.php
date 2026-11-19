@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Throwable;
@@ -103,7 +104,7 @@ class MobilePaymentController extends Controller
 
     public function refund(Request $request, CreditNote $creditNote): RedirectResponse
     {
-        abort_unless($request->user()->hasRole(["admin", "owner"]), 403);
+        Gate::authorize("refund", $creditNote);
 
         $data = $request->validate(["phone" => "required|string|max:20"]);
         $tx = $this->payments->refund($creditNote, $data["phone"], $request->user());

@@ -58,7 +58,7 @@
                     <div class="mb-3">
                         <label class="form-label">{{ __('app.payment_amount') }} <span class="text-danger">*</span></label>
                         <div class="input-group">
-                            <input type="number" name="amount" class="form-control @error("amount") is-invalid @enderror" value="{{ old("amount", $remaining > 0 ? $remaining : 0) }}" required min="1" max="{{ round($remaining, 2) }}">
+                            <input type="number" step="0.01" name="amount" class="form-control @error("amount") is-invalid @enderror" value="{{ old("amount", $remaining > 0 ? $remaining : 0) }}" required min="1" max="{{ round($remaining, 2) }}">
                             <span class="input-group-text">{{ currency_symbol() }}</span>
                         </div>
                         @error("amount") <div class="invalid-feedback">{{ $message }}</div> @enderror

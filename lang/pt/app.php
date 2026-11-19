@@ -2010,6 +2010,8 @@ return [
     'mm_refund_not_allowed' => 'Esta nota de crédito não pode ser reembolsada pela carteira.',
     'mm_refund_exists' => 'Já existe um reembolso em curso ou concluído para esta nota de crédito.',
     'mm_expired' => 'O cliente não confirmou a tempo.',
+    'record_of_another_user' => 'Registo de outro utilizador: só o autor ou a gerência o podem alterar.',
+    'mm_whole_amount' => 'As carteiras móveis só aceitam valores inteiros (sem centavos). Cobre os centavos em dinheiro.',
     'mm_overpaid' => 'Recebido :amount acima do saldo em dívida. Verifique com o cliente.',
     'mm_payment_note' => 'Pagamento móvel :ref',
     'mm_invalid_public_key' => 'A chave pública do operador é inválida.',

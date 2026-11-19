@@ -73,7 +73,7 @@ The admin runs one company with several locations (**Admin → Stores**):
 | **Cashier** | Front desk: customers, new orders, status updates, payments, their own till, production, logistics, complaints, WhatsApp inbox |
 | **Courier** | Their pickup and delivery route only |
 
-Access is enforced twice: role middleware on each route group, and policies (`app/Policies`) per record.
+Access is enforced twice: role middleware on each route group, and policies (`app/Policies`) per record. For expenses, manual journal entries, payslips, consolidated invoices and credit notes, admin and owner manage every record of their store, while other roles change, delete, pay or void only the records they registered themselves (`OwnsStoreRecords`). Records without a known author are left to management.
 
 ## 📖 Documentation
 

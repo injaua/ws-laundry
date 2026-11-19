@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Traits\BelongsToStore;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -57,10 +58,10 @@ class JournalEntry extends Model
                 && ((float) $line["debit"] > 0 || (float) $line["credit"] > 0)
         ));
 
-        $debit = round(array_sum(array_column($lines, "debit")), 2);
-        $credit = round(array_sum(array_column($lines, "credit")), 2);
+        $debit = Money::sum(array_column($lines, "debit"));
+        $credit = Money::sum(array_column($lines, "credit"));
 
-        if (count($lines) < 2 || $debit <= 0 || abs($debit - $credit) > 0.004) {
+        if (count($lines) < 2 || $debit <= 0 || !Money::equals($debit, $credit)) {
             return null;
         }
 
@@ -81,8 +82,8 @@ class JournalEntry extends Model
             foreach ($lines as $line) {
                 $entry->lines()->create([
                     "account_id" => $line["account_id"],
-                    "debit" => (float) $line["debit"],
-                    "credit" => (float) $line["credit"],
+                    "debit" => Money::round($line["debit"]),
+                    "credit" => Money::round($line["credit"]),
                 ]);
             }
 

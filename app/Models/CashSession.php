@@ -31,7 +31,7 @@ class CashSession extends Model
         return [
             "opened_at" => "datetime",
             "closed_at" => "datetime",
-            "opening_float" => "decimal:0",
+            "opening_float" => "decimal:2",
         ];
     }
 

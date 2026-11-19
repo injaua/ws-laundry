@@ -22,6 +22,8 @@ class TrialBalanceArchive extends Model
             "month" => "integer",
             "from_date" => "date",
             "to_date" => "date",
+            "total_debit" => "decimal:2",
+            "total_credit" => "decimal:2",
         ];
     }
 

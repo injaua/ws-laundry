@@ -82,7 +82,9 @@
                             </span>
                         </td>
                         <td class="text-center">
-                            @if($salary->isPaid())
+                            @cannot("update", $salary)
+                                <span class="btn btn-sm btn-outline-secondary disabled" title="{{ __('app.record_of_another_user') }}"><i class="bi bi-lock"></i></span>
+                            @elseif($salary->isPaid())
                                 <form action="{{ route("salaries.unpay", $salary) }}" method="POST" class="d-inline" data-confirm="{{ __('app.unpay') }}?">
                                     @csrf @method("PATCH")
                                     <button class="btn btn-sm btn-outline-warning" title="{{ __('app.unpay') }}"><i class="bi bi-arrow-counterclockwise"></i></button>

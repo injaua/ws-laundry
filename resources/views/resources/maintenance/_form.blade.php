@@ -56,7 +56,7 @@
     <div class="col-md-4">
         <label class="form-label">{{ __('app.cost') }}</label>
         <div class="input-group">
-            <input type="number" name="cost" class="form-control" min="0" step="1" value="{{ old('cost', $maintenance?->cost ?? 0) }}">
+            <input type="number" name="cost" class="form-control" min="0" step="0.01" value="{{ old('cost', $maintenance?->cost ?? 0) }}">
             <span class="input-group-text">{{ currency_symbol() }}</span>
         </div>
     </div>

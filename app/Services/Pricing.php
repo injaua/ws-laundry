@@ -7,6 +7,7 @@ use App\Models\Package;
 use App\Models\Promotion;
 use App\Models\Service;
 use App\Models\SiteSetting;
+use App\Support\Money;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
@@ -107,7 +108,7 @@ class Pricing
         }
 
         return $settings["type"] === "fixed"
-            ? round($settings["value"])
-            : round($itemsSubtotal * $settings["value"] / 100);
+            ? Money::round($settings["value"])
+            : Money::percent($itemsSubtotal, $settings["value"]);
     }
 }

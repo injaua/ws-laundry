@@ -12,7 +12,7 @@
             <div class="row g-3">
                 <div class="col-md-6">
                     <label class="form-label" for="credit_limit">{{ __('app.credit_limit') }}</label>
-                    <input type="number" name="credit_limit" id="credit_limit" class="form-control @error("credit_limit") is-invalid @enderror"
+                    <input type="number" step="0.01" name="credit_limit" id="credit_limit" class="form-control @error("credit_limit") is-invalid @enderror"
                         value="{{ old("credit_limit", $customer?->credit_limit ?? 0) }}" min="0" step="1000">
                     @error("credit_limit") <div class="invalid-feedback">{{ $message }}</div> @enderror
                     <div class="form-text">{{ __('app.credit_limit_hint') }}</div>

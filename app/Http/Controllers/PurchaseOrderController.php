@@ -8,6 +8,7 @@ use App\Models\InventoryMovement;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\Supplier;
+use App\Support\Money;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -138,7 +139,7 @@ class PurchaseOrderController extends Controller
             $request->user(),
             $item,
             (float) $validated["quantity"],
-            isset($validated["unit_cost"]) ? (int) $validated["unit_cost"] : null,
+            isset($validated["unit_cost"]) ? Money::round($validated["unit_cost"]) : null,
             ["lot_number" => $validated["lot_number"] ?? null, "expires_at" => $validated["expires_at"] ?? null],
             (bool) ($validated["register_expense"] ?? false),
         );
@@ -171,12 +172,12 @@ class PurchaseOrderController extends Controller
     private function syncLines(PurchaseOrder $order, array $lines): void
     {
         foreach ($lines as $line) {
-            $cost = (int) round((float) $line["unit_cost"]);
+            $cost = Money::round($line["unit_cost"]);
             $order->items()->create([
                 "inventory_item_id" => $line["inventory_item_id"],
                 "quantity" => $line["quantity"],
                 "unit_cost" => $cost,
-                "subtotal" => (int) round((float) $line["quantity"] * $cost),
+                "subtotal" => Money::round((float) $line["quantity"] * $cost),
             ]);
         }
 

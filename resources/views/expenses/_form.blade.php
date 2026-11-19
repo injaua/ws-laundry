@@ -25,7 +25,7 @@
                             @foreach($categories as $category)
                                 <option value="{{ $category->key }}"
                                     data-fixed="{{ $category->is_fixed ? 1 : 0 }}"
-                                    data-default="{{ (int) $category->default_amount }}"
+                                    data-default="{{ (float) $category->default_amount }}"
                                     data-salary="{{ $category->is_salary ? 1 : 0 }}"
                                     data-name="{{ $category->name }}"
                                     {{ old("category", $expense->category ?? "") == $category->key ? "selected" : "" }}>
@@ -72,7 +72,7 @@
                     <div class="mb-3">
                         <label class="form-label">{{ __('app.amount') }} <span class="text-danger">*</span></label>
                         <div class="input-group">
-                            <input type="number" name="amount" id="expenseAmount" class="form-control @error("amount") is-invalid @enderror" value="{{ old("amount", $expense->amount ?? "") }}" required min="0">
+                            <input type="number" step="0.01" name="amount" id="expenseAmount" class="form-control @error("amount") is-invalid @enderror" value="{{ old("amount", $expense->amount ?? "") }}" required min="0">
                             <span class="input-group-text">{{ currency_symbol() }}</span>
                             @error("amount") <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>

@@ -5,13 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\Account;
 use App\Models\AccountingPeriod;
 use App\Models\JournalEntry;
+use App\Support\Money;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
 class JournalEntryController extends Controller
 {
     public function index(Request $request)
     {
+        Gate::authorize("viewAny", JournalEntry::class);
+
         $query = JournalEntry::with(["lines.account", "poster"]);
 
         if ($search = $request->search) {
@@ -45,6 +49,8 @@ class JournalEntryController extends Controller
 
     public function create()
     {
+        Gate::authorize("create", JournalEntry::class);
+
         $accounts = Account::where("is_group", false)->where("is_active", true)->orderBy("code")->get();
         $defaults = [];
 
@@ -53,6 +59,8 @@ class JournalEntryController extends Controller
 
     public function store(Request $request)
     {
+        Gate::authorize("create", JournalEntry::class);
+
         $validated = $request->validate([
             "entry_date" => "required|date",
             "description" => "required|string|max:255",
@@ -87,6 +95,8 @@ class JournalEntryController extends Controller
                 ->with("error", __("app.journal_auto_locked"));
         }
 
+        Gate::authorize("update", $journal_entry);
+
         $accounts = Account::where("is_group", false)->orderBy("code")->get();
 
         return view("accounting.journal-entries.edit", [
@@ -103,6 +113,8 @@ class JournalEntryController extends Controller
                 ->with("error", __("app.journal_auto_locked"));
         }
 
+        Gate::authorize("update", $journal_entry);
+
         $validated = $request->validate([
             "entry_date" => "required|date",
             "description" => "required|string|max:255",
@@ -117,7 +129,7 @@ class JournalEntryController extends Controller
             return back()->withInput()->withErrors($errors);
         }
 
-        $journal_entry->update([...$validated, "posted_by" => auth()->id()]);
+        $journal_entry->update($validated);
         $journal_entry->lines()->delete();
         $this->writeLines($journal_entry, $rows);
 
@@ -131,6 +143,8 @@ class JournalEntryController extends Controller
             return redirect()->route("accounting.journal-entries.index")
                 ->with("error", __("app.journal_auto_locked"));
         }
+
+        Gate::authorize("delete", $journal_entry);
 
         if ($period = AccountingPeriod::closedOn($journal_entry->entry_date)) {
             return redirect()->route("accounting.journal-entries.index")
@@ -183,7 +197,7 @@ class JournalEntryController extends Controller
             $totalCredit += $creditAmount;
         }
 
-        if (round($totalDebit, 2) !== round($totalCredit, 2)) {
+        if (!Money::equals($totalDebit, $totalCredit)) {
             return ["pairs" => __("app.journal_not_balanced")];
         }
 
@@ -195,13 +209,13 @@ class JournalEntryController extends Controller
         foreach ($rows as $row) {
             $entry->lines()->create([
                 "account_id" => $row["debit_account_id"],
-                "debit" => (float) $row["debit_amount"],
+                "debit" => Money::round($row["debit_amount"]),
                 "credit" => 0,
             ]);
             $entry->lines()->create([
                 "account_id" => $row["credit_account_id"],
                 "debit" => 0,
-                "credit" => (float) $row["credit_amount"],
+                "credit" => Money::round($row["credit_amount"]),
             ]);
         }
     }
@@ -213,9 +227,9 @@ class JournalEntryController extends Controller
 
         return $debits->map(fn ($line, $i) => [
             "debit_account_id" => $line->account_id,
-            "debit_amount" => (int) $line->debit,
+            "debit_amount" => (float) $line->debit,
             "credit_account_id" => $credits[$i]->account_id ?? null,
-            "credit_amount" => isset($credits[$i]) ? (int) $credits[$i]->credit : null,
+            "credit_amount" => isset($credits[$i]) ? (float) $credits[$i]->credit : null,
         ])->values()->all();
     }
 }

@@ -12,8 +12,8 @@ class JournalLine extends Model
     protected function casts(): array
     {
         return [
-            "debit" => "decimal:0",
-            "credit" => "decimal:0",
+            "debit" => "decimal:2",
+            "credit" => "decimal:2",
         ];
     }
 

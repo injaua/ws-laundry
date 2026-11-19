@@ -1,5 +1,5 @@
 // Purchase order lines: add / remove lines, line subtotals.
-import { fmtMoney } from '../lib/money';
+import { fmtMoney, roundMoney } from '../lib/money';
 
 var poLineIndex = Number(document.getElementById('po-lines-body').dataset.nextIndex || 0);
 
@@ -15,7 +15,7 @@ function refreshPoLineNames() {
 function recalcPoSubtotal(row) {
     var qty = parseFloat(row.querySelector('.line-qty').value) || 0;
     var cost = parseFloat(row.querySelector('.line-cost').value) || 0;
-    row.querySelector('.line-subtotal').textContent = qty * cost > 0 ? fmtMoney(Math.round(qty * cost)) : '—';
+    row.querySelector('.line-subtotal').textContent = qty * cost > 0 ? fmtMoney(roundMoney(qty * cost)) : '—';
 }
 
 function addPoLine() {

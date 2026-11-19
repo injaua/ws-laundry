@@ -26,13 +26,13 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" for="fee">{{ __('app.fee_per_trip') }} ({{ currency_symbol() }}) <span class="text-danger">*</span></label>
-                            <input type="number" name="fee" id="fee" min="0" step="1" required class="form-control @error("fee") is-invalid @enderror" value="{{ old("fee", (float) $zone->fee) }}">
+                            <input type="number" name="fee" id="fee" min="0" step="0.01" required class="form-control @error("fee") is-invalid @enderror" value="{{ old("fee", (float) $zone->fee) }}">
                             @error("fee") <div class="invalid-feedback">{{ $message }}</div> @enderror
                             <div class="form-text">{{ __('app.fee_per_trip_hint') }}</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" for="free_from">{{ __('app.free_from') }} ({{ currency_symbol() }})</label>
-                            <input type="number" name="free_from" id="free_from" min="0" step="1" class="form-control @error("free_from") is-invalid @enderror" value="{{ old("free_from", $zone->free_from !== null ? (float) $zone->free_from : "") }}">
+                            <input type="number" name="free_from" id="free_from" min="0" step="0.01" class="form-control @error("free_from") is-invalid @enderror" value="{{ old("free_from", $zone->free_from !== null ? (float) $zone->free_from : "") }}">
                             @error("free_from") <div class="invalid-feedback">{{ $message }}</div> @enderror
                             <div class="form-text">{{ __('app.free_from_hint') }}</div>
                         </div>

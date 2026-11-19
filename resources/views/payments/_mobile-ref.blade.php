@@ -52,7 +52,7 @@
         <div class="col-7">
             <label class="form-label">{{ __('app.tendered') }}</label>
             <div class="input-group">
-                <input type="number" name="tendered" min="0" step="1" class="form-control js-tendered @error('tendered') is-invalid @enderror" value="{{ old('tendered') }}" placeholder="{{ __('app.tendered_placeholder') }}">
+                <input type="number" name="tendered" min="0" step="0.01" class="form-control js-tendered @error('tendered') is-invalid @enderror" value="{{ old('tendered') }}" placeholder="{{ __('app.tendered_placeholder') }}">
                 <span class="input-group-text">{{ currency_symbol() }}</span>
                 @error('tendered') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>

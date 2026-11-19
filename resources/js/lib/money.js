@@ -16,4 +16,11 @@ export function fmtMoney(value, decimals) {
     return sign + (c.position === 'before' ? `${c.symbol} ${text}` : `${text} ${c.symbol}`);
 }
 
+/** Round to cents, half away from zero, like App\Support\Money::round() on the server. */
+export function roundMoney(value) {
+    const n = Number(value) || 0;
+
+    return (Math.sign(n) * Math.round(Math.abs(n) * 100 + 1e-7)) / 100;
+}
+
 export const currencySymbol = () => appConfig().money?.symbol ?? DEFAULTS.symbol;

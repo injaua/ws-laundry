@@ -34,7 +34,7 @@ class InventoryItem extends Model
         return [
             "stock_qty" => "decimal:2",
             "min_stock_qty" => "decimal:2",
-            "unit_cost" => "decimal:0",
+            "unit_cost" => "decimal:2",
             "is_active" => "boolean",
         ];
     }

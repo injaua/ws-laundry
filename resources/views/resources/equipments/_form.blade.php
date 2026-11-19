@@ -40,7 +40,7 @@
     <div class="col-md-4">
         <label class="form-label">{{ __('app.purchase_price') }}</label>
         <div class="input-group">
-            <input type="number" name="purchase_price" class="form-control" min="0" step="1" value="{{ old('purchase_price', $equipment?->purchase_price) }}">
+            <input type="number" name="purchase_price" class="form-control" min="0" step="0.01" value="{{ old('purchase_price', $equipment?->purchase_price) }}">
             <span class="input-group-text">{{ currency_symbol() }}</span>
         </div>
     </div>

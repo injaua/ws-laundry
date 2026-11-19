@@ -17,7 +17,7 @@ class Package extends Model
     {
         return [
             "weight_kg" => "decimal:2",
-            "price" => "decimal:0",
+            "price" => "decimal:2",
             "is_active" => "boolean",
         ];
     }

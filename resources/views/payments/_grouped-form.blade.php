@@ -10,7 +10,7 @@
             @csrf
             <div class="col-sm-6">
                 <label class="form-label small" for="gp_amount">{{ __('app.amount') }} ({{ currency_symbol() }})</label>
-                <input type="number" name="amount" id="gp_amount" min="1" max="{{ $outstanding }}" step="1"
+                <input type="number" name="amount" id="gp_amount" min="1" max="{{ $outstanding }}" step="0.01"
                     class="form-control @error("amount") is-invalid @enderror" value="{{ old("amount", $outstanding) }}" required>
                 @error("amount") <div class="invalid-feedback">{{ $message }}</div> @enderror
                 <div class="form-text">{{ __('app.total_outstanding') }}: {{ money($outstanding) }}</div>

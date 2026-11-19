@@ -49,19 +49,26 @@
                 @endunless
 
                 <div class="d-grid gap-2 mt-3">
+                    @cannot("update", $invoice)
+                        <div class="small text-muted"><i class="bi bi-lock"></i> {{ __('app.record_of_another_user') }}</div>
+                    @endcannot
                     @if($invoice->isDraft())
+                        @can("update", $invoice)
                         <form action="{{ route("invoices.issue", $invoice) }}" method="POST" data-confirm="{{ __('app.invoice_issue_confirm') }}">
                             @csrf
                             <button type="submit" class="btn btn-primary w-100"><i class="bi bi-send-check"></i> {{ __('app.issue_invoice') }}</button>
                         </form>
+                        @endcan
                         <a href="{{ route("invoices.print", [$invoice, "preview" => 1]) }}" target="_blank" class="btn btn-outline-secondary"><i class="bi bi-eye"></i> {{ __('app.preview') }}</a>
+                        @can("void", $invoice)
                         <form action="{{ route("invoices.void", $invoice) }}" method="POST" data-confirm="{{ __('app.invoice_discard_confirm') }}">
                             @csrf
                             <button type="submit" class="btn btn-outline-danger w-100"><i class="bi bi-trash"></i> {{ __('app.discard_draft') }}</button>
                         </form>
+                        @endcan
                     @elseif($invoice->isIssued())
                         <a href="{{ route("invoices.print", $invoice) }}" target="_blank" class="btn btn-outline-primary"><i class="bi bi-printer"></i> {{ __('app.print') }}</a>
-                        @if($invoice->payments->isEmpty())
+                        @if($invoice->payments->isEmpty() && auth()->user()->can("void", $invoice))
                         <button type="button" class="btn btn-outline-danger" data-bs-toggle="collapse" data-bs-target="#voidForm"><i class="bi bi-x-octagon"></i> {{ __('app.void_invoice') }}</button>
                         <form action="{{ route("invoices.void", $invoice) }}" method="POST" id="voidForm" class="collapse">
                             @csrf
@@ -104,10 +111,12 @@
                         <td class="text-end fw-semibold">{{ num(max(0, $order->remainingBalance())) }}</td>
                         @if($invoice->isDraft())
                         <td class="text-end">
+                            @can("update", $invoice)
                             <form action="{{ route("invoices.orders.remove", [$invoice, $order]) }}" method="POST">
                                 @csrf @method("DELETE")
                                 <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="{{ __('app.remove') }}"><i class="bi bi-x-circle"></i></button>
                             </form>
+                            @endcan
                         </td>
                         @endif
                     </tr>

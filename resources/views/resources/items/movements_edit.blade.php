@@ -25,7 +25,7 @@
             <div class="col-md-2">
                 <label class="form-label">{{ __('app.unit_cost') }}</label>
                 <div class="input-group">
-                    <input type="number" name="unit_cost" id="m-unit-cost" class="form-control" min="0" step="1" value="{{ old("unit_cost", $movement->unit_cost) }}">
+                    <input type="number" name="unit_cost" id="m-unit-cost" class="form-control" min="0" step="0.01" value="{{ old("unit_cost", $movement->unit_cost) }}">
                     <span class="input-group-text">{{ currency_symbol() }}</span>
                 </div>
             </div>

@@ -32,8 +32,8 @@ class Payment extends Model
     protected function casts(): array
     {
         return [
-            "amount" => "decimal:0",
-            "tendered" => "decimal:0",
+            "amount" => "decimal:2",
+            "tendered" => "decimal:2",
             "paid_at" => "date",
             "handed_over_at" => "datetime",
             "reconciled_at" => "datetime",

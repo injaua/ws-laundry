@@ -18,8 +18,8 @@ class PurchaseOrderItem extends Model
     {
         return [
             "quantity" => "decimal:2",
-            "unit_cost" => "decimal:0",
-            "subtotal" => "decimal:0",
+            "unit_cost" => "decimal:2",
+            "subtotal" => "decimal:2",
             "received_qty" => "decimal:2",
         ];
     }

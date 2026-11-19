@@ -40,7 +40,7 @@
                         @endif
                         <div class="col-7">
                             <div class="input-group">
-                                <input type="number" id="counted_{{ $method }}" name="counted[{{ $method }}]" class="form-control @error("counted.$method") is-invalid @enderror" value="{{ old("counted.$method") }}" min="0" step="1" required>
+                                <input type="number" id="counted_{{ $method }}" name="counted[{{ $method }}]" class="form-control @error("counted.$method") is-invalid @enderror" value="{{ old("counted.$method") }}" min="0" step="0.01" required>
                                 <span class="input-group-text">{{ currency_symbol() }}</span>
                                 @error("counted.$method") <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>

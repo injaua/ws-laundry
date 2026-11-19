@@ -8,6 +8,7 @@ use App\Models\CashSession;
 use App\Models\JournalEntry;
 use App\Models\Payment;
 use App\Models\User;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -38,8 +39,8 @@ class CloseCashSession
             $hasDifference = false;
 
             foreach (Payment::METHODS as $method) {
-                $count = round((float) ($counted[$method] ?? 0));
-                $difference = round($count - $expected[$method]);
+                $count = Money::round($counted[$method] ?? 0);
+                $difference = Money::round($count - $expected[$method]);
                 $hasDifference = $hasDifference || $difference != 0.0;
 
                 $rows[] = [

@@ -2010,6 +2010,8 @@ return [
     'mm_refund_not_allowed' => 'This credit note cannot be refunded through the wallet.',
     'mm_refund_exists' => 'A refund for this credit note is already in progress or done.',
     'mm_expired' => 'The customer did not confirm in time.',
+    'record_of_another_user' => 'This record belongs to another user: only its author or management can change it.',
+    'mm_whole_amount' => 'Mobile wallets only accept whole amounts (no cents). Collect the cents in cash.',
     'mm_overpaid' => 'Received :amount more than the balance owed. Check with the customer.',
     'mm_payment_note' => 'Mobile payment :ref',
     'mm_invalid_public_key' => 'The operator public key is invalid.',

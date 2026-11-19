@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -30,7 +31,7 @@ class MaintenanceJob extends Model
         return [
             "service_date" => "date",
             "next_service_date" => "date",
-            "cost" => "decimal:0",
+            "cost" => "decimal:2",
             "completed_at" => "datetime",
         ];
     }
@@ -162,12 +163,12 @@ class MaintenanceJob extends Model
 
         $expense = $this->expense;
         if ($expense) {
-            $expense->update(["title" => $title, "category" => $category, "amount" => (int) round((float) $this->cost), "expense_date" => $this->service_date]);
+            $expense->update(["title" => $title, "category" => $category, "amount" => Money::round($this->cost), "expense_date" => $this->service_date]);
         } else {
             $expense = Expense::create([
                 "title" => $title,
                 "category" => $category,
-                "amount" => (int) round((float) $this->cost),
+                "amount" => Money::round($this->cost),
                 "expense_date" => $this->service_date,
                 "user_id" => auth()->id(),
                 "source_type" => "maintenance_job",

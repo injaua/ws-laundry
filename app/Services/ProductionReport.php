@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Models\OrderRework;
 use App\Models\OrderStageLog;
 use App\Models\Service;
+use App\Support\Money;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
@@ -260,7 +261,7 @@ class ProductionReport
 
         return [
             "items" => $rows,
-            "total_cost" => round($totalCost),
+            "total_cost" => Money::round($totalCost),
             "cost_per_kg" => $kgProcessed > 0 ? round($totalCost / $kgProcessed, 1) : null,
             "services" => $services,
         ];

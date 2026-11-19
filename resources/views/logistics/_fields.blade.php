@@ -61,7 +61,7 @@
     @if(auth()->user()->hasRole(["admin", "owner"]))
     <div class="col-md-4">
         <label class="form-label" for="fee">{{ __('app.delivery_fee') }} ({{ currency_symbol() }})</label>
-        <input type="number" name="fee" id="fee" min="0" step="1" class="form-control @error("fee") is-invalid @enderror" value="{{ old("fee", $job ? (float) $job->fee : "") }}" placeholder="{{ __('app.zone_fee_placeholder') }}">
+        <input type="number" name="fee" id="fee" min="0" step="0.01" class="form-control @error("fee") is-invalid @enderror" value="{{ old("fee", $job ? (float) $job->fee : "") }}" placeholder="{{ __('app.zone_fee_placeholder') }}">
         @error("fee") <div class="invalid-feedback">{{ $message }}</div> @enderror
         <div class="form-text">{{ __('app.fee_override_hint') }}</div>
     </div>

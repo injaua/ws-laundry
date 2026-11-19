@@ -74,7 +74,7 @@
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <input type="number" name="amount" class="form-control @error("amount") is-invalid @enderror" placeholder="{{ __('app.amount') }}" value="{{ old("amount") }}" min="1" step="1" required>
+                            <input type="number" name="amount" class="form-control @error("amount") is-invalid @enderror" placeholder="{{ __('app.amount') }}" value="{{ old("amount") }}" min="1" step="0.01" required>
                             @error("amount") <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div class="col-md-4">

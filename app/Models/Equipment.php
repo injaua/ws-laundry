@@ -31,7 +31,7 @@ class Equipment extends Model
         return [
             "purchase_date" => "date",
             "warranty_until" => "date",
-            "purchase_price" => "decimal:0",
+            "purchase_price" => "decimal:2",
             "capacity_kg" => "decimal:2",
         ];
     }

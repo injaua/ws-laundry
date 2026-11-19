@@ -1,7 +1,7 @@
 // New order (orders/create): item lines, live prices, totals, delivery promise, credit options.
 // Server data: <x-page-data name="order-form">. Line markup: <template id="order-item-template">.
 import { getJson, pageData } from '../lib/dom';
-import { fmtMoney } from '../lib/money';
+import { fmtMoney, roundMoney } from '../lib/money';
 import { addDays, createPricing, orderTotals } from '../orders/pricing';
 
 const data = pageData('order-form');
@@ -146,8 +146,9 @@ function calcSubtotal(row) {
         const box = type === 'by_package' ? '.measure-package' : '.measure-piece';
         subtotal = price * (parseInt(row.querySelector(`${box} .amount-input`).value, 10) || 0);
     }
-    row.dataset.subtotal = Math.round(subtotal);
-    row.querySelector('.subtotal-input').value = Math.round(subtotal);
+    subtotal = roundMoney(subtotal);
+    row.dataset.subtotal = subtotal;
+    row.querySelector('.subtotal-input').value = subtotal;
     row.querySelector('.item-subtotal').textContent = fmtMoney(subtotal);
     updateTotal();
 }
@@ -188,7 +189,7 @@ const setText = (id, text) => {
 };
 
 function updateTotal() {
-    const itemsSubtotal = rows().reduce((sum, r) => sum + (parseInt(r.dataset.subtotal, 10) || 0), 0);
+    const itemsSubtotal = rows().reduce((sum, r) => sum + (parseFloat(r.dataset.subtotal) || 0), 0);
     const t = orderTotals({ itemsSubtotal, express, expressOn: expressCheck?.checked, pickup, vatRate });
 
     setText('pickup-display', fmtMoney(t.pickupFee));

@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\Order;
+use App\Support\Money;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -41,9 +42,9 @@ class ReceivablesOrdersSheet implements FromArray, WithHeadings, WithTitle
             $order->received_at?->format(date_fmt()),
             $order->completed_at?->format(date_fmt()),
             $order->due_date?->format(date_fmt()),
-            (int) round((float) $order->total_price),
-            (int) round($order->paidAmount()),
-            (int) round($order->remainingBalance()),
+            Money::round($order->total_price),
+            Money::round($order->paidAmount()),
+            Money::round($order->remainingBalance()),
             $order->daysOverdue(),
             $order->status_label,
         ])->all();

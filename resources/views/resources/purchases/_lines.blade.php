@@ -30,7 +30,7 @@
                 </td>
                 <td>
                     <div class="input-group input-group-sm">
-                        <input type="number" name="lines[{{ $i }}][unit_cost]" class="form-control line-cost" min="0" step="1" value="{{ $line["unit_cost"] ?? '' }}" required>
+                        <input type="number" name="lines[{{ $i }}][unit_cost]" class="form-control line-cost" min="0" step="0.01" value="{{ $line["unit_cost"] ?? '' }}" required>
                         <span class="input-group-text">{{ currency_symbol() }}</span>
                     </div>
                 </td>
@@ -64,7 +64,7 @@
         </td>
         <td>
             <div class="input-group input-group-sm">
-                <input type="number" name="__NAME__[unit_cost]" class="form-control line-cost" min="0" step="1" required>
+                <input type="number" name="__NAME__[unit_cost]" class="form-control line-cost" min="0" step="0.01" required>
                 <span class="input-group-text">{{ currency_symbol() }}</span>
             </div>
         </td>

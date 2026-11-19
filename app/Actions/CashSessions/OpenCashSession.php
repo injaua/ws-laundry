@@ -4,6 +4,7 @@ namespace App\Actions\CashSessions;
 
 use App\Models\CashSession;
 use App\Models\User;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -28,7 +29,7 @@ class OpenCashSession
                 "user_id" => $user->id,
                 "status" => CashSession::STATUS_OPEN,
                 "opened_at" => now(),
-                "opening_float" => round($openingFloat),
+                "opening_float" => Money::round($openingFloat),
             ]);
         });
     }

@@ -29,7 +29,7 @@ class PurchaseOrder extends Model
         return [
             "order_date" => "date",
             "expected_date" => "date",
-            "total" => "decimal:0",
+            "total" => "decimal:2",
         ];
     }
 
@@ -144,7 +144,7 @@ class PurchaseOrder extends Model
         }
 
         $item = $line->item;
-        $cost = $unitCost ?? (int) $line->unit_cost;
+        $cost = $unitCost ?? (float) $line->unit_cost;
 
         return DB::transaction(function () use ($user, $line, $item, $quantity, $cost, $lot, $registerExpense) {
             $movement = InventoryMovement::record(

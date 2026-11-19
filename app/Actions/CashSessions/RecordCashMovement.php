@@ -5,6 +5,7 @@ namespace App\Actions\CashSessions;
 use App\Models\CashMovement;
 use App\Models\CashSession;
 use App\Models\User;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -20,7 +21,7 @@ class RecordCashMovement
                 throw ValidationException::withMessages(["amount" => __("app.cash_session_not_open")]);
             }
 
-            $amount = round($amount);
+            $amount = Money::round($amount);
 
             if ($type === CashMovement::TYPE_WITHDRAWAL && $amount > $session->expectedCash()) {
                 throw ValidationException::withMessages([

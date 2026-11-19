@@ -28,7 +28,7 @@
                     <div class="mb-3">
                         <label class="form-label">{{ __('app.price') }} <span class="text-danger">*</span></label>
                         <div class="input-group">
-                            <input type="number" name="price" class="form-control @error("price") is-invalid @enderror" value="{{ old("price") }}" required min="0" max="10000">
+                            <input type="number" step="0.01" name="price" class="form-control @error("price") is-invalid @enderror" value="{{ old("price") }}" required min="0" max="10000">
                             <span class="input-group-text">{{ currency_symbol() }}</span>
                             @error("price") <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>

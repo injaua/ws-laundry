@@ -77,20 +77,20 @@ class ResourceStockTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $this->assertSame("10.00", (string) $item->fresh()->stock_qty);
-        $this->assertSame("2500", (string) $item->fresh()->unit_cost);
+        $this->assertSame("2500.00", (string) $item->fresh()->unit_cost);
 
         $expense = Expense::firstWhere("source_type", "inventory_movement");
         $this->assertNotNull($expense);
         $this->assertSame("cleaning_products", $expense->category);
         $this->assertSame(25000, (int) $expense->amount);
 
-        // Gross 25000 at 16% -> VAT 3448, net 21552
+        // Gross 25000 at 16% -> VAT 3448.28, net 21551.72 (to the cent)
         $entry = JournalEntry::firstWhere("source", "expense");
         $this->assertNotNull($entry);
         $lines = $entry->lines()->get()->keyBy("account_id");
-        $this->assertSame(21552, (int) $lines[Account::findByCode("6.1.1")->id]->debit);
-        $this->assertSame(3448, (int) $lines[Account::findByCode("4.4.3.1")->id]->debit);
-        $this->assertSame(25000, (int) $lines[Account::findByCode("1.1")->id]->credit);
+        $this->assertSame("21551.72", $lines[Account::findByCode("6.1.1")->id]->debit);
+        $this->assertSame("3448.28", $lines[Account::findByCode("4.4.3.1")->id]->debit);
+        $this->assertSame("25000.00", $lines[Account::findByCode("1.1")->id]->credit);
     }
 
     public function test_editing_purchase_keeps_single_journal_entry(): void

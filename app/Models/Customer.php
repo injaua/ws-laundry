@@ -31,7 +31,7 @@ class Customer extends Model
         return [
             'is_credit_customer' => 'boolean',
             'whatsapp_opt_out' => 'boolean',
-            'credit_limit' => 'decimal:0',
+            'credit_limit' => 'decimal:2',
             'credit_terms_days' => 'integer',
             'discount_percent' => 'decimal:2',
         ];

@@ -16,7 +16,7 @@
                         <select name="employee_id" id="payslipEmployee" class="form-select @error("employee_id") is-invalid @enderror" required data-base-field="base_salary">
                             <option value="">{{ __('app.employees') }}</option>
                             @foreach($employees as $employee)
-                                <option value="{{ $employee->id }}" data-base="{{ (int) $employee->base_salary }}"
+                                <option value="{{ $employee->id }}" data-base="{{ (float) $employee->base_salary }}"
                                     {{ (int) old("employee_id", $salary->employee_id ?? 0) === $employee->id ? "selected" : "" }}>
                                     {{ $employee->name }} — {{ $employee->position }}
                                 </option>
@@ -45,7 +45,7 @@
                     <div class="mb-3">
                         <label class="form-label">{{ __('app.base_salary') }} <span class="text-danger">*</span></label>
                         <div class="input-group">
-                            <input type="number" name="base_salary" id="baseSalary" class="form-control @error("base_salary") is-invalid @enderror" value="{{ old("base_salary", $salary->base_salary ?? 0) }}" required min="0">
+                            <input type="number" step="0.01" name="base_salary" id="baseSalary" class="form-control @error("base_salary") is-invalid @enderror" value="{{ old("base_salary", $salary->base_salary ?? 0) }}" required min="0">
                             <span class="input-group-text">{{ currency_symbol() }}</span>
                             @error("base_salary") <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
@@ -55,7 +55,7 @@
                         <div class="col-md-6 mb-3">
                             <label class="form-label">{{ __('app.bonus') }}</label>
                             <div class="input-group">
-                                <input type="number" name="bonus" id="bonusField" class="form-control @error("bonus") is-invalid @enderror" value="{{ old("bonus", $salary->bonus ?? 0) }}" min="0">
+                                <input type="number" step="0.01" name="bonus" id="bonusField" class="form-control @error("bonus") is-invalid @enderror" value="{{ old("bonus", $salary->bonus ?? 0) }}" min="0">
                                 <span class="input-group-text">{{ currency_symbol() }}</span>
                                 @error("bonus") <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
@@ -63,7 +63,7 @@
                         <div class="col-md-6 mb-3">
                             <label class="form-label">{{ __('app.deduction') }}</label>
                             <div class="input-group">
-                                <input type="number" name="deduction" id="deductionField" class="form-control @error("deduction") is-invalid @enderror" value="{{ old("deduction", $salary->deduction ?? 0) }}" min="0">
+                                <input type="number" step="0.01" name="deduction" id="deductionField" class="form-control @error("deduction") is-invalid @enderror" value="{{ old("deduction", $salary->deduction ?? 0) }}" min="0">
                                 <span class="input-group-text">{{ currency_symbol() }}</span>
                                 @error("deduction") <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
@@ -73,7 +73,7 @@
                     <div class="mb-3">
                         <label class="form-label">{{ __('app.absence_deduction') }}</label>
                         <div class="input-group">
-                            <input type="number" name="absence_deduction" id="absenceField" class="form-control @error("absence_deduction") is-invalid @enderror" value="{{ old("absence_deduction", $salary->absence_deduction ?? 0) }}" min="0">
+                            <input type="number" step="0.01" name="absence_deduction" id="absenceField" class="form-control @error("absence_deduction") is-invalid @enderror" value="{{ old("absence_deduction", $salary->absence_deduction ?? 0) }}" min="0">
                             <span class="input-group-text">{{ currency_symbol() }}</span>
                             @error("absence_deduction") <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>

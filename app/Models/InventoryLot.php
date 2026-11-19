@@ -25,7 +25,7 @@ class InventoryLot extends Model
         return [
             "quantity" => "decimal:2",
             "remaining_qty" => "decimal:2",
-            "unit_cost" => "decimal:0",
+            "unit_cost" => "decimal:2",
             "expires_at" => "date",
             "received_at" => "date",
         ];
