@@ -47,9 +47,29 @@ class AutomaticNotifications
 
     public function template(string $event): ?MessageTemplate
     {
-        $id = SiteSetting::get("notify_{$event}_template_id");
+        $template = $this->chosenTemplate($event);
 
-        return $id ? MessageTemplate::where("is_active", true)->find($id) : null;
+        return $template?->is_active ? $template : null;
+    }
+
+    /**
+     * The template chosen for an event in the store worked in. Templates belong to a store: a
+     * choice inherited from the company settings may point at another store's template, which
+     * then stands for this store's template of the same name.
+     */
+    public function chosenTemplate(string $event): ?MessageTemplate
+    {
+        $id = (int) SiteSetting::get("notify_{$event}_template_id");
+        if (!$id) {
+            return null;
+        }
+
+        $template = MessageTemplate::find($id);
+        if ($template === null && ($name = MessageTemplate::acrossStores()->whereKey($id)->value("name"))) {
+            $template = MessageTemplate::where("name", $name)->first();
+        }
+
+        return $template;
     }
 
     public function days(string $event): int

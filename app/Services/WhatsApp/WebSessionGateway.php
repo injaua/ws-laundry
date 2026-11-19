@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\Http;
  *
  * No 24h window and no templates, but WhatsApp may block numbers that use it, so
  * the platform only uses it for conversations, never for automatic notifications.
+ *
+ * One service, several sessions: the company number ("default") and the number of each store
+ * with its own WhatsApp configuration ("store-{id}"), chosen with the X-WA-Session header.
  */
 class WebSessionGateway implements WhatsAppGateway
 {
@@ -72,10 +75,22 @@ class WebSessionGateway implements WhatsAppGateway
         $this->request("post", "/logout");
     }
 
+    /** Disconnect this session but keep the link (the store stopped using its QR-code number). */
+    public function close(): void
+    {
+        $this->request("post", "/close");
+    }
+
+    public function session(): string
+    {
+        return (string) ($this->config["session"] ?? WhatsAppSettings::COMPANY_SESSION);
+    }
+
     private function request(string $method, string $path, array $data = [], ?int $timeout = null): Response
     {
         try {
             return Http::withToken((string) $this->config["token"])
+                ->withHeaders(["X-WA-Session" => $this->session()])
                 ->acceptJson()
                 ->timeout($timeout ?? (int) ($this->config["timeout"] ?? 20))
                 ->{$method}(rtrim((string) $this->config["url"], "/") . $path, $data);

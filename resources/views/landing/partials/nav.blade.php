@@ -17,7 +17,7 @@
                 @if($galleries->isNotEmpty())<a href="#gallery">{{ __('app.nav_gallery') }}</a>@endif
                 @if(($zones ?? collect())->isNotEmpty())<a href="#pickup">{{ __('app.nav_pickup') }}</a>@endif
                 <a href="#contact">{{ __('app.nav_contact') }}</a>
-                @if(\App\Services\MobileMoney\MobileMoneySettings::enabledProviders() !== [])<a href="{{ route('pay.lookup') }}">{{ __('app.nav_pay') }}</a>@endif
+                @if(\App\Services\MobileMoney\MobileMoneySettings::enabledAnywhere())<a href="{{ route('pay.lookup') }}">{{ __('app.nav_pay') }}</a>@endif
             @endif
             <div class="dropdown">
                 <a href="#" class="dropdown-toggle text-decoration-none" data-bs-toggle="dropdown">

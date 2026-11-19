@@ -39,7 +39,7 @@ class PaymentRequest extends FormRequest
             ...($this->payment() ? [] : ["order_id" => ["required", "integer", Rule::exists("orders", "id")]]),
             "paid_at" => ["required", "date"],
             "amount" => $this->amountRules("1"),
-            "method" => ["required", Rule::in(Payment::METHODS)],
+            "method" => ["required", Rule::in(Payment::acceptedMethods($this->payment()?->method))],
             "note" => ["nullable", "string", "max:255"],
             ...Payment::referenceRules(),
         ];

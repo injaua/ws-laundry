@@ -530,6 +530,7 @@ Route::middleware(["auth", "verified"])->group(function () {
             Route::resource("system-settings/currencies", CurrencyController::class)->except(["show"])->names("currencies");
             Route::post("/system-settings/currencies/{currency}/default", [CurrencyController::class, "makeDefault"])->name("currencies.default");
             Route::post("/notifications/channels", [NotificationSettingController::class, "updateChannels"])->name("notifications.channels");
+            Route::post("/notifications/channels/release", [NotificationSettingController::class, "releaseChannels"])->name("notifications.channels.release");
             Route::get("/notifications/qr-status", [NotificationSettingController::class, "webStatus"])->name("notifications.web-status");
             Route::post("/notifications/qr-logout", [NotificationSettingController::class, "webLogout"])->name("notifications.web-logout");
             Route::post("/notifications/qr-start", [NotificationSettingController::class, "webStart"])->name("notifications.web-start");
@@ -538,6 +539,8 @@ Route::middleware(["auth", "verified"])->group(function () {
         });
 
         Route::get("/mobile-money", [MobileMoneySettingController::class, "edit"])->middleware("role:admin")->name("mobile-money.edit");
+        Route::put("/mobile-money/methods", [MobileMoneySettingController::class, "updateMethods"])->middleware("role:admin")->name("mobile-money.methods");
+        Route::post("/mobile-money/release", [MobileMoneySettingController::class, "release"])->middleware("role:admin")->name("mobile-money.release");
         Route::put("/mobile-money/{provider}", [MobileMoneySettingController::class, "update"])->middleware("role:admin")->name("mobile-money.update");
         // System settings: identity & branding of the store worked in (falls back to the company values)
         Route::get("/system-settings/general", [SystemSettingController::class, "general"])->name("system-settings.general");

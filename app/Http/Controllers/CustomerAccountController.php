@@ -11,6 +11,7 @@ use App\Support\Documents\ReportDownload;
 use App\Support\Documents\ReportTable;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 /** Business-customer account: grouped payments, statement of account and group receipts. */
 class CustomerAccountController extends Controller
@@ -22,7 +23,7 @@ class CustomerAccountController extends Controller
         $data = $request->validate([
             "paid_at" => "required|date",
             "amount" => "required|numeric|min:1",
-            "method" => "required|in:" . implode(",", Payment::METHODS),
+            "method" => ["required", Rule::in(Payment::acceptedMethods())],
             "note" => "nullable|string|max:255",
         ] + Payment::referenceRules());
         $data = Payment::validateReference($data);

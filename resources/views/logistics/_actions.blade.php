@@ -42,7 +42,7 @@
                 <div class="col-5">
                     <label class="form-label small mb-1" for="method{{ $job->id }}">{{ __('app.payment_method') }}</label>
                     <select name="method" id="method{{ $job->id }}" class="form-select form-select-sm">
-                        @foreach(\App\Models\Payment::METHODS as $m)
+                        @foreach(\App\Models\Payment::courierMethods() as $m)
                             <option value="{{ $m }}" @selected($m === "cash")>{{ __('app.' . $m) }}</option>
                         @endforeach
                     </select>

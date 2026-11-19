@@ -4,7 +4,6 @@ namespace App\Providers;
 
 use App\Models\ActivityLog;
 use App\Models\User;
-use App\Services\WhatsApp\LogGateway;
 use App\Services\WhatsApp\WhatsAppChannels;
 use App\Services\WhatsApp\WhatsAppGateway;
 use App\Services\WhatsApp\WhatsAppSettings;
@@ -37,8 +36,9 @@ class AppServiceProvider extends ServiceProvider
         // (not singleton) so the binding survives the deferred ValidationServiceProvider.
         $this->app->extend("validation.presence", fn ($verifier, $app) => new StorePresenceVerifier($app["db"]));
 
-        // The channel staff conversations go through (log, cloud or web).
-        $this->app->singleton(WhatsAppGateway::class, fn () => WhatsAppChannels::make(config("whatsapp.driver")) ?? new LogGateway);
+        // The channel staff conversations go through (log, cloud or web), in the store worked in:
+        // resolved on each use, since a store may have its own WhatsApp configuration.
+        $this->app->bind(WhatsAppGateway::class, fn ($app) => $app->make(WhatsAppChannels::class)->conversationGateway());
         $this->app->singleton(WhatsAppChannels::class);
         // One count of the sidebar badges per request, however many times the layout renders.
         $this->app->singleton(AdminNavigationComposer::class);

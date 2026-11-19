@@ -6,7 +6,9 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Store;
 use App\Models\WhatsAppMessage;
+use App\Services\WhatsApp\WhatsAppSettings;
 use App\Support\CurrentStore;
+use App\Support\StoreSettings;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
@@ -16,17 +18,24 @@ use Illuminate\Support\Facades\Log;
  * read / failed updates for the messages we sent. Two senders, same payload shape:
  * Meta's Cloud API (signed with the app secret) and the QR-code companion service
  * in whatsapp-web/ (signed with WHATSAPP_WEB_TOKEN).
+ *
+ * The company number serves every store that uses the company WhatsApp configuration; a store
+ * with its own configuration has its own number: messages to it (its official API phone number
+ * id, or its QR-code session) always go to that store.
  */
 class WhatsAppWebhookController extends Controller
 {
     /** Subscription handshake when the webhook URL is registered in Meta. */
     public function verify(Request $request): Response
     {
-        $token = config("whatsapp.cloud.verify_token");
+        $given = (string) $request->query("hub_verify_token");
 
-        if ($request->query("hub_mode") === "subscribe" && filled($token)
-            && hash_equals((string) $token, (string) $request->query("hub_verify_token"))) {
-            return response((string) $request->query("hub_challenge"), 200)->header("Content-Type", "text/plain");
+        // Each number (the company's, or a store's own) may have its own verify token.
+        foreach (WhatsAppSettings::allLevels() as $config) {
+            $token = (string) ($config["cloud"]["verify_token"] ?? "");
+            if ($request->query("hub_mode") === "subscribe" && $token !== "" && hash_equals($token, $given)) {
+                return response((string) $request->query("hub_challenge"), 200)->header("Content-Type", "text/plain");
+            }
         }
 
         return response("Forbidden", 403);
@@ -63,15 +72,18 @@ class WhatsAppWebhookController extends Controller
         foreach ($request->input("entry", []) as $entry) {
             foreach ($entry["changes"] ?? [] as $change) {
                 $value = $change["value"] ?? [];
+                $stores = $channel === "web"
+                    ? $this->storesOfSession((string) $request->input("session", WhatsAppSettings::COMPANY_SESSION))
+                    : $this->storesOfCloudNumber((string) ($value["metadata"]["phone_number_id"] ?? ""));
 
                 foreach ($value["messages"] ?? [] as $message) {
-                    $this->inStoreOf($message, fn () => $this->storeInbound($message, $value["contacts"] ?? [], $channel));
+                    $this->inStoreOf($message, $stores, fn () => $this->storeInbound($message, $value["contacts"] ?? [], $channel));
                 }
 
                 // Only the QR service sends these: messages typed on the linked phone itself.
                 if ($channel === "web") {
                     foreach ($value["echoes"] ?? [] as $message) {
-                        $this->inStoreOf($message, fn () => $this->storeFromPhone($message));
+                        $this->inStoreOf($message, $stores, fn () => $this->storeFromPhone($message));
                     }
                 }
 
@@ -85,45 +97,88 @@ class WhatsAppWebhookController extends Controller
         return response("OK", 200);
     }
 
+    /** Signed with the app secret of one of our Meta apps (the company's, or a store's own). */
     private function signatureIsValid(Request $request): bool
     {
-        $secret = config("whatsapp.cloud.app_secret");
+        $secrets = collect(WhatsAppSettings::allLevels())
+            ->map(fn (array $config) => (string) ($config["cloud"]["app_secret"] ?? ""))
+            ->filter()->unique();
 
-        if (blank($secret)) {
+        if ($secrets->isEmpty()) {
             // Unsigned calls are only trusted on a developer machine or in tests;
             // anywhere else anyone could inject fake customer messages.
             return app()->environment("local", "testing");
         }
 
-        $expected = "sha256=" . hash_hmac("sha256", $request->getContent(), $secret);
+        $given = (string) $request->header("X-Hub-Signature-256");
 
-        return hash_equals($expected, (string) $request->header("X-Hub-Signature-256"));
+        return $secrets->contains(fn (string $secret) => hash_equals("sha256=" . hash_hmac("sha256", $request->getContent(), $secret), $given));
+    }
+
+    /** @return int[] stores using the company WhatsApp number (every active store when all have their own) */
+    private function companyStores(): array
+    {
+        $own = StoreSettings::owners("whatsapp");
+        $stores = Store::active()->orderBy("id")->pluck("id")->map(fn ($id) => (int) $id);
+
+        return $stores->diff($own)->values()->all() ?: $stores->all();
+    }
+
+    /** @return int[] the store of a QR-code session, or the stores using the company number */
+    private function storesOfSession(string $session): array
+    {
+        $storeId = WhatsAppSettings::storeOfSession($session);
+
+        return $storeId && Store::whereKey($storeId)->exists() ? [$storeId] : $this->companyStores();
+    }
+
+    /** @return int[] the stores served by the official API number that received the message */
+    private function storesOfCloudNumber(string $phoneNumberId): array
+    {
+        if ($phoneNumberId === "") {
+            return $this->companyStores();
+        }
+
+        $stores = [];
+        foreach (WhatsAppSettings::allLevels() as $level => $config) {
+            if ((string) ($config["cloud"]["phone_number_id"] ?? "") === $phoneNumberId) {
+                $stores = [...$stores, ...($level === "" ? $this->companyStores() : [(int) $level])];
+            }
+        }
+
+        return array_values(array_unique($stores)) ?: $this->companyStores();
     }
 
     /**
-     * One WhatsApp number serves every store: a message joins the conversation of the store
-     * that last talked to that number; else the store of the customer's latest order; else
-     * the main store.
+     * When a number serves several stores, a message joins the conversation of the store that last
+     * talked to that customer; else the store of the customer's latest order; else the main store.
+     *
+     * @param  int[]  $stores  the stores this number serves
      */
-    private function inStoreOf(array $message, \Closure $callback): void
+    private function inStoreOf(array $message, array $stores, \Closure $callback): void
     {
         $phone = preg_replace("/\D+/", "", (string) ($message["from"] ?? ""));
-        CurrentStore::run($phone === "" ? Store::defaultId() : $this->storeForPhone($phone), $callback);
+        $storeId = count($stores) <= 1 || $phone === ""
+            ? ($stores[0] ?? Store::defaultId())
+            : $this->storeForPhone($phone, $stores);
+
+        CurrentStore::run($storeId, $callback);
     }
 
-    private function storeForPhone(string $phone): ?int
+    /** @param  int[]  $stores */
+    private function storeForPhone(string $phone, array $stores): ?int
     {
-        $last = WhatsAppMessage::acrossStores()->where("phone", $phone)->latest("id")->value("store_id");
+        $last = WhatsAppMessage::acrossStores()->where("phone", $phone)->whereIn("store_id", $stores)->latest("id")->value("store_id");
         if ($last) {
             return (int) $last;
         }
 
-        $customers = CurrentStore::each(fn () => Customer::findByWhatsapp($phone));
+        $customers = array_map(fn (int $storeId) => CurrentStore::run($storeId, fn () => Customer::findByWhatsapp($phone)), $stores);
         $latest = collect($customers)->filter()
             ->sortByDesc(fn (Customer $customer) => Order::acrossStores()->where("customer_id", $customer->id)->max("id") ?? 0)
             ->first();
 
-        return $latest?->store_id ?? Store::defaultId();
+        return $latest?->store_id ?? (in_array(Store::defaultId(), $stores, true) ? Store::defaultId() : $stores[0]);
     }
 
     private function storeInbound(array $message, array $contacts, string $channel): void

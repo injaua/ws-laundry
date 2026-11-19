@@ -23,14 +23,14 @@ class PublicPaymentController extends Controller
 {
     public function lookupForm(): View
     {
-        abort_if(MobileMoneySettings::enabledProviders() === [], 404);
+        abort_unless(MobileMoneySettings::enabledAnywhere(), 404);
 
         return view("pay.lookup");
     }
 
     public function lookup(Request $request): RedirectResponse
     {
-        abort_if(MobileMoneySettings::enabledProviders() === [], 404);
+        abort_unless(MobileMoneySettings::enabledAnywhere(), 404);
 
         $data = $request->validate([
             "order_number" => "required|string|max:40",

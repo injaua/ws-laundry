@@ -5,13 +5,19 @@
 @section("content")
 {{-- Channels --}}
 @php($channelLabel = fn ($c) => match ($c) { "cloud" => __('app.wa_channel_cloud'), "web" => __('app.wa_channel_web'), "log" => __('app.wa_mode_log'), default => __('app.wa_channel_off') })
+{{-- The company number, or the store's own: only the admin chooses. --}}
+@if(auth()->user()->isAdmin())
+    @include("admin.partials.settings-level", ["bar" => $levelBar, "release" => "admin.notifications.channels.release"])
+@endif
 <div class="card mb-3">
-    <div class="card-header"><i class="bi bi-whatsapp me-1 text-wa"></i> {{ __('app.wa_connection') }}</div>
+    <div class="card-header"><i class="bi bi-whatsapp me-1 text-wa"></i> {{ __('app.wa_connection') }}
+        <span class="badge bg-light text-dark border ms-1">{{ $levelBar['level'] === null ? __('app.settings_level_company') : __('app.settings_level_store', ['name' => $levelBar['store']?->name]) }}</span>
+    </div>
     <div class="card-body small">
-        {{-- One WhatsApp number/connection for the whole company: only the admin changes it. --}}
         @if(auth()->user()->isAdmin())
         <form action="{{ route("admin.notifications.channels") }}" method="POST" class="mb-3">
             @csrf
+            <input type="hidden" name="level" value="{{ $levelParam }}">
             <div class="fw-semibold mb-2">{{ __('app.wa_conversations_channel') }}</div>
             <div class="row g-2 mb-3">
                 @foreach($drivers as $d)
@@ -41,10 +47,40 @@
                 {{ __('app.wa_notifications_now') }}: <span class="fw-semibold">{{ $channelLabel($notificationChannel) }}</span>
                 @unless($notificationChannel) — {{ __('app.wa_notifications_off_help') }}@endunless
             </div>
+
+            {{-- Official API number of this level (empty at company level = the .env values). --}}
+            <details class="border rounded mt-3" @if($errors->has('cloud.*')) open @endif>
+                <summary class="px-3 py-2 cursor-pointer fw-semibold"><i class="bi bi-patch-check"></i> {{ __('app.wa_cloud_credentials') }}</summary>
+                <div class="p-3 border-top">
+                    <p class="text-muted mb-2">{{ $levelParam === 'company' ? __('app.wa_cloud_credentials_company_help') : __('app.wa_cloud_credentials_store_help') }}</p>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label mb-0" for="cloud_phone_number_id">Phone number ID</label>
+                            <input type="text" name="cloud[phone_number_id]" id="cloud_phone_number_id" inputmode="numeric" autocomplete="off" class="form-control form-control-sm @error('cloud.phone_number_id') is-invalid @enderror" value="{{ old('cloud.phone_number_id', $cloud['phone_number_id']) }}" placeholder="{{ $cloud['phone_number_id_hint'] }}">
+                            @error('cloud.phone_number_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0" for="cloud_verify_token">Verify token</label>
+                            <input type="text" name="cloud[verify_token]" id="cloud_verify_token" autocomplete="off" class="form-control form-control-sm @error('cloud.verify_token') is-invalid @enderror" value="{{ old('cloud.verify_token', $cloud['verify_token']) }}" placeholder="{{ $cloud['verify_token_hint'] }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0" for="cloud_access_token">Access token</label>
+                            <input type="password" name="cloud[access_token]" id="cloud_access_token" autocomplete="off" class="form-control form-control-sm" placeholder="{{ $cloud['has_access_token'] ? __('app.mm_secret_kept') : '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label mb-0" for="cloud_app_secret">App secret</label>
+                            <input type="password" name="cloud[app_secret]" id="cloud_app_secret" autocomplete="off" class="form-control form-control-sm" placeholder="{{ $cloud['has_app_secret'] ? __('app.mm_secret_kept') : '' }}">
+                        </div>
+                    </div>
+                    <div class="text-end mt-2">
+                        <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg"></i> {{ __('app.wa_save_channels') }}</button>
+                    </div>
+                </div>
+            </details>
         </form>
         @else
             <p class="mb-2">{{ __('app.wa_notifications_now') }}: <span class="fw-semibold">{{ $channelLabel($notificationChannel) }}</span></p>
-            <p class="text-muted mb-2"><i class="bi bi-lock"></i> {{ __('app.company_setting_admin_only') }}</p>
+            <p class="text-muted mb-2"><i class="bi bi-lock"></i> {{ __('app.wa_channel_admin_only') }}</p>
         @endif
 
         @if($conversationChannel === "log")
@@ -52,7 +88,7 @@
         @endif
 
         @if($conversationChannel === "web" && auth()->user()->isAdmin())
-            <div class="border rounded p-3 mb-3" id="waQr" data-status="{{ route("admin.notifications.web-status") }}">
+            <div class="border rounded p-3 mb-3" id="waQr" data-status="{{ route("admin.notifications.web-status", ["level" => $levelParam]) }}">
                 <div class="fw-semibold mb-1"><i class="bi bi-qr-code"></i> {{ __('app.wa_channel_web') }}</div>
                 @unless($webTokenOk)
                     <div class="alert alert-danger py-2 mb-2">{{ __('app.wa_web_token_missing') }}</div>
@@ -64,12 +100,14 @@
                         <p id="waQrHelp" class="text-muted mb-2"></p>
                         <form action="{{ route("admin.notifications.web-start") }}" method="POST" id="waQrStart" class="d-none mb-2">
                             @csrf
+                            <input type="hidden" name="level" value="{{ $levelParam }}">
                             <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-play-fill"></i> {{ __('app.wa_web_start') }}</button>
                         </form>
                         <pre id="waQrLog" class="d-none small bg-body-tertiary border rounded p-2 mb-2 mh-240px overflow-auto pre-wrap"></pre>
                         <p class="text-muted mb-2">{{ __('app.wa_web_start_help') }}</p>
                         <form action="{{ route("admin.notifications.web-logout") }}" method="POST" id="waQrLogout" class="d-none" data-confirm="{{ __('app.wa_web_logout_confirm') }}">
                             @csrf
+                            <input type="hidden" name="level" value="{{ $levelParam }}">
                             <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-box-arrow-right"></i> {{ __('app.wa_web_logout') }}</button>
                         </form>
                     </div>
@@ -94,8 +132,9 @@
 {{-- Events --}}
 <form action="{{ route("admin.notifications.update") }}" method="POST" class="card mb-3">
     @csrf
-    <div class="card-header"><i class="bi bi-bell me-1"></i> {{ __('app.wa_automatic_notifications') }}</div>
+    <div class="card-header"><i class="bi bi-bell me-1"></i> {{ __('app.wa_automatic_notifications') }} <span class="badge bg-light text-dark border ms-1">{{ __('app.settings_level_store', ['name' => $currentStore?->name]) }}</span></div>
     <div class="card-body p-0">
+        <p class="small text-muted px-3 pt-2 mb-0">{{ __('app.wa_per_store_help', ['name' => $currentStore?->name]) }}</p>
         <div class="table-responsive">
         <table class="table mb-0 align-middle">
             <thead>
@@ -178,9 +217,9 @@
 
 {{-- Templates --}}
 <div class="card">
-    <div class="card-header"><i class="bi bi-file-earmark-text me-1"></i> {{ __('app.wa_templates') }}</div>
+    <div class="card-header"><i class="bi bi-file-earmark-text me-1"></i> {{ __('app.wa_templates') }} <span class="badge bg-light text-dark border ms-1">{{ __('app.settings_level_store', ['name' => $currentStore?->name]) }}</span></div>
     <div class="card-body">
-        <p class="small text-muted">{{ __('app.wa_templates_help') }} <code>{{ "{" . implode("} {", \App\Models\MessageTemplate::PLACEHOLDERS) . "}" }}</code></p>
+        <p class="small text-muted">{{ __('app.wa_per_store_help', ['name' => $currentStore?->name]) }} {{ __('app.wa_templates_help') }} <code>{{ "{" . implode("} {", \App\Models\MessageTemplate::PLACEHOLDERS) . "}" }}</code></p>
 
         @foreach($templates as $t)
         <details class="border rounded mb-2" @if($errors->any() && (int) old("template_form") === $t->id) open @endif>

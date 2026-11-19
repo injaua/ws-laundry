@@ -29,9 +29,11 @@ No topo do ecrã, abra o menu com o nome da loja e escolha outra. Tudo o que vê
 | De cada loja | Da empresa (só o administrador altera) |
 |--------------|----------------------------------------|
 | Nome comercial, NUIT, logótipo e dados de faturação (**Definições → Geral**; sem valor próprio, usa o da empresa) | Localização, idiomas e moedas |
-| Definições do negócio (IVA, expresso, capacidade, cheques, limite de caixa) | Canal de WhatsApp (número, API oficial ou código QR) |
-| Notificações automáticas e modelos de mensagem | Pagamentos móveis (M-Pesa, e-Mola) |
-| Numeração de encomendas, faturas, notas de crédito e reclamações | Site público, galeria e testemunhos; segurança e cópias de segurança |
+| Definições do negócio (IVA, expresso, capacidade, cheques, limite de caixa) | Site público, galeria e testemunhos |
+| Notificações automáticas e modelos de mensagem | Segurança e cópias de segurança |
+| Numeração de encomendas, faturas, notas de crédito e reclamações | |
+
+**WhatsApp** (canal, número da API oficial ou código QR) e **pagamentos** (métodos aceites, M-Pesa e e-Mola) são da empresa, mas o administrador pode dar a uma loja a sua **configuração própria**: nas respetivas páginas de definições, escolha **Loja** no topo e grave. Uma loja nova usa a configuração da empresa até ter a sua.
 
 ## Desativar uma loja
 

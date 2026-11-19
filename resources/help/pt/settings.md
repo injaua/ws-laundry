@@ -23,16 +23,21 @@ As definições do negócio, as notificações automáticas e os modelos de mens
 ## WhatsApp
 
 <!-- roles:admin -->
-- Escolha o canal das **conversas**: teste, **API oficial** ou **código QR** (número normal). O número é **um só para a empresa**: cada mensagem recebida vai para a loja que falou por último com esse número.
-- Com **código QR**, o serviço arranca sozinho; leia o código no telemóvel em **WhatsApp → Dispositivos associados**.
+- No topo, escolha o que está a configurar: **Empresa** (vale para todas as lojas sem configuração própria) ou **Loja** (a loja em uso). Ao gravar na loja, ela passa a ter **configuração própria**, a partir de uma cópia da configuração da empresa. O botão **Voltar a usar a configuração da empresa** apaga a configuração própria.
+- Escolha o canal das **conversas**: teste, **API oficial** ou **código QR** (número normal). O número da empresa serve as lojas sem configuração própria: cada mensagem recebida vai para a loja que falou por último com esse cliente. Uma loja com configuração própria tem **o seu número**, e as mensagens para ele vão sempre para essa loja.
+- **API oficial**: indique o *Phone number ID*, o *access token*, o *app secret* e o *verify token* do número. Na empresa, os campos em branco usam os valores do `.env`. Todas as apps da Meta usam o mesmo URL de webhook.
+- Com **código QR**, o serviço arranca sozinho; leia o código no telemóvel em **WhatsApp → Dispositivos associados**. Cada loja com configuração própria lê o seu código, com o seu telemóvel.
 <!-- /roles -->
 - **Notificações automáticas** (só pela API oficial): ative cada evento — encomenda recebida, pronta, pagamento recebido, lembrete de pagamento, fatura vencida, peças por levantar, recolha agendada, estafeta a caminho, encomenda atrasada — e ligue-o a um **modelo**.
 - **Modelos**: use as variáveis `{customer}`, `{order}`, `{amount}`, `{due_date}`, `{delivery_date}`, `{days}`.
 
 <!-- roles:admin -->
-## Pagamentos móveis
+## Pagamentos e carteiras móveis
 
-**Pagamentos móveis**: credenciais de M-Pesa e e-Mola e modo — desligado, **simulação** (formação, sem dinheiro), sandbox (testes do operador) ou produção.
+Como no WhatsApp, escolha no topo **Empresa** ou **Loja**: uma loja pode ter a sua configuração de pagamentos.
+
+- **Métodos de pagamento aceites**: só os métodos marcados aparecem nos pagamentos, na entrega e no faturamento. Os pagamentos já registados mantêm o seu método.
+- **Pagamentos móveis**: credenciais de M-Pesa e e-Mola e modo — desligado, **simulação** (formação, sem dinheiro), sandbox (testes do operador) ou produção. Os pedidos de pagamento só funcionam se o método (M-Pesa ou e-Mola) também estiver aceite.
 <!-- /roles -->
 
 <!-- roles:admin -->

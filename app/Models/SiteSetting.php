@@ -9,9 +9,13 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Key / value settings. A row without store is the company-wide value; a row with a store
- * overrides it for that store. Company-level keys (security, localization, WhatsApp channel,
- * mobile-money credentials, public website) are always global; every other key is set per
- * store and falls back to the global value until the store sets its own.
+ * overrides it for that store. Company-level keys (security, localization, public website,
+ * WhatsApp channel, payment methods and mobile-money credentials) are read and written at
+ * company level by get() / set(); every other key is set per store and falls back to the
+ * global value until the store sets its own.
+ *
+ * WhatsApp and payments can still be configured per store, as a whole group: see
+ * App\Support\StoreSettings, which reads and writes them with valuesAt() / setAt().
  */
 class SiteSetting extends Model
 {
@@ -25,14 +29,16 @@ class SiteSetting extends Model
         // Localization (Admin → System settings → Localization)
         "locale_default", "currency_code", "currency_symbol", "currency_position", "currency_decimals",
         "number_format", "timezone", "date_format", "time_format", "text_direction", "phone_country_code",
-        // WhatsApp channel (one company number / connection)
+        // WhatsApp channel (company default; a store may have its own: StoreSettings "whatsapp")
         "whatsapp_driver", "whatsapp_notifications_driver",
+        // Accepted payment methods (company default; a store may have its own: StoreSettings "payments")
+        "payment_methods",
         // Public website
         "hero_title", "hero_subtitle", "hero_cta_text", "hero_cta_url", "about_title", "about_content",
         "about_image", "footer_text", "facebook_url", "instagram_url", "map_embed_url", "whatsapp_number", "address",
     ];
 
-    public const GLOBAL_PREFIXES = ["security_", "mm_"];
+    public const GLOBAL_PREFIXES = ["security_", "mm_", "whatsapp_cloud_"];
 
     public static function isGlobal(string $key): bool
     {
@@ -93,6 +99,33 @@ class SiteSetting extends Model
             ["store_id" => self::storeFor($key), "key" => $key],
             ["value" => $value]
         );
+        SystemSettings::flush();
+    }
+
+    /**
+     * Values stored at exactly one level (null = company), without any fallback.
+     *
+     * @return array<string, mixed>
+     */
+    public static function valuesAt(?int $storeId, array $keys): array
+    {
+        return static::whereIn("key", $keys)
+            ->when($storeId, fn ($q) => $q->where("store_id", $storeId), fn ($q) => $q->whereNull("store_id"))
+            ->pluck("value", "key")
+            ->all();
+    }
+
+    /** Writes a value at exactly one level (null = company), whatever the key. */
+    public static function setAt(?int $storeId, string $key, mixed $value): void
+    {
+        static::updateOrCreate(["store_id" => $storeId, "key" => $key], ["value" => $value]);
+        SystemSettings::flush();
+    }
+
+    /** Removes a store's own values of these keys (it falls back to the company values again). */
+    public static function forgetAt(int $storeId, array $keys): void
+    {
+        static::where("store_id", $storeId)->whereIn("key", $keys)->get()->each->delete();
         SystemSettings::flush();
     }
 

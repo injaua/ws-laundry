@@ -141,7 +141,7 @@
                             </div>
                             <div class="col-3">
                                 <select name="method" class="form-select form-select-sm">
-                                    @foreach(\App\Models\Payment::METHODS as $m)
+                                    @foreach(\App\Models\Payment::acceptedMethods($pm->method) as $m)
                                         <option value="{{ $m }}" {{ $pm->method == $m ? "selected" : "" }}>{{ __('app.' . $m) }}</option>
                                     @endforeach
                                 </select>

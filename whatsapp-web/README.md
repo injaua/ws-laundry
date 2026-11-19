@@ -48,6 +48,10 @@ Com `WHATSAPP_WEB_AUTOSTART=false`, para o serviço continuar a correr depois de
 - Linux: `pm2 start server.mjs --name whatsapp-web && pm2 save`, ou um serviço systemd.
 - Windows: [NSSM](https://nssm.cc/) ou `pm2` com `pm2-windows-startup`.
 
+### Vários números (lojas com WhatsApp próprio)
+
+Um só serviço liga vários números. O número da empresa fica em `whatsapp-web/auth/`. Cada loja com configuração própria de WhatsApp e canal **código QR** tem a sua sessão em `whatsapp-web/sessions/store-<id>/` e lê o seu próprio código QR, com a loja escolhida no topo da página de definições. As mensagens recebidas nesse número vão sempre para essa loja. Quando a loja deixa o código QR, a sua sessão é desligada mas não é apagada. Proteja a pasta `sessions/` como a pasta `auth/`.
+
 O telemóvel não precisa de ficar ligado à internet o tempo todo, mas o WhatsApp desliga dispositivos que não abre há cerca de 14 dias.
 
 ## Limitações

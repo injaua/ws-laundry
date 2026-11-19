@@ -12,6 +12,7 @@ use App\Support\Documents\DocumentResponse;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 
 class InvoiceController extends Controller
 {
@@ -151,7 +152,7 @@ class InvoiceController extends Controller
         $data = $request->validate([
             "paid_at" => "required|date",
             "amount" => "required|numeric|min:1",
-            "method" => "required|in:" . implode(",", Payment::METHODS),
+            "method" => ["required", Rule::in(Payment::acceptedMethods())],
             "note" => "nullable|string|max:255",
         ] + Payment::referenceRules());
         $data = Payment::validateReference($data);

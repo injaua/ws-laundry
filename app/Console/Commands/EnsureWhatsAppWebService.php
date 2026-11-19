@@ -2,10 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Services\WhatsApp\WhatsAppSettings;
 use App\Services\WhatsApp\WhatsAppWebService;
 use Illuminate\Console\Command;
 
-/** Keeps the WhatsApp QR service running while "QR code" is the conversations channel (every minute). */
+/** Keeps the WhatsApp QR service running while the company or a store chats by QR code (every minute). */
 class EnsureWhatsAppWebService extends Command
 {
     protected $signature = "whatsapp:web-service {--stop : Stop the service}";
@@ -21,7 +22,7 @@ class EnsureWhatsAppWebService extends Command
             return self::SUCCESS;
         }
 
-        if (config("whatsapp.driver") !== "web" || !$service->enabled()) {
+        if (!WhatsAppSettings::anyUsesWeb() || !$service->enabled()) {
             return self::SUCCESS; // another channel, or the service is run by pm2 / systemd / NSSM
         }
 

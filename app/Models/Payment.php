@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
 use App\Services\Payments\Cheques;
+use App\Services\Payments\PaymentMethods;
 use App\Support\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -57,16 +58,28 @@ class Payment extends Model
         return array_values(array_diff(self::METHODS, ["cheque"]));
     }
 
-    /** Methods a courier can collect on the road (cheques are taken at the counter). */
+    /** Methods a courier can collect on the road (cheques are taken at the counter), among those the store accepts. */
     public static function courierMethods(): array
     {
-        return array_values(array_diff(self::METHODS, ["cheque"]));
+        return array_values(array_diff(PaymentMethods::enabled(), ["cheque"]));
     }
 
-    /** Methods offered in a payment form: cheques only when the policy allows them. */
-    public static function formMethods(?Customer $customer = null): array
+    /** Methods a new payment may use (the store's accepted methods); an edited payment may keep its own. */
+    public static function acceptedMethods(?string $keep = null): array
     {
-        return array_values(array_filter(self::METHODS, fn ($m) => $m !== "cheque" || Cheques::acceptedFrom($customer)));
+        return array_values(array_filter(self::METHODS, fn ($m) => $m === $keep || PaymentMethods::accepts($m)));
+    }
+
+    /**
+     * Methods offered in a payment form: those the store accepts (Admin → Payments), cheques only
+     * when the policy allows them. When an existing payment is edited, its own method stays valid.
+     */
+    public static function formMethods(?Customer $customer = null, ?string $keep = null): array
+    {
+        $enabled = PaymentMethods::enabled();
+
+        return array_values(array_filter(self::METHODS, fn ($m) => $m === $keep
+            || (in_array($m, $enabled, true) && ($m !== "cheque" || Cheques::acceptedFrom($customer)))));
     }
 
     public function isCheque(): bool

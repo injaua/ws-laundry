@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\ChoosesSettingsLevel;
 use App\Http\Controllers\Controller;
 use App\Models\MessageTemplate;
 use App\Models\SiteSetting;
@@ -12,6 +13,8 @@ use App\Services\WhatsApp\WhatsAppChannels;
 use App\Services\WhatsApp\WhatsAppException;
 use App\Services\WhatsApp\WhatsAppSettings;
 use App\Services\WhatsApp\WhatsAppWebService;
+use App\Support\CurrentStore;
+use App\Support\StoreSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,31 +22,58 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
-/** WhatsApp channels (incl. the QR connection), automatic notifications and message templates. */
+/**
+ * WhatsApp channels (incl. the QR connection), automatic notifications and message templates.
+ *
+ * The channels are the company's, or the store's own (admin, ?level=company|store); the
+ * automatic notifications and the templates always belong to the store worked in.
+ */
 class NotificationSettingController extends Controller
 {
-    public function index(AutomaticNotifications $notifications, WhatsAppChannels $channels): View
+    use ChoosesSettingsLevel;
+
+    public function index(Request $request, AutomaticNotifications $notifications): View
     {
         $events = collect(AutomaticNotifications::EVENTS)->map(fn ($defaults, $event) => (object) [
             "key" => $event,
             "enabled" => $notifications->enabled($event),
-            "template_id" => (int) SiteSetting::get("notify_{$event}_template_id"),
+            "template_id" => $notifications->chosenTemplate($event)?->id,
             "days" => in_array($event, AutomaticNotifications::SCHEDULED, true) ? $notifications->days($event) : null,
             "sent_30d" => WhatsAppMessage::where("notification_key", "like", "{$event}:%")->where("created_at", ">=", now()->subDays(30))->where("status", "!=", "failed")->count(),
             "failed_30d" => WhatsAppMessage::where("notification_key", "like", "{$event}:%")->where("created_at", ">=", now()->subDays(30))->where("status", "failed")->count(),
         ]);
 
+        // The channels shown: those of the level being edited (company, or the store's own).
+        $level = $this->settingsLevel($request, "whatsapp");
+        $config = WhatsAppSettings::forLevel($level);
+        $notificationsDriver = ($config["notifications_driver"] ?? null) ?: $config["driver"];
+        $notificationChannel = in_array($notificationsDriver, WhatsAppChannels::NOTIFICATION_DRIVERS, true) ? $notificationsDriver : null;
+        $stored = StoreSettings::values("whatsapp", $level);
+
         return view("admin.notifications.index", [
             "events" => $events,
             "templates" => MessageTemplate::orderBy("name")->get(),
-            "conversationChannel" => $channels->conversations()->channel(),
+            "currentStore" => CurrentStore::store(),
+            "levelBar" => $this->levelBar("whatsapp", $level, "admin.notifications.index"),
+            "levelParam" => $level === null ? "company" : "store",
+            "conversationChannel" => $config["driver"],
             "drivers" => WhatsAppSettings::DRIVERS,
-            "notificationsSetting" => (string) (SiteSetting::get("whatsapp_notifications_driver") ?? (config("whatsapp.notifications_driver") ?? "")),
-            "notificationChannel" => $channels->notificationsDriver(),
-            "usesCloud" => in_array("cloud", [$channels->conversations()->channel(), $channels->notificationsDriver()], true),
-            "configured" => filled(config("whatsapp.cloud.phone_number_id")) && filled(config("whatsapp.cloud.access_token")),
+            "notificationsSetting" => (string) ($stored["whatsapp_notifications_driver"] ?? ($level === null ? (config("whatsapp.notifications_driver") ?? "") : "")),
+            "notificationChannel" => $notificationChannel,
+            "usesCloud" => in_array("cloud", [$config["driver"], $notificationChannel], true),
+            // The fields show what is stored at this level; at company level the .env values in use
+            // appear as placeholders, so saving the form never copies them into the database.
+            "cloud" => [
+                "phone_number_id" => $stored["whatsapp_cloud_phone_number_id"] ?? null,
+                "verify_token" => $stored["whatsapp_cloud_verify_token"] ?? null,
+                "phone_number_id_hint" => $level === null ? ($config["cloud"]["phone_number_id"] ?? null) : null,
+                "verify_token_hint" => $level === null ? ($config["cloud"]["verify_token"] ?? null) : null,
+                "has_access_token" => filled($config["cloud"]["access_token"] ?? null),
+                "has_app_secret" => filled($config["cloud"]["app_secret"] ?? null),
+            ],
+            "configured" => filled($config["cloud"]["phone_number_id"] ?? null) && filled($config["cloud"]["access_token"] ?? null),
             "webTokenOk" => strlen((string) config("whatsapp.web.token")) >= 16,
-            "webhookSigned" => filled(config("whatsapp.cloud.app_secret")),
+            "webhookSigned" => filled($config["cloud"]["app_secret"] ?? null),
             "webhookUrl" => route("webhooks.whatsapp"),
             "recentFailures" => WhatsAppMessage::with("customer:id,name")->where("direction", "out")->where("status", "failed")
                 ->latest("id")->limit(10)->get(),
@@ -52,44 +82,89 @@ class NotificationSettingController extends Controller
 
     /**
      * Channel of the conversations (log / official API / a number linked by QR code) and of the
-     * automatic notifications. Choosing the QR code also creates the secret shared with the service.
+     * automatic notifications, with the official API number, for the company or for the store
+     * worked in. Choosing the QR code also creates the secret shared with the service.
      */
     public function updateChannels(Request $request, WhatsAppWebService $service): RedirectResponse
     {
         $data = $request->validate([
+            "level" => ["nullable", Rule::in(["company", "store"])],
             "driver" => ["required", Rule::in(WhatsAppSettings::DRIVERS)],
             // The unofficial QR connection never sends automatic notifications (the number would be blocked).
             "notifications_driver" => ["nullable", Rule::in(WhatsAppSettings::NOTIFICATION_DRIVERS)],
+            "cloud" => ["nullable", "array"],
+            "cloud.phone_number_id" => ["nullable", "string", "max:40", "regex:/^\d+$/"],
+            "cloud.access_token" => ["nullable", "string", "max:1000"],
+            "cloud.app_secret" => ["nullable", "string", "max:255"],
+            "cloud.verify_token" => ["nullable", "string", "max:255"],
         ]);
 
-        WhatsAppSettings::save($data["driver"], (string) ($data["notifications_driver"] ?? ""));
+        $level = $this->settingsLevel($request, "whatsapp", forSaving: true);
+        // Whether this level's own number was linked by QR code (a store using the company's has none).
+        $wasWeb = ($level === null || StoreSettings::owns("whatsapp", $level)) && WhatsAppSettings::forLevel($level)["driver"] === "web";
 
-        // QR code chosen: start the service right away (first run installs it); otherwise stop it.
+        WhatsAppSettings::save($data["driver"], (string) ($data["notifications_driver"] ?? ""), $level, $request->has("cloud") ? (array) ($data["cloud"] ?? []) : null);
+
+        // QR code chosen: start the service right away (first run installs it); otherwise stop it
+        // when nobody chats by QR code any more, or just disconnect this number.
         $message = __("app.wa_channels_saved");
-        if ($service->enabled()) {
-            if ($data["driver"] === "web") {
+        if ($data["driver"] === "web") {
+            if ($service->enabled()) {
                 $message .= " " . __("app.wa_web_autostart_" . $service->start());
-            } else {
-                $service->stop();
             }
+        } elseif ($wasWeb) {
+            $this->leaveQr($level, $service);
         }
 
-        return redirect()->route("admin.notifications.index")->with("success", $message);
+        return redirect()->route("admin.notifications.index", $this->levelQuery($level, "whatsapp"))->with("success", $message);
+    }
+
+    /** The store worked in goes back to the company WhatsApp configuration (its own number is disconnected). */
+    public function releaseChannels(WhatsAppWebService $service): RedirectResponse
+    {
+        $storeId = CurrentStore::id();
+        abort_unless($storeId && StoreSettings::owns("whatsapp", $storeId), 404);
+
+        $wasWeb = WhatsAppSettings::forLevel($storeId)["driver"] === "web";
+        StoreSettings::release("whatsapp", $storeId);
+        if ($wasWeb) {
+            $this->leaveQr($storeId, $service);
+        }
+
+        return redirect()->route("admin.notifications.index", ["level" => "store"])->with("success", __("app.store_settings_released"));
+    }
+
+    /** A level stopped chatting by QR code: disconnect its number, or stop the service if nobody uses it. */
+    private function leaveQr(?int $level, WhatsAppWebService $service): void
+    {
+        if (!WhatsAppSettings::anyUsesWeb()) {
+            if ($service->enabled()) {
+                $service->stop();
+            }
+
+            return;
+        }
+
+        try {
+            (new WebSessionGateway(["session" => WhatsAppSettings::session($level)] + (array) config("whatsapp.web")))->close();
+        } catch (WhatsAppException) {
+            // the service is down: nothing to disconnect
+        }
     }
 
     /** "Start service" button, when the QR service is not running. */
-    public function webStart(WhatsAppWebService $service): RedirectResponse
+    public function webStart(Request $request, WhatsAppWebService $service): RedirectResponse
     {
-        abort_unless(config("whatsapp.driver") === "web", 404);
+        abort_unless($this->webGateway($request), 404);
         $result = $service->start();
 
         return back()->with($result === "failed" ? "error" : "success", __("app.wa_web_autostart_" . $result));
     }
 
     /** State of the QR connection, polled by the settings page while the QR is shown. */
-    public function webStatus(WhatsAppWebService $service): JsonResponse
+    public function webStatus(Request $request, WhatsAppWebService $service): JsonResponse
     {
-        $status = $this->webGateway()?->status() ?? ["status" => "disabled", "qr" => null, "me" => null];
+        $status = $this->webGateway($request)?->status() ?? ["status" => "disabled", "qr" => null, "me" => null];
 
         // Not answering yet: still installing / booting, or failed (the log says why).
         if ($status["status"] === "offline") {
@@ -104,10 +179,10 @@ class NotificationSettingController extends Controller
     }
 
     /** Unlink the phone from the QR connection (e.g. to link another number). */
-    public function webLogout(): RedirectResponse
+    public function webLogout(Request $request): RedirectResponse
     {
         try {
-            $this->webGateway()?->logout();
+            $this->webGateway($request)?->logout();
         } catch (WhatsAppException $e) {
             return back()->with("error", $e->getMessage());
         }
@@ -115,11 +190,13 @@ class NotificationSettingController extends Controller
         return back()->with("success", __("app.wa_web_logged_out"));
     }
 
-    private function webGateway(): ?WebSessionGateway
+    /** The QR connection of the level being edited (company or the store's own), when it chats by QR code. */
+    private function webGateway(Request $request): ?WebSessionGateway
     {
-        $gateway = app(WhatsAppChannels::class)->for("web");
+        $config = WhatsAppSettings::forLevel($this->settingsLevel($request, "whatsapp"));
+        $gateway = WhatsAppChannels::make("web", $config);
 
-        return config("whatsapp.driver") === "web" && $gateway instanceof WebSessionGateway ? $gateway : null;
+        return $config["driver"] === "web" && $gateway instanceof WebSessionGateway ? $gateway : null;
     }
 
     public function update(Request $request): RedirectResponse
