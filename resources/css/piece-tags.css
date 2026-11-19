@@ -1,0 +1,121 @@
+/* Piece tags (tracking/labels): .tags-a4 (sheet of 4 columns) or .tags-thermal (40 × 30 mm). */
+@page tags-a4 {
+    size: A4;
+    margin: 8mm;
+}
+@page tags-thermal {
+    size: 40mm 30mm;
+    margin: 0;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    color: #000;
+    background: #fff;
+}
+.toolbar {
+    padding: 10px;
+    text-align: center;
+    background: #f1f3f5;
+    font-size: 13px;
+}
+.toolbar a,
+.toolbar button {
+    margin: 0 4px;
+    padding: 6px 12px;
+    border: 1px solid #adb5bd;
+    border-radius: 4px;
+    background: #fff;
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 13px;
+}
+.tag {
+    text-align: center;
+    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+.tag .shop {
+    font-size: 7px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.tag .code {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+}
+.tag .barcode {
+    display: flex;
+    justify-content: center;
+}
+.tag .barcode svg {
+    max-width: 100%;
+    height: auto;
+}
+.tag .desc,
+.tag .cust {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.tag .seq {
+    font-weight: 700;
+}
+.empty {
+    padding: 20px;
+    text-align: center;
+}
+
+.tags-thermal .sheet {
+    page: tags-thermal;
+}
+.tags-thermal .tag {
+    width: 40mm;
+    height: 30mm;
+    padding: 1.2mm 1.5mm;
+    page-break-after: always;
+}
+.tags-thermal .tag:last-child {
+    page-break-after: auto;
+}
+.tags-thermal .tag .code {
+    font-size: 9px;
+}
+.tags-thermal .tag .desc,
+.tags-thermal .tag .cust {
+    font-size: 7.5px;
+}
+
+.tags-a4 .sheet {
+    page: tags-a4;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 3mm;
+    padding: 4mm;
+}
+.tags-a4 .tag {
+    border: 1px dashed #868e96;
+    border-radius: 2mm;
+    padding: 2mm;
+    height: 32mm;
+}
+.tags-a4 .tag .code {
+    font-size: 11px;
+}
+.tags-a4 .tag .desc,
+.tags-a4 .tag .cust {
+    font-size: 9px;
+}
+
+@media print {
+    .toolbar {
+        display: none;
+    }
+}

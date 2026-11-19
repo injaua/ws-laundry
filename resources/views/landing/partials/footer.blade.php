@@ -4,10 +4,10 @@
         <div class="footer-grid">
             <div>
                 <div class="footer-brand">
-                    <img src="{{ asset("images/logo.png") }}" alt="{{ config("app.name") }}">
-                    <span>WS Clean &amp; Laundry</span>
+                    <img src="{{ \App\Support\SystemSettings::logoUrl() }}" alt="{{ config("app.name") }}">
+                    <span>{{ \App\Support\SystemSettings::companyName() }}</span>
                 </div>
-                <p style="max-width:320px">{{ __('app.footer_tagline') }}</p>
+                <p class="mw-320px">{{ __('app.footer_tagline') }}</p>
                 <div class="footer-social">
                     @if($settings["facebook_url"] ?? null) <a href="{{ $settings["facebook_url"] }}" target="_blank" rel="noopener" aria-label="Facebook"><i class="bi bi-facebook"></i></a> @endif
                     @if($settings["instagram_url"] ?? null) <a href="{{ $settings["instagram_url"] }}" target="_blank" rel="noopener" aria-label="Instagram"><i class="bi bi-instagram"></i></a> @endif
@@ -39,7 +39,7 @@
             </div>
             <div>
                 <h6>{{ __('app.cta_title') }}</h6>
-                <p style="margin-bottom:1rem">{{ __('app.cta_desc') }}</p>
+                <p class="mb-3">{{ __('app.cta_desc') }}</p>
                 @if ($settings["whatsapp_number"] ?? null)
                     <a href="https://wa.me/{{ $settings["whatsapp_number"] }}" class="btn-pill btn-wa-sm" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i> {{ $settings["hero_cta_text"] ?? __('app.contact_us') }}</a>
                 @elseif ($settings["hero_cta_url"] ?? null)
@@ -48,8 +48,8 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <span>{{ $settings["footer_text"] ?? "© " . date("Y") . " WS Clean & Laundry Serviços, Lda." }}</span>
-            <span>WS Clean &amp; Laundry Serviços, Lda</span>
+            <span>{{ $settings["footer_text"] ?? "© " . date("Y") . " " . \App\Support\SystemSettings::legalName() . "." }}</span>
+            <span>{{ \App\Support\SystemSettings::legalName() }}</span>
         </div>
     </div>
 </footer>

@@ -17,7 +17,7 @@
     <div class="card-body p-3">
         <form action="{{ route("vacations.plan") }}" method="GET" class="row g-2 align-items-center">
             <div class="col-auto">
-                <select name="year" class="form-select" onchange="this.form.submit()">
+                <select name="year" class="form-select" data-auto-submit>
                     @for($y = now()->year + 1; $y >= now()->year - 3; $y--)
                         <option value="{{ $y }}" {{ $year == $y ? "selected" : "" }}>{{ $y }}</option>
                     @endfor
@@ -27,8 +27,8 @@
                 <button class="btn btn-outline-primary" type="submit">{{ __('app.search') }}</button>
             </div>
             <div class="col-md-auto ms-md-auto">
-                <small class="text-muted me-2"><span class="d-inline-block rounded-pill bg-success" style="width:.9rem;height:.9rem"></span> {{ __('app.approved') }}</small>
-                <small class="text-muted"><span class="d-inline-block rounded-pill bg-warning" style="width:.9rem;height:.9rem"></span> {{ __('app.pending') }}</small>
+                <small class="text-muted me-2"><span class="d-inline-block rounded-pill bg-success square-0_9rem"></span> {{ __('app.approved') }}</small>
+                <small class="text-muted"><span class="d-inline-block rounded-pill bg-warning square-0_9rem"></span> {{ __('app.pending') }}</small>
             </div>
         </form>
     </div>

@@ -6,7 +6,7 @@
 <div class="card">
     <div class="card-header d-flex flex-wrap gap-2 align-items-center justify-content-between">
         <span><i class="bi bi-clipboard-data me-1"></i> {{ __('app.attendance_summary') }}</span>
-        <span class="small text-muted">{{ \Carbon\Carbon::parse($summaryStart)->format("d/m/Y") }} — {{ \Carbon\Carbon::parse($summaryEnd)->format("d/m/Y") }}</span>
+        <span class="small text-muted">{{ \Carbon\Carbon::parse($summaryStart)->format(date_fmt()) }} — {{ \Carbon\Carbon::parse($summaryEnd)->format(date_fmt()) }}</span>
     </div>
     <div class="card-body p-0">
         <form action="{{ route("attendance.summary") }}" method="GET" class="p-3 border-bottom row g-2 align-items-end">

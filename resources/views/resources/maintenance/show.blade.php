@@ -3,10 +3,6 @@
 @section("page_title", __('app.maintenance') . ": " . $maintenance->title)
 
 @section("content")
-@php
-    $fmt = fn ($v) => number_format($v, 0, ".", ",");
-    $fmtQty = fn ($v) => rtrim(rtrim(number_format((float) $v, 2, ",", "."), "0"), ",");
-@endphp
 <div class="page-title">
     <span>
         <span class="badge badge-status bg-{{ $maintenance->status_color }}">{{ __('app.maintenance_status_' . $maintenance->status) }}</span>
@@ -14,7 +10,7 @@
     </span>
     <div>
         @if(!in_array($maintenance->status, ["cancelled"]))
-            <form action="{{ route("resources.maintenance.cancel", $maintenance) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.cancel_job_confirm') }}')">
+            <form action="{{ route("resources.maintenance.cancel", $maintenance) }}" method="POST" class="d-inline" data-confirm="{{ __('app.cancel_job_confirm') }}">
                 @csrf @method("PATCH")
                 <button class="btn btn-outline-danger"><i class="bi bi-x-circle"></i> {{ __('app.cancel_job') }}</button>
             </form>
@@ -29,12 +25,12 @@
             <div class="card-body">
                 <table class="table table-sm mb-0">
                     <tbody>
-                        <tr><td class="text-muted" style="width:40%">{{ __('app.equipment') }}</td><td><a href="{{ route("resources.equipments.show", $maintenance->equipment) }}" class="text-decoration-none">{{ $maintenance->equipment->name }}</a></td></tr>
-                        <tr><td class="text-muted">{{ __('app.service_date') }}</td><td>{{ $maintenance->service_date->format("d/m/Y") }}</td></tr>
-                        <tr><td class="text-muted">{{ __('app.next_service_date') }}</td><td>{{ $maintenance->next_service_date ? $maintenance->next_service_date->format("d/m/Y") : "—" }}</td></tr>
+                        <tr><td class="text-muted w-40pct">{{ __('app.equipment') }}</td><td><a href="{{ route("resources.equipments.show", $maintenance->equipment) }}" class="text-decoration-none">{{ $maintenance->equipment->name }}</a></td></tr>
+                        <tr><td class="text-muted">{{ __('app.service_date') }}</td><td>{{ $maintenance->service_date->format(date_fmt()) }}</td></tr>
+                        <tr><td class="text-muted">{{ __('app.next_service_date') }}</td><td>{{ $maintenance->next_service_date ? $maintenance->next_service_date->format(date_fmt()) : "—" }}</td></tr>
                         <tr><td class="text-muted">{{ __('app.technician') }}</td><td>{{ $maintenance->technician ?: "—" }}</td></tr>
                         <tr><td class="text-muted">{{ __('app.employee') }}</td><td>{{ $maintenance->employee->name ?? "—" }}</td></tr>
-                        <tr><td class="text-muted">{{ __('app.cost') }}</td><td class="fw-semibold">{{ $fmt($maintenance->cost) }} Mts</td></tr>
+                        <tr><td class="text-muted">{{ __('app.cost') }}</td><td class="fw-semibold">{{ money($maintenance->cost) }}</td></tr>
                         <tr>
                             <td class="text-muted">{{ __('app.expense') }}</td>
                             <td>
@@ -79,10 +75,10 @@
                                 <a href="{{ route("resources.items.show", $part->item) }}" class="text-decoration-none">{{ $part->item->name }}</a>
                                 <small class="text-muted">({{ __('app.unit_' . $part->item->unit) }})</small>
                             </td>
-                            <td class="text-end">{{ $fmtQty($part->quantity) }}</td>
+                            <td class="text-end">{{ qty($part->quantity) }}</td>
                             <td class="text-center">
                                 @if($maintenance->status !== "cancelled")
-                                <form action="{{ route("resources.maintenance.parts.remove", [$maintenance, $part]) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.delete_confirm') }}')">
+                                <form action="{{ route("resources.maintenance.parts.remove", [$maintenance, $part]) }}" method="POST" class="d-inline" data-confirm="{{ __('app.delete_confirm') }}">
                                     @csrf @method("DELETE")
                                     <button class="btn btn-sm btn-outline-danger" title="{{ __('app.remove_part') }}"><i class="bi bi-dash-lg"></i></button>
                                 </form>
@@ -105,7 +101,7 @@
                             <option value="">—</option>
                             @foreach($availableParts as $partOption)
                                 <option value="{{ $partOption->id }}" {{ old("inventory_item_id") == $partOption->id ? "selected" : "" }}>
-                                    {{ $partOption->name }} ({{ rtrim(rtrim(number_format((float) $partOption->stock_qty, 2, ",", "."), "0"), ",") }} {{ __('app.unit_' . $partOption->unit) }})
+                                    {{ $partOption->name }} ({{ qty((float) $partOption->stock_qty) }} {{ __('app.unit_' . $partOption->unit) }})
                                 </option>
                             @endforeach
                         </select>

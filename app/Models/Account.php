@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToStore;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Account extends Model
 {
+    use BelongsToStore;
+
     public const TYPES = ["asset", "liability", "equity", "revenue", "expense"];
 
     protected $fillable = ["code", "name", "type", "is_group", "is_active", "parent_id"];

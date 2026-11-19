@@ -1,0 +1,24 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table("orders", function (Blueprint $table) {
+            $table->boolean("is_credit")->default(false)->after("total_price");
+            $table->date("due_date")->nullable()->after("is_credit");
+            $table->string("credit_override_note", 255)->nullable()->after("due_date");
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table("orders", function (Blueprint $table) {
+            $table->dropColumn(["is_credit", "due_date", "credit_override_note"]);
+        });
+    }
+};

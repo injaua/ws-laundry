@@ -60,11 +60,11 @@
                         <div class="form-text">{{ __('app.vat_applicable_hint') }}</div>
                     </div>
 
-                    <div class="mb-3 {{ old("is_fixed", $category->is_fixed ?? false) ? "" : "d-none" }}" id="defaultAmountBox">
+                    <div class="mb-3 {{ old("is_fixed", $category->is_fixed ?? false) ? "" : "d-none" }}" id="defaultAmountBox" data-show-if="is_fixed">
                         <label class="form-label">{{ __('app.category_default_amount') }}</label>
                         <div class="input-group">
                             <input type="number" name="default_amount" class="form-control @error("default_amount") is-invalid @enderror" value="{{ old("default_amount", isset($category) ? (int) $category->default_amount : "") }}" min="0">
-                            <span class="input-group-text">Mts</span>
+                            <span class="input-group-text">{{ currency_symbol() }}</span>
                             @error("default_amount") <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
@@ -79,14 +79,3 @@
     </div>
 </div>
 
-@push("scripts")
-<script>
-    (function() {
-        var isFixed = document.getElementById("isFixed");
-        var box = document.getElementById("defaultAmountBox");
-        isFixed.addEventListener("change", function() {
-            box.classList.toggle("d-none", !isFixed.checked);
-        });
-    })();
-</script>
-@endpush

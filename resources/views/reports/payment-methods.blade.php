@@ -26,7 +26,7 @@
         <div class="card border-start border-4 border-success">
             <div class="card-body">
                 <div class="text-muted small">{{ __('app.total_received') }}</div>
-                <div class="fs-4 fw-bold text-success">{{ number_format($totalReceived, 0, ".", ",") }} Mts</div>
+                <div class="fs-4 fw-bold text-success">{{ money($totalReceived) }}</div>
             </div>
         </div>
     </div>
@@ -68,7 +68,7 @@
                             <tr>
                                 <td class="fw-medium">{{ __('app.' . $row["method"]) }}</td>
                                 <td>{{ $row["count"] }}</td>
-                                <td class="text-end fw-semibold">{{ number_format($row["amount"], 0, ".", ",") }} Mts</td>
+                                <td class="text-end fw-semibold">{{ money($row["amount"]) }}</td>
                                 <td class="text-end">{{ $row["share"] }}%</td>
                             </tr>
                             @empty
@@ -85,7 +85,7 @@
                             <tr class="table-light fw-bold">
                                 <td>{{ __('app.total') }}</td>
                                 <td>{{ $totalCount }}</td>
-                                <td class="text-end">{{ number_format($totalReceived, 0, ".", ",") }} Mts</td>
+                                <td class="text-end">{{ money($totalReceived) }}</td>
                                 <td class="text-end">100%</td>
                             </tr>
                         </tfoot>
@@ -111,20 +111,8 @@
 
 @if(count($rows) > 0)
 @push("scripts")
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script>
-new Chart(document.getElementById("methodPieChart"), {
-    type: "doughnut",
-    data: {
-        labels: @json($pieLabels),
-        datasets: [{ data: @json($pieValues), backgroundColor: ["#20c997", "#6f42c1", "#0d6efd", "#fd7e14", "#198754"] }]
-    },
-    options: {
-        responsive: true,
-        plugins: { legend: { position: "bottom" } }
-    }
-});
-</script>
+    <x-page-data name="payment-methods-report" :data="['labels' => $pieLabels, 'values' => $pieValues]"/>
+    @vite("resources/js/pages/payment-methods-report.js")
 @endpush
 @endif
 @endsection

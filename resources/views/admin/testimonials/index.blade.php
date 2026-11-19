@@ -29,7 +29,7 @@
                         <tr>
                             <td>{{ $loop->iteration }}</td>
                             <td class="fw-medium">{{ $t->customer_name }}</td>
-                            <td class="small text-muted" style="max-width:300px">
+                            <td class="small text-muted mw-300px">
                                 {{ Str::limit($t->content, 80) }}
                             </td>
                             <td>
@@ -50,7 +50,7 @@
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 <form action="{{ route("admin.testimonials.destroy", $t) }}" method="POST" class="d-inline"
-                                    onsubmit="return confirm('{{ __('app.confirm_delete') }}')">
+                                    data-confirm="{{ __('app.confirm_delete') }}">
                                     @csrf @method("DELETE")
                                     <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}"><i class="bi bi-trash"></i></button>
                                 </form>

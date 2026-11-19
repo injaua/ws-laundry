@@ -148,7 +148,7 @@ class AttendanceController extends Controller
         $saved = 0;
 
         foreach ($validated["attendance"] ?? [] as $employeeId => $status) {
-            if (! $workingIds->contains($employeeId)) {
+            if (!$workingIds->contains($employeeId)) {
                 continue;
             }
 
@@ -193,14 +193,14 @@ class AttendanceController extends Controller
             "summary_end" => "nullable|date",
         ]);
 
-        if (! empty($validated["summary_month"])
+        if (!empty($validated["summary_month"])
             && preg_match("/^(\d{4})-(0[1-9]|1[0-2])$/", $validated["summary_month"], $m)) {
             $month = Carbon::create((int) $m[1], (int) $m[2], 1);
 
             return [$month->startOfMonth()->toDateString(), $month->endOfMonth()->toDateString()];
         }
 
-        if (! empty($validated["summary_start"]) && ! empty($validated["summary_end"])) {
+        if (!empty($validated["summary_start"]) && !empty($validated["summary_end"])) {
             $start = Carbon::parse($validated["summary_start"])->toDateString();
             $end = Carbon::parse($validated["summary_end"])->toDateString();
 

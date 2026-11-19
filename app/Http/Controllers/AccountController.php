@@ -10,7 +10,7 @@ class AccountController extends Controller
 {
     public function index()
     {
-        $accounts = Account::orderBy("code")->get();
+        $accounts = Account::withExists(["lines", "children"])->orderBy("code")->get();
 
         return view("accounting.accounts.index", compact("accounts"));
     }

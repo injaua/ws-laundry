@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CustomerRequest;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\Package;
+use App\Models\Service;
+use App\Services\Security\CustomerPrivacy;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class CustomerController extends Controller
 {
@@ -15,7 +18,9 @@ class CustomerController extends Controller
 
         if ($search = $request->search) {
             $query->where("name", "like", "%{$search}%")
-                  ->orWhere("phone", "like", "%{$search}%");
+                ->orWhere("phone", "like", "%{$search}%")
+                ->orWhere("legal_name", "like", "%{$search}%")
+                ->orWhere("nuit", "like", "%{$search}%");
         }
 
         $customers = $query->withCount("orders")
@@ -34,7 +39,30 @@ class CustomerController extends Controller
             ->latest()
             ->paginate(15);
 
-        return view("customers.show", compact("customer", "orders"));
+        $receivables = null;
+        if ($customer->is_credit_customer) {
+            $overdue = $customer->orders()->overdueCredit()->get();
+            $receivables = [
+                "outstanding" => $customer->creditOutstandingBalance(),
+                "overdue_count" => $overdue->count(),
+                "overdue_amount" => (float) $overdue->sum(fn ($order) => $order->remainingBalance()),
+            ];
+        }
+
+        $messageLogs = $customer->messageLogs()->with("sender:id,name")->latest()->limit(10)->get();
+
+        $customer->load(["prices.service", "prices.package"]);
+        $invoices = $customer->is_credit_customer
+            ? $customer->invoices()->with(["orders.payments", "orders.creditNotes"])->latest("id")->limit(5)->get()
+            : collect();
+        $services = Service::orderBy("name")->get();
+        $packages = Package::orderBy("name")->get();
+
+        $privacyBlockers = auth()->user()->isAdmin() || auth()->user()->isOwner()
+            ? app(CustomerPrivacy::class)->blockers($customer)
+            : [];
+
+        return view("customers.show", compact("customer", "orders", "receivables", "messageLogs", "invoices", "services", "packages", "privacyBlockers"));
     }
 
     public function create()
@@ -42,15 +70,9 @@ class CustomerController extends Controller
         return view("customers.create");
     }
 
-    public function store(Request $request)
+    public function store(CustomerRequest $request)
     {
-        $validated = $request->validate([
-            "name" => "required|string|max:100",
-            "phone" => "required|string|max:20|unique:customers",
-            "address" => "nullable|string",
-        ]);
-
-        Customer::create($validated);
+        Customer::create($request->customerData());
 
         return redirect()->route("customers.index")
             ->with("success", __('app.customer_added'));
@@ -61,15 +83,19 @@ class CustomerController extends Controller
         return view("customers.edit", compact("customer"));
     }
 
-    public function update(Request $request, Customer $customer)
+    public function update(CustomerRequest $request, Customer $customer)
     {
-        $validated = $request->validate([
-            "name" => "required|string|max:100",
-            "phone" => ["required", "string", "max:20", Rule::unique("customers")->ignore($customer->id)],
-            "address" => "nullable|string",
-        ]);
+        $wasMonthly = $customer->billsMonthly();
+        $customer->update($request->customerData());
 
-        $customer->update($validated);
+        // Leaving monthly billing: unbilled orders get their own due date again,
+        // otherwise they would never become overdue.
+        if ($wasMonthly && !$customer->billsMonthly()) {
+            $customer->orders()->outstandingCredit()->whereNull("invoice_id")->whereNull("due_date")->get()
+                ->each(fn (Order $order) => $order->update([
+                    "due_date" => ($order->completed_at ?? $order->received_at)->copy()->addDays($customer->credit_terms_days ?: 30)->toDateString(),
+                ]));
+        }
 
         return redirect()->route("customers.index")
             ->with("success", __('app.customer_updated'));
@@ -83,6 +109,7 @@ class CustomerController extends Controller
         }
 
         $customer->delete();
+
         return redirect()->route("customers.index")
             ->with("success", __('app.customer_deleted'));
     }

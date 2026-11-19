@@ -5,9 +5,11 @@
 @section("content")
 <div class="page-title">
     <span>{{ __('app.total_customers_label', ['count' => $customers->total()]) }}</span>
+    @unless(auth()->user()->isAccountant())
     <a href="{{ route("customers.create") }}" class="btn btn-primary">
         <i class="bi bi-plus-lg"></i> {{ __('app.add_customer') }}
     </a>
+    @endunless
 </div>
 
 <div class="card">
@@ -44,17 +46,17 @@
                     @forelse($customers as $customer)
                     <tr>
                         <td>{{ $loop->iteration + ($customers->currentPage() - 1) * $customers->perPage() }}</td>
-                        <td class="fw-medium"><a href="{{ route("customers.show", $customer) }}" class="text-decoration-none">{{ $customer->name }}</a></td>
+                        <td class="fw-medium"><a href="{{ route("customers.show", $customer) }}" class="text-decoration-none">{{ $customer->name }}</a>@if($customer->isBusiness()) <span class="badge bg-dark" title="{{ $customer->legal_name }}"><i class="bi bi-building"></i> {{ __('app.customer_type_business') }}</span>@endif</td>
                         <td>{{ $customer->phone }}</td>
                         <td class="text-muted small">{{ Str::limit($customer->address, 40) ?? "-" }}</td>
                         <td><span class="badge bg-secondary">{{ $customer->orders_count ?? 0 }}</span></td>
-                        <td class="small text-muted">{{ $customer->created_at->format("d/m/Y") }}</td>
+                        <td class="small text-muted">{{ $customer->created_at->format(date_fmt()) }}</td>
                         <td class="text-center">
-                            @if(!auth()->user()->isCashier())
+                            @if(auth()->user()->isManager())
                             <a href="{{ route("customers.edit", $customer) }}" class="btn btn-sm btn-outline-primary" title="{{ __('app.edit') }}">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <form action="{{ route("customers.destroy", $customer) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.confirm_delete') }}')">
+                            <form action="{{ route("customers.destroy", $customer) }}" method="POST" class="d-inline" data-confirm="{{ __('app.confirm_delete') }}">
                                 @csrf @method("DELETE")
                                 <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}">
                                     <i class="bi bi-trash"></i>
@@ -67,7 +69,7 @@
                     <tr>
                         <td colspan="7" class="text-center py-4 text-muted">
                             <i class="bi bi-people fs-1 d-block mb-2"></i>
-                            {{ __('app.no_customers') }} <a href="{{ route("customers.create") }}">{{ __('app.no_customers_yet') }}</a>.
+                            {{ __('app.no_customers') }}@unless(auth()->user()->isAccountant()) <a href="{{ route("customers.create") }}">{{ __('app.no_customers_yet') }}</a>@endunless.
                         </td>
                     </tr>
                     @endforelse

@@ -2,13 +2,17 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToStore;
+use App\Models\Traits\Loggable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Expense extends Model
 {
+    use BelongsToStore;
     use HasFactory;
+    use Loggable;
 
     protected $fillable = ["title", "description", "category", "period_type", "amount", "expense_date", "user_id", "source_type", "source_id"];
 
@@ -44,7 +48,7 @@ class Expense extends Model
         $amount = (float) $this->amount;
         $cashId = Account::findByCode("1.1")?->id;
 
-        $rate = $category->is_vat_applicable ? (float) SiteSetting::get("iva_rate", 16) : 0.0;
+        $rate = $category->is_vat_applicable ? (float) SiteSetting::get("vat_rate", 16) : 0.0;
         $vatAccount = $rate > 0 ? Account::findByCode("4.4.3.1")?->id : null;
 
         if ($vatAccount && $cashId) {

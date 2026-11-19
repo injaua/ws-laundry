@@ -39,9 +39,9 @@
                             <a href="{{ route("accounting.accounts.edit", $account) }}" class="btn btn-sm btn-outline-primary" title="{{ __('app.edit') }}">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <form action="{{ route("accounting.accounts.destroy", $account) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.delete_account_confirm') }}')">
+                            <form action="{{ route("accounting.accounts.destroy", $account) }}" method="POST" class="d-inline" data-confirm="{{ __('app.delete_account_confirm') }}">
                                 @csrf @method("DELETE")
-                                <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}" {{ $account->lines()->exists() || $account->children()->exists() ? "disabled" : "" }}>
+                                <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}" {{ $account->lines_exists || $account->children_exists ? "disabled" : "" }}>
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>

@@ -1,0 +1,38 @@
+/* Activity log */
+.log-entry {
+    transition: background-color 0.15s;
+}
+.log-entry:hover {
+    background-color: #f8f9fa;
+}
+[data-bs-theme='dark'] .log-entry:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+.log-action {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.log-time {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+[data-bs-theme='dark'] .log-time {
+    color: var(--text-muted);
+}
+.log-desc {
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+.filter-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+[data-bs-theme='dark'] .filter-card {
+    background: var(--card-bg);
+    border-color: var(--card-border);
+}

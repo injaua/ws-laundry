@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToStore;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MaintenanceJobItem extends Model
 {
+    use BelongsToStore;
     use HasFactory;
 
     protected $fillable = ["maintenance_job_id", "inventory_item_id", "quantity", "inventory_movement_id"];

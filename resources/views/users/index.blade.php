@@ -21,13 +21,25 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <select name="role" class="form-select" onchange="this.form.submit()">
+                    <select name="role" class="form-select" data-auto-submit>
                         <option value="">{{ __('app.filter') }} - {{ __('app.role') }}</option>
                         <option value="admin" @selected(request("role") == "admin")>{{ __('app.role_admin') }}</option>
                         <option value="owner" @selected(request("role") == "owner")>{{ __('app.role_owner') }}</option>
+                        <option value="accountant" @selected(request("role") == "accountant")>{{ __('app.role_accountant') }}</option>
                         <option value="cashier" @selected(request("role") == "cashier")>{{ __('app.role_cashier') }}</option>
+                        <option value="courier" @selected(request("role") == "courier")>{{ __('app.role_courier') }}</option>
                     </select>
                 </div>
+                @if($stores->isNotEmpty())
+                <div class="col-md-3">
+                    <select name="store" class="form-select" data-auto-submit>
+                        <option value="">{{ __('app.filter') }} - {{ __('app.store') }}</option>
+                        @foreach($stores as $store)
+                            <option value="{{ $store->id }}" @selected(request("store") == $store->id)>{{ $store->label() }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
                 <div class="col-auto">
                     <button class="btn btn-outline-primary" type="submit">{{ __('app.search') }}</button>
                     <a href="{{ route("users.index") }}" class="btn btn-outline-secondary">{{ __('app.reset') }}</a>
@@ -43,6 +55,7 @@
                         <th>{{ __('app.name') }}</th>
                         <th>{{ __('app.email') }}</th>
                         <th>{{ __('app.role') }}</th>
+                        <th>{{ __('app.store') }}</th>
                         <th>{{ __('app.is_active') }}</th>
                         <th>{{ __('app.created_at') }}</th>
                         <th class="text-center">{{ __('app.actions') }}</th>
@@ -59,10 +72,15 @@
                                 <span class="badge bg-danger"><i class="bi bi-shield-lock"></i> {{ __('app.role_admin') }}</span>
                             @elseif($user->role == "owner")
                                 <span class="badge bg-primary"><i class="bi bi-person-badge"></i> {{ __('app.role_owner') }}</span>
+                            @elseif($user->role == "accountant")
+                                <span class="badge bg-success"><i class="bi bi-calculator"></i> {{ __('app.role_accountant') }}</span>
+                            @elseif($user->role == "courier")
+                                <span class="badge bg-warning text-dark"><i class="bi bi-bicycle"></i> {{ __('app.role_courier') }}</span>
                             @else
                                 <span class="badge bg-info"><i class="bi bi-shop"></i> {{ __('app.role_cashier') }}</span>
                             @endif
                         </td>
+                        <td>{{ $user->store?->name ?? __('app.store_all') }}</td>
                         <td>
                             @if($user->is_active)
                                 <span class="badge bg-success">{{ __('app.active') }}</span>
@@ -70,7 +88,7 @@
                                 <span class="badge bg-secondary">{{ __('app.inactive') }}</span>
                             @endif
                         </td>
-                        <td>{{ $user->created_at->format("d/m/Y") }}</td>
+                        <td>{{ $user->created_at->format(date_fmt()) }}</td>
                         <td class="text-center">
                           @if($user->manageableBy(auth()->user()))
                             <a href="{{ route("users.edit", $user) }}" class="btn btn-sm btn-outline-primary" title="{{ __('app.edit') }}">
@@ -92,7 +110,7 @@
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
-                                        <form action="{{ route("users.destroy", $user) }}" method="POST" onsubmit="return confirm('{{ __('app.delete_user_confirm') }}')">
+                                        <form action="{{ route("users.destroy", $user) }}" method="POST" data-confirm="{{ __('app.delete_user_confirm') }}">
                                             @csrf @method("DELETE")
                                             <button class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>{{ __('app.delete') }}</button>
                                         </form>
@@ -105,7 +123,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="text-center py-4 text-muted">
+                        <td colspan="8" class="text-center py-4 text-muted">
                             <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                             {{ __('app.no_users') }}
                         </td>

@@ -10,10 +10,6 @@
 @section("page_title", $kindLabels[$kind])
 
 @section("content")
-@php
-    $fmt = fn ($v) => number_format($v, 0, ".", ",");
-    $fmtQty = fn ($v) => rtrim(rtrim(number_format((float) $v, 2, ",", "."), "0"), ",");
-@endphp
 <div class="page-title">
     <span>{{ __('app.total_count', ['count' => $items->total()]) }}</span>
     <a href="{{ route("resources.items.create", ["kind" => $kind]) }}" class="btn btn-primary">
@@ -69,13 +65,13 @@
                         </td>
                         <td class="small">{{ $item->type ? __('app.item_type_' . $item->type) : "—" }}</td>
                         <td class="text-end">
-                            <span class="{{ $item->isLowStock() ? "text-danger fw-bold" : "" }}">{{ $fmtQty($item->stock_qty) }} {{ __('app.unit_' . $item->unit) }}</span>
+                            <span class="{{ $item->isLowStock() ? "text-danger fw-bold" : "" }}">{{ qty($item->stock_qty) }} {{ __('app.unit_' . $item->unit) }}</span>
                             @if($item->isLowStock())
                                 <i class="bi bi-exclamation-triangle text-danger" title="{{ __('app.low_stock') }}"></i>
                             @endif
                         </td>
-                        <td class="text-end small">{{ $item->min_stock_qty > 0 ? $fmtQty($item->min_stock_qty) : "—" }}</td>
-                        <td class="text-end small">{{ $item->unit_cost > 0 ? $fmt($item->unit_cost) : "—" }}</td>
+                        <td class="text-end small">{{ $item->min_stock_qty > 0 ? qty($item->min_stock_qty) : "—" }}</td>
+                        <td class="text-end small">{{ $item->unit_cost > 0 ? num($item->unit_cost) : "—" }}</td>
                         <td class="small">{{ $item->supplier ?: "—" }}</td>
                         <td class="text-center">
                             <span class="badge bg-{{ $item->is_active ? "success" : "secondary" }}">{{ $item->is_active ? __('app.active') : __('app.inactive') }}</span>
@@ -83,7 +79,7 @@
                         <td class="text-center">
                             <a href="{{ route("resources.items.show", $item) }}" class="btn btn-sm btn-outline-secondary" title="{{ __('app.view') }}"><i class="bi bi-list-ol"></i></a>
                             <a href="{{ route("resources.items.edit", $item) }}" class="btn btn-sm btn-outline-primary" title="{{ __('app.edit') }}"><i class="bi bi-pencil"></i></a>
-                            <form action="{{ route("resources.items.destroy", $item) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.delete_confirm') }}')">
+                            <form action="{{ route("resources.items.destroy", $item) }}" method="POST" class="d-inline" data-confirm="{{ __('app.delete_confirm') }}">
                                 @csrf @method("DELETE")
                                 <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}"><i class="bi bi-trash"></i></button>
                             </form>

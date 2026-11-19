@@ -24,7 +24,7 @@
             <input type="hidden" name="date" value="{{ $endDate }}">
             <div class="col-md-auto">
                 <label class="form-label small text-muted mb-1">{{ __('app.employee') }}</label>
-                <select name="employee_id" class="form-select form-select-sm" style="min-width: 220px;">
+                <select name="employee_id" class="form-select form-select-sm minw-220px">
                     <option value="">{{ __('app.all_employees') }}</option>
                     @foreach($allEmployees as $e)
                         <option value="{{ $e->id }}" {{ (int) $employeeId === $e->id ? "selected" : "" }}>{{ $e->name }}</option>
@@ -45,7 +45,7 @@
 
         @if($selectedEmployee)
         <div class="px-3 py-2 border-bottom d-flex flex-wrap gap-2 align-items-center">
-            <strong>{{ __('app.attendance_of_employee_on', ["name" => $selectedEmployee->name, "date" => \Carbon\Carbon::parse($endDate)->format("d/m/Y")]) }}:</strong>
+            <strong>{{ __('app.attendance_of_employee_on', ["name" => $selectedEmployee->name, "date" => \Carbon\Carbon::parse($endDate)->format(date_fmt())]) }}:</strong>
             @if($selectedStatus)
                 <span class="badge bg-{{ $statusColors[$selectedStatus] }}">{{ __('app.' . ($selectedStatus === "vacation" ? "on_vacation" : $selectedStatus)) }}</span>
             @else
@@ -58,14 +58,14 @@
             <table class="table table-bordered table-sm mb-0 text-center align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th class="text-start" style="position: sticky; left: 0; background: var(--bs-table-bg); z-index: 1; min-width: 180px;">{{ __('app.employee') }}</th>
+                        <th class="text-start sticky-col minw-180px">{{ __('app.employee') }}</th>
                         @foreach($dates as $d)
                             @php $day = \Carbon\Carbon::parse($d); @endphp
-                            <th class="small {{ $day->isSunday() ? "bg-light" : "" }} {{ $d === $endDate ? "fw-bold border-start border-2 border-primary" : "" }}" style="min-width: 34px;">
+                            <th class="small {{ $day->isSunday() ? "bg-light" : "" }} {{ $d === $endDate ? "fw-bold border-start border-2 border-primary" : "" }} minw-34px">
                                 {{ $day->format("d/m") }}
                             </th>
                         @endforeach
-                        <th class="text-center" style="min-width: 80px;">{{ __('app.attendance_rate') }}</th>
+                        <th class="text-center minw-80px">{{ __('app.attendance_rate') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -81,12 +81,12 @@
                         $rateColor = $rate === null ? "secondary" : ($rate >= 90 ? "success" : ($rate >= 70 ? "warning" : "danger"));
                     @endphp
                     <tr>
-                        <td class="text-start fw-medium text-truncate" style="position: sticky; left: 0; background: var(--bs-table-bg); z-index: 1; max-width: 240px;">
+                        <td class="text-start fw-medium text-truncate sticky-col mw-240px">
                             <a href="{{ route("employees.show", $employee) }}" class="text-decoration-none">{{ $employee->name }}</a>
                         </td>
                         @foreach($dates as $d)
                             @php $st = $rowMap[$d] ?? null; @endphp
-                            <td class="{{ $d === $endDate ? "border-start border-2 border-primary" : "" }}" style="padding: 0.15rem;">
+                            <td class="{{ $d === $endDate ? "border-start border-2 border-primary" : "" }} p-tight">
                                 @if($st)
                                     <span class="badge rounded-pill bg-{{ $statusColors[$st] }}" title="{{ __('app.' . ($st === "vacation" ? "on_vacation" : $st)) }}">{{ $statusLetters[$st] }}</span>
                                 @endif

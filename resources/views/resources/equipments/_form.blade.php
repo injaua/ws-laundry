@@ -41,7 +41,7 @@
         <label class="form-label">{{ __('app.purchase_price') }}</label>
         <div class="input-group">
             <input type="number" name="purchase_price" class="form-control" min="0" step="1" value="{{ old('purchase_price', $equipment?->purchase_price) }}">
-            <span class="input-group-text">Mts</span>
+            <span class="input-group-text">{{ currency_symbol() }}</span>
         </div>
     </div>
     <div class="col-md-4">
@@ -58,6 +58,16 @@
         <input type="text" name="location" class="form-control" value="{{ old('location', $equipment?->location) }}">
     </div>
     <div class="col-md-3">
+        <label class="form-label">{{ __('app.capacity_kg') }}</label>
+        <input type="number" name="capacity_kg" min="0" step="0.5" class="form-control @error('capacity_kg') is-invalid @enderror" value="{{ old('capacity_kg', $equipment?->capacity_kg) }}">
+        <div class="form-text">{{ __('app.capacity_kg_hint') }}</div>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">{{ __('app.service_interval_cycles') }}</label>
+        <input type="number" name="service_interval_cycles" min="1" class="form-control @error('service_interval_cycles') is-invalid @enderror" value="{{ old('service_interval_cycles', $equipment?->service_interval_cycles) }}">
+        <div class="form-text">{{ __('app.service_interval_hint') }}</div>
+    </div>
+    <div class="col-md-3">
         <label class="form-label">{{ __('app.status') }} <span class="text-danger">*</span></label>
         <select name="status" class="form-select" required>
             @foreach(\App\Models\Equipment::STATUSES as $st)
@@ -70,7 +80,7 @@
         <label class="form-label">{{ __('app.photo') }}</label>
         @if($equipment?->photo)
             <div class="mb-2">
-                <img src="{{ asset('storage/' . $equipment->photo) }}" alt="{{ $equipment->name }}" class="rounded border" style="max-height:100px">
+                <img src="{{ asset('storage/' . $equipment->photo) }}" alt="{{ $equipment->name }}" class="rounded border mh-100px">
                 <div class="form-check mt-1">
                     <input class="form-check-input" type="checkbox" name="remove_photo" value="1" id="remove_photo">
                     <label class="form-check-label small" for="remove_photo">{{ __('app.remove_photo') }}</label>

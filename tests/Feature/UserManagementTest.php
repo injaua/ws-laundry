@@ -2,6 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Customer;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Payment;
+use App\Models\Service;
+use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -15,8 +21,8 @@ class UserManagementTest extends TestCase
         $response = $this->post("/register", [
             "name" => "First Admin",
             "email" => "first@example.com",
-            "password" => "password123",
-            "password_confirmation" => "password123",
+            "password" => "Password2026",
+            "password_confirmation" => "Password2026",
         ]);
 
         $user = User::where("email", "first@example.com")->first();
@@ -37,8 +43,8 @@ class UserManagementTest extends TestCase
         $this->post("/register", [
             "name" => "Second Admin",
             "email" => "second@example.com",
-            "password" => "password123",
-            "password_confirmation" => "password123",
+            "password" => "Password2026",
+            "password_confirmation" => "Password2026",
         ])->assertForbidden();
         $this->assertDatabaseMissing("users", ["email" => "second@example.com"]);
     }
@@ -50,16 +56,16 @@ class UserManagementTest extends TestCase
         $this->actingAs($admin)->post("/users", [
             "name" => "The Owner",
             "email" => "owner@test.local",
-            "password" => "password123",
-            "password_confirmation" => "password123",
+            "password" => "Password2026",
+            "password_confirmation" => "Password2026",
             "role" => "owner",
         ])->assertRedirect(route("users.index"));
 
         $this->actingAs($admin)->post("/users", [
             "name" => "The Store",
             "email" => "store@test.local",
-            "password" => "password123",
-            "password_confirmation" => "password123",
+            "password" => "Password2026",
+            "password_confirmation" => "Password2026",
             "role" => "cashier",
         ])->assertRedirect(route("users.index"));
 
@@ -69,7 +75,8 @@ class UserManagementTest extends TestCase
 
     public function test_cashier_cannot_access_users_and_owner_cannot_edit(): void
     {
-        $cashier = User::factory()->cashier()->create();
+        // A cashier of another store: the owner cannot manage it.
+        $cashier = User::factory()->cashier()->create(["store_id" => Store::create(["name" => "Outra loja", "code" => "LJ02"])->id]);
         $owner = User::factory()->owner()->create();
 
         $this->actingAs($cashier)->get("/users")->assertForbidden();
@@ -86,8 +93,8 @@ class UserManagementTest extends TestCase
         $this->actingAs($owner)->post("/users", [
             "name" => "New Cashier",
             "email" => "cashier2@test.local",
-            "password" => "password123",
-            "password_confirmation" => "password123",
+            "password" => "Password2026",
+            "password_confirmation" => "Password2026",
             "role" => "cashier",
         ])->assertRedirect(route("users.index"));
         $this->assertDatabaseHas("users", ["email" => "cashier2@test.local", "role" => "cashier"]);
@@ -96,23 +103,23 @@ class UserManagementTest extends TestCase
             $this->actingAs($owner)->post("/users", [
                 "name" => "Sneaky $role",
                 "email" => "$role-sneaky@test.local",
-                "password" => "password123",
-                "password_confirmation" => "password123",
+                "password" => "Password2026",
+                "password_confirmation" => "Password2026",
                 "role" => $role,
             ])->assertSessionHasErrors("role");
             $this->assertDatabaseMissing("users", ["email" => "$role-sneaky@test.local"]);
         }
     }
 
-    public function test_owner_can_edit_and_delete_only_own_cashiers(): void
+    public function test_owner_can_edit_and_delete_only_their_store_cashiers(): void
     {
         $owner = User::factory()->owner()->create();
 
         $this->actingAs($owner)->post("/users", [
             "name" => "My Cashier",
             "email" => "mine@test.local",
-            "password" => "password123",
-            "password_confirmation" => "password123",
+            "password" => "Password2026",
+            "password_confirmation" => "Password2026",
             "role" => "cashier",
         ])->assertRedirect(route("users.index"));
         $cashier = User::where("email", "mine@test.local")->first();
@@ -127,8 +134,8 @@ class UserManagementTest extends TestCase
         ])->assertRedirect(route("users.index"));
         $this->assertSame("Renamed Cashier", $cashier->fresh()->name);
 
-        // a cashier created by an admin is invisible to the owner
-        $foreign = User::factory()->cashier()->create(["email" => "foreign@test.local"]);
+        // a cashier of another store is out of the owner's reach
+        $foreign = User::factory()->cashier()->create(["email" => "foreign@test.local", "store_id" => Store::create(["name" => "Outra loja", "code" => "LJ02"])->id]);
         $this->actingAs($owner)->get("/users/{$foreign->id}/edit")->assertForbidden();
         $this->actingAs($owner)->patch("/users/{$foreign->id}", ["name" => "x", "email" => "foreign@test.local", "role" => "cashier"])->assertForbidden();
         $this->actingAs($owner)->delete("/users/{$foreign->id}")->assertForbidden();
@@ -224,7 +231,7 @@ class UserManagementTest extends TestCase
         $this->actingAs($owner)->get("/orders/trash")->assertOk();
     }
 
-    public function test_owner_accesses_expenses_settings_testimonials_galleries(): void
+    public function test_owner_accesses_expenses_but_not_the_company_website(): void
     {
         $owner = User::factory()->owner()->create();
 
@@ -238,9 +245,10 @@ class UserManagementTest extends TestCase
         ])->assertRedirect();
         $this->assertDatabaseHas("expenses", ["title" => "Detergente"]);
 
-        $this->actingAs($owner)->get("/admin/landing-settings")->assertOk();
-        $this->actingAs($owner)->get("/admin/testimonials")->assertOk();
-        $this->actingAs($owner)->get("/admin/galleries")->assertOk();
+        // The public website is the same for every store: admin only.
+        $this->actingAs($owner)->get("/admin/landing-settings")->assertForbidden();
+        $this->actingAs($owner)->get("/admin/testimonials")->assertForbidden();
+        $this->actingAs($owner)->get("/admin/galleries")->assertForbidden();
 
         // still admin-only
         $this->actingAs($owner)->get("/services")->assertForbidden();
@@ -266,7 +274,7 @@ class UserManagementTest extends TestCase
     {
         $cashier = User::factory()->cashier()->create();
         $order = $this->makeOrder();
-        $payment = \App\Models\Payment::create([
+        $payment = Payment::create([
             "order_id" => $order->id,
             "paid_at" => now(),
             "amount" => 1000,
@@ -307,7 +315,7 @@ class UserManagementTest extends TestCase
         $this->assertSame("washing", $order->fresh()->status);
 
         // attempting to move the order to another customer is rejected
-        $otherCustomer = \App\Models\Customer::create(["name" => "Other", "phone" => "+258840000002", "address" => "Somewhere"]);
+        $otherCustomer = Customer::create(["name" => "Other", "phone" => "+258840000002", "address" => "Somewhere"]);
         $this->actingAs($cashier)->put("/orders/{$order->id}", [
             "customer_id" => $otherCustomer->id,
             "status" => "ready",
@@ -322,6 +330,7 @@ class UserManagementTest extends TestCase
     public function test_cashier_can_create_payment(): void
     {
         $cashier = User::factory()->cashier()->create();
+        $this->openTill($cashier);
         $order = $this->makeOrder();
 
         $this->actingAs($cashier)->post("/payments", [
@@ -334,12 +343,12 @@ class UserManagementTest extends TestCase
         $this->assertDatabaseHas("payments", ["order_id" => $order->id, "amount" => 1000]);
     }
 
-    private function makeOrder(): \App\Models\Order
+    private function makeOrder(): Order
     {
-        $customer = \App\Models\Customer::create(["name" => "Test Customer", "phone" => "+258840000001", "address" => "Test Address"]);
-        $service = \App\Models\Service::create(["name" => "Wet Wash", "type" => "by_weight", "price" => 4000, "estimated_days" => 1]);
+        $customer = Customer::create(["name" => "Test Customer", "phone" => "+258840000001", "address" => "Test Address"]);
+        $service = Service::create(["name" => "Wet Wash", "type" => "by_weight", "price" => 4000, "estimated_days" => 1]);
 
-        $order = \App\Models\Order::create([
+        $order = Order::create([
             "order_number" => "ORDTEST0001",
             "customer_id" => $customer->id,
             "received_at" => now(),
@@ -347,7 +356,7 @@ class UserManagementTest extends TestCase
             "status" => "received",
         ]);
 
-        \App\Models\OrderItem::create([
+        OrderItem::create([
             "order_id" => $order->id,
             "service_id" => $service->id,
             "type" => "by_weight",

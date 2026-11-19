@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Languages;
+use App\Support\SystemSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 
@@ -9,8 +11,8 @@ class LanguageController extends Controller
 {
     public function switch(Request $request, string $locale)
     {
-        if (!in_array($locale, ['pt', 'en'])) {
-            $locale = 'pt';
+        if (!Languages::isActive($locale)) {
+            $locale = SystemSettings::defaultLocale();
         }
 
         session(['locale' => $locale]);

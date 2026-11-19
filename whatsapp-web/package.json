@@ -1,0 +1,17 @@
+{
+  "name": "ws-laundry-whatsapp-web",
+  "private": true,
+  "description": "Free WhatsApp connection by QR code (WhatsApp Web protocol via Baileys) for conversations in the platform.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "6.7.24",
+    "pino": "10.4.0",
+    "qrcode": "1.5.4"
+  }
+}

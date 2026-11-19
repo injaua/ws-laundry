@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Store;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -32,6 +33,8 @@ class UserFactory extends Factory
             'remember_token' => Str::random(10),
             'role' => 'admin',
             'is_active' => true,
+            // Admins work in every store; everyone else belongs to one (the first by default).
+            'store_id' => fn (array $attributes) => ($attributes['role'] ?? 'admin') === 'admin' ? null : Store::defaultId(),
         ];
     }
 
@@ -53,6 +56,16 @@ class UserFactory extends Factory
     public function cashier(): static
     {
         return $this->state(fn (array $attributes) => ['role' => 'cashier']);
+    }
+
+    public function accountant(): static
+    {
+        return $this->state(fn () => ["role" => "accountant"]);
+    }
+
+    public function courier(): static
+    {
+        return $this->state(fn (array $attributes) => ['role' => 'courier']);
     }
 
     public function inactive(): static

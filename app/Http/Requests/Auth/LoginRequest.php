@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
+use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -34,31 +36,38 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Attempt to authenticate the request's credentials.
+     * Checks the credentials WITHOUT logging in: the controller logs the user in, or
+     * first asks for the second factor when two-factor authentication is on.
      *
      * @throws ValidationException
      */
-    public function authenticate(): void
+    public function authenticate(): User
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $credentials = $this->only('email', 'password');
+
+        if (!Auth::guard('web')->validate($credentials)) {
             RateLimiter::hit($this->throttleKey());
+            event(new Failed('web', Auth::guard('web')->getLastAttempted(), $credentials));
 
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
             ]);
         }
 
-        if (! Auth::user()->is_active) {
-            Auth::logout();
+        /** @var User $user */
+        $user = Auth::guard('web')->getLastAttempted();
 
+        if (!$user->is_active) {
             throw ValidationException::withMessages([
                 'email' => trans('auth.account_deactivated'),
             ]);
         }
 
         RateLimiter::clear($this->throttleKey());
+
+        return $user;
     }
 
     /**
@@ -68,7 +77,7 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (!RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
             return;
         }
 

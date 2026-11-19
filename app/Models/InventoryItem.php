@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class InventoryItem extends Model
 {
+    use BelongsToStore;
     use HasFactory, Loggable;
 
     public const KINDS = ["product", "material", "part"];
@@ -40,6 +42,11 @@ class InventoryItem extends Model
     public function movements(): HasMany
     {
         return $this->hasMany(InventoryMovement::class);
+    }
+
+    public function lots(): HasMany
+    {
+        return $this->hasMany(InventoryLot::class);
     }
 
     public function jobItems(): HasMany

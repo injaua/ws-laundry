@@ -27,7 +27,10 @@
                         <textarea name="address" class="form-control @error("address") is-invalid @enderror" rows="3">{{ old("address") }}</textarea>
                         @error("address") <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
-                    <div class="d-flex gap-2">
+                    @include("customers._delivery")
+                    @include("customers._business")
+                    @include("customers._credit")
+                    <div class="d-flex gap-2 mt-3">
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-save"></i> {{ __('app.save') }}
                         </button>

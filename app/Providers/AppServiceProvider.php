@@ -2,8 +2,29 @@
 
 namespace App\Providers;
 
+use App\Models\ActivityLog;
+use App\Models\User;
+use App\Services\WhatsApp\LogGateway;
+use App\Services\WhatsApp\WhatsAppChannels;
+use App\Services\WhatsApp\WhatsAppGateway;
+use App\Services\WhatsApp\WhatsAppSettings;
+use App\Support\DatabaseTranslationLoader;
+use App\Support\StorePresenceVerifier;
+use App\Support\SystemSettings;
+use App\View\Composers\AdminNavigationComposer;
+use App\View\Composers\DeliveryFieldsComposer;
+use App\View\Composers\MobileChargeComposer;
+use App\View\Composers\PieceTrackingComposer;
+use App\View\Composers\StoreSwitcherComposer;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Lockout;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -12,7 +33,22 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // exists / unique rules on store-owned tables only look inside the current store. extend()
+        // (not singleton) so the binding survives the deferred ValidationServiceProvider.
+        $this->app->extend("validation.presence", fn ($verifier, $app) => new StorePresenceVerifier($app["db"]));
+
+        // The channel staff conversations go through (log, cloud or web).
+        $this->app->singleton(WhatsAppGateway::class, fn () => WhatsAppChannels::make(config("whatsapp.driver")) ?? new LogGateway);
+        $this->app->singleton(WhatsAppChannels::class);
+        // One count of the sidebar badges per request, however many times the layout renders.
+        $this->app->singleton(AdminNavigationComposer::class);
+
+        // Texts: lang/ files + translations made in Admin → System settings → Languages.
+        $this->app->extend("translation.loader", function ($loader, $app) {
+            $app->instance("translation.loader.files", $loader);
+
+            return new DatabaseTranslationLoader($loader);
+        });
     }
 
     /**
@@ -22,5 +58,52 @@ class AppServiceProvider extends ServiceProvider
     {
         // Laravel's default links() markup is Tailwind; this app only loads Bootstrap 5.
         Paginator::useBootstrapFive();
+
+        // Admin → System settings: company name, time zone (read fresh on every boot).
+        SystemSettings::flush();
+        SystemSettings::apply();
+        WhatsAppSettings::apply();
+        View::share("sys", new SystemSettings);
+
+        // Data that shared views / partials need, kept out of the Blade files.
+        View::composer("layouts.admin.sidebar", AdminNavigationComposer::class);
+        View::composer("layouts.admin.store-switcher", StoreSwitcherComposer::class);
+        View::composer("mobile-payments._charge", MobileChargeComposer::class);
+        View::composer("orders._pieces", PieceTrackingComposer::class);
+        View::composer("customers._delivery", DeliveryFieldsComposer::class);
+
+        // Password policy for every new or changed password: 10+ characters with upper
+        // and lower case letters and a number. Existing passwords keep working.
+        Password::defaults(fn () => Password::min(10)->letters()->mixedCase()->numbers());
+
+        $this->registerSecurityEvents();
+    }
+
+    /** Logins, failed attempts, logouts and lockouts go to the audit trail. */
+    private function registerSecurityEvents(): void
+    {
+        Event::listen(Login::class, function (Login $event) {
+            if (!$event->user instanceof User) {
+                return;
+            }
+            $event->user->forceFill(["last_login_at" => now(), "last_login_ip" => request()->ip()])->saveQuietly();
+            ActivityLog::security("login", $event->user, "Login: {$event->user->email}", $event->user);
+        });
+
+        Event::listen(Failed::class, function (Failed $event) {
+            $email = mb_substr((string) ($event->credentials["email"] ?? ""), 0, 120);
+            ActivityLog::security("login_failed", $event->user instanceof User ? $event->user : null, "Failed login: {$email}");
+        });
+
+        Event::listen(Logout::class, function (Logout $event) {
+            if ($event->user instanceof User) {
+                ActivityLog::security("logout", $event->user, "Logout: {$event->user->email}", $event->user);
+            }
+        });
+
+        Event::listen(Lockout::class, function (Lockout $event) {
+            $email = mb_substr((string) $event->request->input("email"), 0, 120);
+            ActivityLog::security("lockout", null, "Too many login attempts: {$email}");
+        });
     }
 }

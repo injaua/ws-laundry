@@ -11,7 +11,7 @@ class OrderItem extends Model
 
     protected $fillable = [
         'order_id', 'service_id', 'package_id', 'type', 'weight',
-        'amount', 'unit_price', 'subtotal'
+        'amount', 'unit_price', 'list_price', 'promotion_id', 'subtotal',
     ];
 
     public function order()
@@ -27,6 +27,27 @@ class OrderItem extends Model
     public function package()
     {
         return $this->belongsTo(Package::class);
+    }
+
+    public function promotion()
+    {
+        return $this->belongsTo(Promotion::class);
+    }
+
+    /** Billed quantity: kg for weight lines, units for piece and package lines. */
+    public function billedQuantity(): float
+    {
+        return $this->type === "by_weight" ? (float) $this->weight : (float) $this->amount;
+    }
+
+    /** Money taken off the catalog price on this line (promotion, negotiated price or discount). */
+    public function discountAmount(): float
+    {
+        if ($this->list_price === null) {
+            return 0.0;
+        }
+
+        return max(0.0, round(((float) $this->list_price - (float) $this->unit_price) * $this->billedQuantity()));
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToStore;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,7 +11,9 @@ use Illuminate\Support\Str;
 
 class JournalEntry extends Model
 {
-    public const SOURCES = ["manual", "payment", "expense"];
+    use BelongsToStore;
+
+    public const SOURCES = ["manual", "payment", "expense", "credit_sale", "cash_session"];
 
     protected $fillable = ["entry_number", "entry_date", "description", "source", "source_id", "posted_by"];
 

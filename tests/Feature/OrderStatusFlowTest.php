@@ -89,7 +89,17 @@ class OrderStatusFlowTest extends TestCase
     public function test_fully_paid_order_advances_to_delivering(): void
     {
         $user = User::factory()->create();
-        $order = $this->makeOrder("washing");
+        $washing = $this->makeOrder("washing");
+        $this->actingAs($user)->post("/payments", [
+            "order_id" => $washing->id,
+            "paid_at" => now()->format("Y-m-d"),
+            "amount" => $washing->total_price,
+            "method" => "cash",
+        ])->assertRedirect();
+        // Paid in advance: still has to be washed.
+        $this->assertSame("washing", $washing->fresh()->status);
+
+        $order = $this->makeOrder("ready");
 
         $this->actingAs($user)->post("/payments", [
             "order_id" => $order->id,
@@ -118,9 +128,8 @@ class OrderStatusFlowTest extends TestCase
 
     private function makeOrder(string $status): Order
     {
-        $customer = Customer::create([
+        $customer = Customer::firstOrCreate(["phone" => "+258840000001"], [
             "name" => "Flow Customer",
-            "phone" => "+258840000001",
             "address" => "Matola",
         ]);
         $service = Service::create([

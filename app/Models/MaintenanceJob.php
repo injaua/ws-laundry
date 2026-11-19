@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class MaintenanceJob extends Model
 {
+    use BelongsToStore;
     use HasFactory, Loggable;
 
     public const KINDS = ["preventive", "corrective"];
@@ -31,6 +33,16 @@ class MaintenanceJob extends Model
             "cost" => "decimal:0",
             "completed_at" => "datetime",
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // A finished preventive service restarts the machine's cycle counter.
+        static::saved(function (MaintenanceJob $job) {
+            if (($job->wasRecentlyCreated || $job->wasChanged("status")) && $job->status === "completed" && $job->kind === "preventive" && $job->equipment) {
+                $job->equipment->update(["cycles_at_last_service" => $job->equipment->cycles_count]);
+            }
+        });
     }
 
     public function equipment(): BelongsTo

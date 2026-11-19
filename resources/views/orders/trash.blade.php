@@ -34,10 +34,10 @@
                         <td class="fw-medium">{{ $order->order_number }}</td>
                         <td>{{ $order->customer->name ?? "-" }}</td>
                         <td><span class="badge bg-secondary">{{ $order->status_label }}</span></td>
-                        <td>{{ number_format($order->total_price, 0, ".", ",") }} Mts</td>
-                        <td class="small text-muted">{{ $order->deleted_at->format("d/m/Y H:i") }}</td>
+                        <td>{{ money($order->total_price) }}</td>
+                        <td class="small text-muted">{{ $order->deleted_at->format(datetime_fmt()) }}</td>
                         <td class="text-center">
-                            <form action="{{ route("orders.restore", $order->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.restore_order_confirm') }}')">
+                            <form action="{{ route("orders.restore", $order->id) }}" method="POST" class="d-inline" data-confirm="{{ __('app.restore_order_confirm') }}">
                                 @csrf @method("PATCH")
                                 <button class="btn btn-sm btn-success" title="{{ __('app.restore') }}"><i class="bi bi-arrow-counterclockwise"></i> {{ __('app.restore') }}</button>
                             </form>

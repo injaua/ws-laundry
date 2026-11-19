@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\OrderExport;
+use App\Models\CreditNote;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\Order;
@@ -28,7 +29,10 @@ class ReportController extends Controller
         // Revenue is computed from orders within the received_at range, not from payment date
         $orderIds = $orders->pluck('id');
         $payments = Payment::whereIn('order_id', $orderIds)->get();
-        $totalRevenue = $payments->sum('amount');
+        // Refunds count as negative receipts of the order they belong to.
+        $refundsByOrderId = CreditNote::valid()->refunds()->whereIn('order_id', $orderIds)
+            ->selectRaw('order_id, sum(amount) as total')->groupBy('order_id')->pluck('total', 'order_id');
+        $totalRevenue = $payments->sum('amount') - (float) $refundsByOrderId->sum();
 
         $avgOrder = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
 
@@ -40,10 +44,10 @@ class ReportController extends Controller
         while ($period->lte($to)) {
             $chartLabels[] = $period->format("d M");
             $dateKey = $period->format('Y-m-d');
-            $dayOrders = $orders->filter(fn($o) => $o->received_at->format('Y-m-d') === $dateKey);
+            $dayOrders = $orders->filter(fn ($o) => $o->received_at->format('Y-m-d') === $dateKey);
             $total = 0;
             foreach ($dayOrders as $order) {
-                $total += ($paymentsByOrderId->get($order->id) ?? collect())->sum('amount');
+                $total += ($paymentsByOrderId->get($order->id) ?? collect())->sum('amount') - (float) ($refundsByOrderId[$order->id] ?? 0);
             }
             $chartData[] = (float) $total;
             $period->addDay();
@@ -55,7 +59,6 @@ class ReportController extends Controller
         ));
     }
 
-
     public function export(Request $request)
     {
         $from = $request->from ? Carbon::parse($request->from) : today()->startOfMonth();
@@ -63,8 +66,6 @@ class ReportController extends Controller
 
         return Excel::download(new OrderExport($from, $to), "report-laundry-{$from->format("Y-m-d")}-{$to->format("Y-m-d")}.xlsx");
     }
-
-
 
     public function profitLoss(Request $request)
     {
@@ -85,9 +86,9 @@ class ReportController extends Controller
 
         // Group expenses by category for chart
         $categoryNames = ExpenseCategory::pluck("name", "key");
-        $expenseCategories = $expenses->groupBy("category")->map(fn($g) => $g->sum("amount"));
+        $expenseCategories = $expenses->groupBy("category")->map(fn ($g) => $g->sum("amount"));
         $expCatLabels = $expenseCategories->keys()
-            ->map(fn($key) => $categoryNames[$key] ?? $key)
+            ->map(fn ($key) => $categoryNames[$key] ?? $key)
             ->toArray();
         $expCatValues = $expenseCategories->values()->toArray();
 
@@ -100,10 +101,10 @@ class ReportController extends Controller
             $dateKey = $period->format("Y-m-d");
             $chartLabels[] = $period->format("d M");
 
-            $dayOrders = $orders->filter(fn($o) => $o->received_at->format("Y-m-d") === $dateKey);
+            $dayOrders = $orders->filter(fn ($o) => $o->received_at->format("Y-m-d") === $dateKey);
             $chartRevenue[] = (float) $dayOrders->sum(fn ($o) => (float) ($o->subtotal ?? $o->total_price));
 
-            $dayExpense = $expenses->filter(fn($e) => $e->expense_date->format("Y-m-d") === $dateKey);
+            $dayExpense = $expenses->filter(fn ($e) => $e->expense_date->format("Y-m-d") === $dateKey);
             $chartExpense[] = (float) $dayExpense->sum("amount");
 
             $period->addDay();
@@ -122,7 +123,9 @@ class ReportController extends Controller
         $to = $request->to ? Carbon::parse($request->to) : today();
 
         $payments = Payment::whereBetween("paid_at", [$from, $to])->get();
-        $totalReceived = (float) $payments->sum("amount");
+        $refunds = CreditNote::valid()->refunds()->whereDate("issued_at", ">=", $from->toDateString())->whereDate("issued_at", "<=", $to->toDateString())
+            ->selectRaw("refund_method, sum(amount) as total")->groupBy("refund_method")->pluck("total", "refund_method");
+        $totalReceived = (float) $payments->sum("amount") - (float) $refunds->sum();
         $totalCount = $payments->count();
 
         $rows = [];
@@ -130,10 +133,10 @@ class ReportController extends Controller
         $pieValues = [];
         foreach (Payment::METHODS as $method) {
             $group = $payments->where("method", $method);
-            if ($group->isEmpty()) {
+            if ($group->isEmpty() && !isset($refunds[$method])) {
                 continue;
             }
-            $amount = (float) $group->sum("amount");
+            $amount = (float) $group->sum("amount") - (float) ($refunds[$method] ?? 0);
             $rows[] = [
                 "method" => $method,
                 "count" => $group->count(),
@@ -148,5 +151,4 @@ class ReportController extends Controller
             "rows", "pieLabels", "pieValues", "totalReceived", "totalCount", "from", "to"
         ));
     }
-
 }

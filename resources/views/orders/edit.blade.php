@@ -58,7 +58,7 @@
                     <div class="mb-2">
                         <label class="d-flex justify-content-between">
                             <span>{{ $svc->name }} <small class="text-muted">({{ $svc->type === 'by_weight' ? __('app.by_weight') : __('app.by_piece') }})</small></span>
-                            <span class="fw-semibold">{{ number_format($svc->price, 0, ".", ",") }} Mts</span>
+                            <span class="fw-semibold">{{ money($svc->price) }}</span>
                         </label>
                     </div>
                     @endforeach
@@ -75,15 +75,5 @@
 @endsection
 
 @push("scripts")
-<script>
-// The delivery date follows the estimated / completion date unless typed by hand
-const deliveryInput = document.getElementById("delivery_date");
-const completionInput = document.getElementById("completed_at");
-let manualDelivery = deliveryInput.value !== "";
-
-deliveryInput.addEventListener("change", () => { manualDelivery = deliveryInput.value !== ""; });
-completionInput.addEventListener("change", () => {
-    if (!manualDelivery && completionInput.value) deliveryInput.value = completionInput.value;
-});
-</script>
+    @vite("resources/js/pages/order-edit.js")
 @endpush

@@ -43,7 +43,7 @@ class AccountingTest extends TestCase
     {
         $cashier = User::factory()->cashier()->create();
 
-        foreach (["/accounting/accounts", "/accounting/journal-entries", "/accounting/balancete", "/accounting/balanco", "/accounting/demonstracao-resultados", "/accounting/iva-acerto"] as $url) {
+        foreach (["/accounting/accounts", "/accounting/journal-entries", "/accounting/trial-balance", "/accounting/balance-sheet", "/accounting/income-statement", "/accounting/vat-settlement"] as $url) {
             $this->actingAs($cashier)->get($url)->assertForbidden();
         }
     }
@@ -108,7 +108,7 @@ class AccountingTest extends TestCase
     {
         $order = $this->order();
         $admin = User::factory()->create();
-        $banco = Account::findByCode("1.2.1");
+        $banco = Account::findByCode("1.2.2"); // M-Pesa wallet account
         $servicos = Account::findByCode("7.2");
 
         $this->actingAs($admin)->post("/payments", [
@@ -116,6 +116,7 @@ class AccountingTest extends TestCase
             "paid_at" => now()->toDateString(),
             "amount" => 4000,
             "method" => "mpesa",
+            "transaction_ref" => "MP4000ACC",
         ])->assertSessionHasNoErrors();
 
         $payment = $order->payments()->first();
@@ -144,7 +145,7 @@ class AccountingTest extends TestCase
         // Deleting the payment removes the entry
         $this->actingAs($admin)->delete("/payments/{$payment->id}")->assertSessionHasNoErrors();
         $this->assertSame(0, JournalEntry::where("source", "payment")->count());
-        $this->assertSame(0, \App\Models\JournalLine::count());
+        $this->assertSame(0, JournalLine::count());
     }
 
     public function test_expense_posts_to_linked_category_account(): void
@@ -181,7 +182,7 @@ class AccountingTest extends TestCase
         $this->assertSame(0, JournalEntry::where("source", "expense")->count());
     }
 
-    public function test_balancete_shows_balanced_totals(): void
+    public function test_trial_balance_shows_balanced_totals(): void
     {
         $order = $this->order();
         $admin = User::factory()->create();
@@ -193,7 +194,7 @@ class AccountingTest extends TestCase
             "method" => "cash",
         ])->assertSessionHasNoErrors();
 
-        $this->actingAs($admin)->get("/accounting/balancete")
+        $this->actingAs($admin)->get("/accounting/trial-balance")
             ->assertOk()
             ->assertSee("Caixa")
             ->assertSee("Prestação de serviços")
@@ -256,7 +257,7 @@ class AccountingTest extends TestCase
         $this->assertDatabaseMissing("expense_categories", ["key" => "sabao-novo"]);
     }
 
-    public function test_seeded_expense_categories_reach_the_balancete(): void
+    public function test_seeded_expense_categories_reach_the_trial_balance(): void
     {
         $admin = User::factory()->create();
 
@@ -271,7 +272,7 @@ class AccountingTest extends TestCase
         $this->assertNotNull($entry);
         $this->assertSame("6.1.1", Account::find($entry->lines()->where("debit", ">", 0)->first()->account_id)->code);
 
-        $this->actingAs($admin)->get("/accounting/balancete")
+        $this->actingAs($admin)->get("/accounting/trial-balance")
             ->assertOk()
             ->assertSee("Custo das matérias e mercadorias consumidas")
             ->assertSee("1,961");
@@ -300,7 +301,7 @@ class AccountingTest extends TestCase
         $this->assertSame(2, JournalLine::count());
     }
 
-    public function test_balanco_balances_after_payment_and_expense(): void
+    public function test_balance_sheet_balances_after_payment_and_expense(): void
     {
         $order = $this->order();
         $admin = User::factory()->create();
@@ -313,14 +314,14 @@ class AccountingTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         // Gross 1160 → net expense 1000 + input VAT 160 (4.4.3.1). Caixa 6000-1160+160 IVA asset = Activo 5000; Capital = 6000-1000 = 5000
-        $this->actingAs($admin)->get("/accounting/balanco")
+        $this->actingAs($admin)->get("/accounting/balance-sheet")
             ->assertOk()
             ->assertSee("1.1")
             ->assertSee("5,000")
-            ->assertSee(__('app.balanco_equilibrado'), false);
+            ->assertSee(__('app.balance_sheet_balanced'), false);
     }
 
-    public function test_demonstracao_resultados_shows_income_expenses_and_net_result(): void
+    public function test_income_statement_shows_income_expenses_and_net_result(): void
     {
         $order = $this->order();
         $admin = User::factory()->create();
@@ -332,7 +333,7 @@ class AccountingTest extends TestCase
             "title" => "Detergente", "category" => "detergent", "amount" => 1160, "expense_date" => now()->toDateString(),
         ])->assertSessionHasNoErrors();
 
-        $this->actingAs($admin)->get("/accounting/demonstracao-resultados")
+        $this->actingAs($admin)->get("/accounting/income-statement")
             ->assertOk()
             ->assertSee("Prestação de serviços")
             ->assertSee("Custo das matérias e mercadorias consumidas")

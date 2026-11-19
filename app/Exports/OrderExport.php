@@ -3,16 +3,17 @@
 namespace App\Exports;
 
 use App\Models\Order;
+use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\Exportable;
 
 class OrderExport implements FromQuery, WithHeadings, WithMapping
 {
     use Exportable;
 
     protected $from;
+
     protected $to;
 
     public function __construct($from, $to)
@@ -24,7 +25,7 @@ class OrderExport implements FromQuery, WithHeadings, WithMapping
     public function query()
     {
         return Order::query()
-            ->with(["customer", "items.service", "items.package", "payments"])
+            ->with(["customer", "items.service", "items.package", "payments", "creditNotes"])
             ->whereBetween("received_at", [$this->from, $this->to])
             ->orderBy("received_at");
     }
@@ -39,10 +40,10 @@ class OrderExport implements FromQuery, WithHeadings, WithMapping
         return [
             $order->order_number,
             $order->customer->name ?? "-",
-            $order->received_at->format("d/m/Y"),
+            $order->received_at->format(date_fmt()),
             ucfirst($order->status),
             (float) $order->total_price,
-            (float) $order->payments->sum("amount"),
+            (float) $order->payments->sum("amount") - (float) $order->creditNotes->whereNull("voided_at")->where("settlement", "refund")->sum("amount"),
         ];
     }
 }

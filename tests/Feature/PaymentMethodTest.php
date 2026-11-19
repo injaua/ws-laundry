@@ -30,6 +30,7 @@ class PaymentMethodTest extends TestCase
     {
         $order = $this->makeOrder();
         $cashier = User::factory()->create(["role" => "cashier"]);
+        $this->openTill($cashier);
 
         foreach (["mpesa", "emola", "mkesh"] as $i => $method) {
             $this->actingAs($cashier)->post("/payments", [
@@ -37,6 +38,7 @@ class PaymentMethodTest extends TestCase
                 "paid_at" => now()->toDateString(),
                 "amount" => 1000 + $i,
                 "method" => $method,
+                "transaction_ref" => "REF{$i}ABC",
             ])->assertRedirect()->assertSessionHasNoErrors();
         }
 
@@ -50,6 +52,7 @@ class PaymentMethodTest extends TestCase
     {
         $order = $this->makeOrder();
         $cashier = User::factory()->create(["role" => "cashier"]);
+        $this->openTill($cashier);
 
         $this->actingAs($cashier)->post("/payments", [
             "order_id" => $order->id,
@@ -65,6 +68,7 @@ class PaymentMethodTest extends TestCase
     {
         $order = $this->makeOrder();
         $cashier = User::factory()->create(["role" => "cashier"]);
+        $this->openTill($cashier);
 
         $this->actingAs($cashier)->post("/payments", [
             "order_id" => $order->id,
@@ -80,6 +84,7 @@ class PaymentMethodTest extends TestCase
     {
         $order = $this->makeOrder();
         $cashier = User::factory()->create(["role" => "cashier"]);
+        $this->openTill($cashier);
 
         foreach ([5000, 7000] as $amount) {
             $this->actingAs($cashier)->post("/payments", [
@@ -114,6 +119,7 @@ class PaymentMethodTest extends TestCase
     {
         $order = $this->makeOrder();
         $cashier = User::factory()->create(["role" => "cashier"]);
+        $this->openTill($cashier);
 
         foreach ([10000, 10000] as $amount) {
             $this->actingAs($cashier)->post("/payments", [

@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -16,7 +18,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): View
     {
-        return view('auth.login');
+        return view('auth.login', ['canRegister' => Route::has('register') && !User::hasAdmin()]);
     }
 
     /**
@@ -24,8 +26,21 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
+        $user = $request->authenticate();
 
+        // Second factor: the password was right, the code is asked on the next page.
+        if ($user->hasTwoFactor()) {
+            $request->session()->regenerate();
+            $request->session()->put('login.2fa', [
+                'id' => $user->id,
+                'remember' => $request->boolean('remember'),
+                'expires' => now()->addMinutes(5)->timestamp,
+            ]);
+
+            return redirect()->route('two-factor.challenge');
+        }
+
+        Auth::guard('web')->login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard', absolute: false));

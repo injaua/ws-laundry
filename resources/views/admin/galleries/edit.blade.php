@@ -7,10 +7,10 @@
     <div class="col-lg-6">
         <div class="card">
             <div class="card-body">
-                <form method="POST" enctype="multipart/form-data">
+                <form action="{{ route("admin.galleries.update", $gallery) }}" method="POST" enctype="multipart/form-data">
                     @csrf @method("PUT")
                     <div class="mb-3 text-center">
-                        <img src="{{ Storage::url($gallery->photo) }}" class="rounded" style="max-height:200px">
+                        <img src="{{ Storage::url($gallery->photo) }}" class="rounded mh-200px">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Replace photo (leave blank to keep the current one)</label>
@@ -24,21 +24,21 @@
                     </div>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label class="form-label">Urutan</label>
+                            <label class="form-label">{{ __('app.sort_order') }}</label>
                             <input type="number" name="sort_order" class="form-control" value="{{ old("sort_order", $gallery->sort_order) }}" min="0">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Active</label>
+                            <label class="form-label">{{ __('app.active') }}</label>
                             <div class="form-check mt-2">
                                 <input type="checkbox" name="is_active" class="form-check-input" value="1"
                                     {{ $gallery->is_active ? "checked" : "" }} id="active">
-                                <label class="form-check-label" for="active">Tampilkan</label>
+                                <label class="form-check-label" for="active">{{ __('app.show_on_site') }}</label>
                             </div>
                         </div>
                     </div>
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Save</button>
-                        <a href="{{ route("admin.galleries.index") }}" class="btn btn-outline-secondary">Batal</a>
+                        <a href="{{ route("admin.galleries.index") }}" class="btn btn-outline-secondary">{{ __('app.cancel') }}</a>
                     </div>
                 </form>
             </div>

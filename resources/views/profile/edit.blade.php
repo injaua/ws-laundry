@@ -111,8 +111,8 @@
                 <i class="bi bi-info-circle me-1"></i> {{ __('app.account') }}
             </div>
             <div class="card-body text-center">
-                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3"
-                    style="width:80px;height:80px;font-size:2rem;font-weight:700">
+                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3 avatar-80"
+                   >
                     {{ strtoupper(substr($user->name, 0, 1)) }}
                 </div>
                 <h5 class="fw-semibold mb-0">{{ $user->name }}</h5>
@@ -121,54 +121,25 @@
                 <div class="text-start small">
                     <div class="d-flex justify-content-between mb-1">
                         <span class="text-muted">{{ __('app.joined') }}</span>
-                        <span>{{ $user->created_at->format("d/m/Y") }}</span>
+                        <span>{{ $user->created_at->format(date_fmt()) }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- Delete account --}}
-        <div class="card border-danger">
-            <div class="card-header text-danger">
-                <i class="bi bi-exclamation-triangle me-1"></i> {{ __('app.delete_account') }}
+        {{-- Account security (self-deletion is disabled: staff accounts keep the audit trail) --}}
+        <div class="card">
+            <div class="card-header"><i class="bi bi-shield-lock me-1"></i> {{ __('app.account_security') }}</div>
+            <div class="card-body small">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>{{ __('app.two_factor') }}</span>
+                    @if($user->hasTwoFactor())<span class="badge bg-success">{{ __('app.enabled') }}</span>@else<span class="badge bg-secondary">{{ __('app.disabled') }}</span>@endif
+                </div>
+                @if($user->password_changed_at)
+                <div class="d-flex justify-content-between mb-2 text-muted"><span>{{ __('app.password_changed_at') }}</span><span>{{ $user->password_changed_at->format(date_fmt()) }}</span></div>
+                @endif
+                <a href="{{ route("profile.security") }}" class="btn btn-outline-primary btn-sm w-100"><i class="bi bi-shield-check"></i> {{ __('app.manage_security') }}</a>
             </div>
-            <div class="card-body">
-                <button type="button" class="btn btn-outline-danger w-100" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                    <i class="bi bi-trash me-1"></i> {{ __('app.delete_account') }}
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-{{-- Delete account modal --}}
-<div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="post" action="{{ route("profile.destroy") }}">
-                @csrf
-                @method("delete")
-                <div class="modal-header">
-                    <h5 class="modal-title">{{ __('app.delete_account') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="small text-muted mb-3">
-                        {{ __('app.confirm_delete') }}
-                    </p>
-                    <div class="mb-0">
-                        <input type="password" name="password" class="form-control @error("password", "userDeletion") is-invalid @enderror"
-                            placeholder="{{ __('app.password') }}" required>
-                        @error("password", "userDeletion")
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('app.cancel') }}</button>
-                    <button type="submit" class="btn btn-danger">{{ __('app.delete_account') }}</button>
-                </div>
-            </form>
         </div>
     </div>
 </div>

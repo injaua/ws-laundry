@@ -37,7 +37,7 @@ trait Loggable
     protected static function generateDescription(Model $model, string $action): string
     {
         $modelName = class_basename($model);
-        $identifier = $model->name ?? $model->title ?? $model->order_number ?? $model->id;
+        $identifier = $model->name ?? $model->title ?? $model->order_number ?? $model->number ?? $model->key ?? $model->id;
 
         return match ($action) {
             'created' => "{$modelName} created: {$identifier}",

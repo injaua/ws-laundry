@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Equipment;
+use App\Models\EquipmentRecipe;
+use App\Models\InventoryItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -59,9 +61,32 @@ class EquipmentController extends Controller
 
     public function show(Equipment $equipment)
     {
-        $equipment->load(["jobs" => fn ($q) => $q->with("employee")->latest("service_date")]);
+        $equipment->load(["jobs" => fn ($q) => $q->with("employee")->latest("service_date"), "recipes.item"]);
+        $loads = $equipment->loads()->with("employee:id,name")->withCount("orders")->latest("started_at")->limit(15)->get();
+        $items = InventoryItem::where("is_active", true)->orderBy("name")->get(["id", "name", "unit"]);
 
-        return view("resources.equipments.show", compact("equipment"));
+        return view("resources.equipments.show", compact("equipment", "loads", "items"));
+    }
+
+    /** Per-cycle recipe: products the machine uses on every load. */
+    public function storeRecipe(Request $request, Equipment $equipment)
+    {
+        $data = $request->validate([
+            "inventory_item_id" => "required|integer|exists:inventory_items,id",
+            "quantity" => "required|numeric|min:0.001|max:100000",
+        ]);
+
+        $equipment->recipes()->updateOrCreate(["inventory_item_id" => $data["inventory_item_id"]], ["quantity" => $data["quantity"]]);
+
+        return back()->with("success", __("app.recipe_saved"));
+    }
+
+    public function destroyRecipe(Equipment $equipment, EquipmentRecipe $recipe)
+    {
+        abort_unless($recipe->equipment_id === $equipment->id, 404);
+        $recipe->delete();
+
+        return back()->with("success", __("app.recipe_removed"));
     }
 
     public function edit(Equipment $equipment)
@@ -129,6 +154,8 @@ class EquipmentController extends Controller
             "photo" => self::PHOTO_RULES,
             "remove_photo" => "nullable|boolean",
             "notes" => "nullable|string|max:2000",
+            "capacity_kg" => "nullable|numeric|min:0|max:1000",
+            "service_interval_cycles" => "nullable|integer|min:1|max:1000000",
         ]);
     }
 }

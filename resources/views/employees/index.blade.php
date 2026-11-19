@@ -24,7 +24,7 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <select name="status" class="form-select" onchange="this.form.submit()">
+                    <select name="status" class="form-select" data-auto-submit>
                         <option value="">{{ __('app.status') }}</option>
                         @foreach(\App\Models\Employee::STATUSES as $st)
                             <option value="{{ $st }}" {{ request("status") == $st ? "selected" : "" }}>{{ __('app.status_' . $st) }}</option>
@@ -65,8 +65,8 @@
                         </td>
                         <td>{{ $employee->position }}</td>
                         <td class="small">{{ __('app.contract_' . $employee->contract_type) }}</td>
-                        <td class="small">{{ $employee->hire_date->format("d/m/Y") }}</td>
-                        <td class="fw-semibold">{{ number_format($employee->base_salary, 0, ".", ",") }} Mts</td>
+                        <td class="small">{{ $employee->hire_date->format(date_fmt()) }}</td>
+                        <td class="fw-semibold">{{ money($employee->base_salary) }}</td>
                         <td>
                             <span class="badge badge-status bg-{{ $statusColors[$employee->status] ?? "secondary" }}">
                                 {{ $employee->status_label }}
@@ -86,7 +86,7 @@
                             <a href="{{ route("employees.edit", $employee) }}" class="btn btn-sm btn-outline-primary" title="{{ __('app.edit') }}">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <form action="{{ route("employees.destroy", $employee) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.delete_employee_confirm') }}')">
+                            <form action="{{ route("employees.destroy", $employee) }}" method="POST" class="d-inline" data-confirm="{{ __('app.delete_employee_confirm') }}">
                                 @csrf @method("DELETE")
                                 <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}">
                                     <i class="bi bi-trash"></i>

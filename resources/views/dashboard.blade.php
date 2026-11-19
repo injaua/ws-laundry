@@ -61,7 +61,7 @@
             <div class="d-flex justify-content-between align-items-start">
                 <div>
                     <div class="label">{{ __('app.revenue_today') }}</div>
-                    <div class="value" style="font-size:1.4rem">{{ number_format($todayRevenue, 0, ".", ",") }} Mts</div>
+                    <div class="value text-1_4rem">{{ money($todayRevenue) }}</div>
                 </div>
                 <div class="icon bg-success bg-opacity-10 text-success">
                     <i class="bi bi-cash-stack"></i>
@@ -69,7 +69,7 @@
             </div>
             <div class="mt-2 small text-muted">
                 @if($isManager)
-                    <i class="bi bi-graph-up"></i> {{ __('app.revenue_this_month') }} {{ number_format($monthRevenue, 0, ".", ",") }} Mts
+                    <i class="bi bi-graph-up"></i> {{ __('app.revenue_this_month') }} {{ money($monthRevenue) }}
                 @else
                     <i class="bi bi-person-check"></i> {{ __('app.your_own_payments') }}
                 @endif
@@ -125,6 +125,59 @@
         </a>
     </div>
     @endif
+    @if($resourceAlerts["expiring_lots"] > 0)
+    <div class="col-xl-3 col-md-6 mb-3">
+        <a href="{{ route("resources.lots.index", ["status" => "expiring"]) }}" class="stat-card text-decoration-none d-block">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="label">{{ __('app.lots_expiring') }}</div>
+                    <div class="value text-warning">{{ $resourceAlerts["expiring_lots"] }}</div>
+                </div>
+                <div class="icon bg-warning bg-opacity-10 text-warning">
+                    <i class="bi bi-boxes"></i>
+                </div>
+            </div>
+        </a>
+    </div>
+    @endif
+    @if($resourceAlerts["expired_lots"] > 0)
+    <div class="col-xl-3 col-md-6 mb-3">
+        <a href="{{ route("resources.lots.index", ["status" => "expired"]) }}" class="stat-card text-decoration-none d-block">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="label">{{ __('app.lots_expired') }}</div>
+                    <div class="value text-danger">{{ $resourceAlerts["expired_lots"] }}</div>
+                </div>
+                <div class="icon bg-danger bg-opacity-10 text-danger">
+                    <i class="bi bi-calendar-x"></i>
+                </div>
+            </div>
+        </a>
+    </div>
+    @endif
+</div>
+@endif
+
+@if(($receivablesAlerts["total"] ?? 0) > 0)
+<div class="row mb-1">
+    <div class="col-xl-3 col-md-6 mb-3">
+        <a href="{{ route("receivables.index") }}" class="stat-card text-decoration-none d-block">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="label">{{ __('app.receivables') }}</div>
+                    <div class="value text-1_4rem">{{ money($receivablesAlerts["total"]) }}</div>
+                    <div class="mt-1 small {{ $receivablesAlerts["overdue"] > 0 ? "text-danger fw-semibold" : "text-muted" }}">
+                        {{ $receivablesAlerts["overdue"] > 0
+                            ? __('app.overdue_amount') . ": " . money($receivablesAlerts["overdue"]) . " (" . $receivablesAlerts["overdue_count"] . ")"
+                            : __('app.no_overdue') }}
+                    </div>
+                </div>
+                <div class="icon bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-cash-coin"></i>
+                </div>
+            </div>
+        </a>
+    </div>
 </div>
 @endif
 
@@ -155,7 +208,7 @@
                             <span class="fw-semibold small">{{ $o->order_number }}</span>
                             <span class="badge bg-{{ $o->status_color }} badge-status">{{ $o->status_label }}</span>
                         </div>
-                        <div class="small text-muted">{{ $o->customer->name }} - {{ number_format($o->total_price, 0, ".", ",") }} Mts</div>
+                        <div class="small text-muted">{{ $o->customer->name }} - {{ money($o->total_price) }}</div>
                     </a>
                     @empty
                     <div class="list-group-item text-muted text-center py-4">{{ __('app.no_orders') }}</div>
@@ -169,36 +222,7 @@
 
 @push("scripts")
 @if($isManager)
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script>
-const ctx = document.getElementById("weeklyChart").getContext("2d");
-const isDark = document.documentElement.getAttribute("data-bs-theme") === "dark";
-Chart.defaults.color = isDark ? "#adb5bd" : "#6c757d";
-Chart.defaults.borderColor = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)";
-new Chart(ctx, {
-    type: "bar",
-    data: {
-        labels: @json($chartLabels),
-        datasets: [{
-            label: "{{ __('app.revenue') }}",
-            data: @json($chartData),
-            backgroundColor: [
-                "#c5cae9","#9fa8da","#7986cb","#5c6bc0","#3f51b5","#3949ab","#1a237e"
-            ],
-            borderRadius: 4,
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: { callback: v => v.toLocaleString("en-US") + " Mts" }
-            }
-        }
-    }
-});
-</script>
+    <x-page-data name="dashboard" :data="['labels' => $chartLabels, 'values' => $chartData, 'texts' => ['revenue' => __('app.revenue')]]"/>
+    @vite("resources/js/pages/dashboard.js")
 @endif
 @endpush

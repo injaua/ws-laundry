@@ -18,7 +18,7 @@
             <input id="password" type="password" name="password"
                 class="form-control @error("password") is-invalid @enderror"
                 required autocomplete="current-password">
-            <button class="btn btn-outline-secondary" type="button" onclick="togglePw('password', this)" aria-label="{{ __('app.show_password') }}" aria-pressed="false"><i class="bi bi-eye"></i></button>
+            <button class="btn btn-outline-secondary" type="button" data-toggle-password="password" aria-label="{{ __('app.show_password') }}" aria-pressed="false"><i class="bi bi-eye"></i></button>
             @error("password") <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
     </div>
@@ -32,7 +32,7 @@
         @endif
     </div>
     <button type="submit" class="btn btn-brand w-100 mb-3">{{ __('app.login') }}</button>
-    @if (Route::has("register") && ! \App\Models\User::hasAdmin())
+    @if ($canRegister ?? false)
         <p class="text-center small text-muted mb-0">
             {{ __('app.dont_have_account') }}
             <a href="{{ route("register") }}" class="auth-link">{{ __('app.register') }}</a>

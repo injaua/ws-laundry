@@ -15,7 +15,7 @@
             @forelse($galleries as $g)
                 <div class="col-6 col-md-4 col-lg-3">
                     <div class="card h-100">
-                        <img src="{{ Storage::url($g->photo) }}" class="card-img-top" style="height:160px;object-fit:cover">
+                        <img src="{{ Storage::url($g->photo) }}" class="card-img-top h-160px img-cover">
                         <div class="card-body p-2">
                             <p class="small mb-1 text-truncate">{{ $g->caption ?? "—" }}</p>
                             <div class="d-flex justify-content-between align-items-center">
@@ -27,7 +27,7 @@
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     <form action="{{ route("admin.galleries.destroy", $g) }}" method="POST" class="d-inline"
-                                        onsubmit="return confirm('{{ __('app.confirm_delete') }}')">
+                                        data-confirm="{{ __('app.confirm_delete') }}">
                                         @csrf @method("DELETE")
                                         <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}"><i class="bi bi-trash"></i></button>
                                     </form>

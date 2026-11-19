@@ -30,11 +30,11 @@
                 @forelse($salaries as $salary)
                 <tr>
                     <td>{{ $salary->periodLabel() }}</td>
-                    <td class="text-end">{{ number_format($salary->base_salary, 0, ".", ",") }}</td>
-                    <td class="text-end text-success">{{ number_format($salary->bonus, 0, ".", ",") }}</td>
-                    <td class="text-end text-danger">{{ number_format($salary->deduction, 0, ".", ",") }}</td>
-                    <td class="text-end text-danger">{{ number_format($salary->absence_deduction, 0, ".", ",") }}</td>
-                    <td class="text-end fw-semibold">{{ number_format($salary->net_salary, 0, ".", ",") }} Mts</td>
+                    <td class="text-end">{{ num($salary->base_salary) }}</td>
+                    <td class="text-end text-success">{{ num($salary->bonus) }}</td>
+                    <td class="text-end text-danger">{{ num($salary->deduction) }}</td>
+                    <td class="text-end text-danger">{{ num($salary->absence_deduction) }}</td>
+                    <td class="text-end fw-semibold">{{ money($salary->net_salary) }}</td>
                     <td>
                         <span class="badge bg-{{ $salary->isPaid() ? "success" : "secondary" }}">
                             {{ $salary->isPaid() ? __('app.paid') : __('app.pending') }}

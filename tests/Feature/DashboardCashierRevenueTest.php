@@ -30,14 +30,16 @@ class DashboardCashierRevenueTest extends TestCase
 
     private function todayCardValue(int $expectedAmount): string
     {
-        return '<div class="value" style="font-size:1.4rem">'
+        return '<div class="value text-1_4rem">'
             . number_format($expectedAmount, 0, ".", ",") . " Mts</div>";
     }
 
     public function test_cashier_dashboard_counts_only_own_payments_today(): void
     {
         $a = User::factory()->create(["role" => "cashier"]);
+        $this->openTill($a);
         $b = User::factory()->create(["role" => "cashier"]);
+        $this->openTill($b);
 
         $this->actingAs($a)->post("/payments", [
             "order_id" => $this->makeOrder()->id,
@@ -71,6 +73,7 @@ class DashboardCashierRevenueTest extends TestCase
     {
         $admin = User::factory()->create();
         $cashier = User::factory()->create(["role" => "cashier"]);
+        $this->openTill($cashier);
 
         $this->actingAs($cashier)->post("/payments", [
             "order_id" => $this->makeOrder()->id,

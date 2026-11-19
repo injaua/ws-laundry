@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Equipment;
+use App\Models\AccountingPeriod;
 use App\Models\Employee;
+use App\Models\Equipment;
 use App\Models\ExpenseCategory;
 use App\Models\InventoryItem;
 use App\Models\MaintenanceJob;
@@ -46,11 +47,15 @@ class MaintenanceJobController extends Controller
         $jobData = Arr::except($data, ["register_expense", "expense_category"]);
         $jobData["cost"] = $data["cost"] ?? 0;
 
+        if (!empty($data["register_expense"])) {
+            AccountingPeriod::assertOpen($jobData["service_date"], "service_date");
+        }
+
         $job = new MaintenanceJob($jobData);
         $job->completed_at = $job->status === "completed" ? now() : null;
         $job->save();
 
-        $job->syncExpense((bool) ($data["register_expense"] ?? false), $data["expense_category"] ?? "manutencao");
+        $job->syncExpense((bool) ($data["register_expense"] ?? false), $data["expense_category"] ?? "maintenance");
 
         return redirect()->route("resources.maintenance.show", $job)
             ->with("success", __('app.job_created'));
@@ -86,6 +91,11 @@ class MaintenanceJobController extends Controller
                 ->with("error", __('app.job_cancelled_locked'));
         }
 
+        if ($maintenance->expense_id || !empty($data["register_expense"])) {
+            AccountingPeriod::assertOpen($maintenance->service_date, "service_date");
+            AccountingPeriod::assertOpen($jobData["service_date"], "service_date");
+        }
+
         $wasCompleted = $maintenance->status === "completed";
         $maintenance->fill($jobData);
         $maintenance->completed_at = $maintenance->status === "completed"
@@ -93,7 +103,7 @@ class MaintenanceJobController extends Controller
             : null;
         $maintenance->save();
 
-        $maintenance->syncExpense((bool) ($data["register_expense"] ?? false), $data["expense_category"] ?? "manutencao");
+        $maintenance->syncExpense((bool) ($data["register_expense"] ?? false), $data["expense_category"] ?? "maintenance");
 
         return redirect()->route("resources.maintenance.show", $maintenance)
             ->with("success", __('app.job_updated'));
@@ -101,6 +111,11 @@ class MaintenanceJobController extends Controller
 
     public function destroy(MaintenanceJob $maintenance)
     {
+        if ($maintenance->expense_id && $period = AccountingPeriod::closedOn($maintenance->service_date)) {
+            return redirect()->route("resources.maintenance.show", $maintenance)
+                ->with("error", __("app.period_closed", ["period" => $period->label()]));
+        }
+
         $maintenance->cancel();
         $maintenance->delete();
 

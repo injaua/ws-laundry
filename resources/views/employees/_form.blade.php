@@ -70,7 +70,7 @@
                         <label class="form-label">{{ __('app.base_salary') }} <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <input type="number" name="base_salary" class="form-control @error("base_salary") is-invalid @enderror" value="{{ old("base_salary", isset($employee) ? (int) $employee->base_salary : "") }}" required min="0">
-                            <span class="input-group-text">Mts</span>
+                            <span class="input-group-text">{{ currency_symbol() }}</span>
                             @error("base_salary") <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>

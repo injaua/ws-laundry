@@ -14,23 +14,39 @@
                 </div>
                 <div class="d-flex justify-content-between mb-2">
                     <span>{{ __('app.total') }}:</span>
-                    <span class="fw-bold fs-5">{{ number_format($order->total_price, 0, ".", ",") }} Mts</span>
+                    <span class="fw-bold fs-5">{{ money($order->total_price) }}</span>
                 </div>
-                @php $paid = $order->payments->sum("amount"); $remaining = $order->total_price - $paid; @endphp
+                @php $paid = $order->netPaid(); $remaining = $order->remainingBalance(); $credited = $order->creditedAmount(); @endphp
+                @if($credited > 0)
+                <div class="d-flex justify-content-between mb-2">
+                    <span>{{ __('app.credit_notes') }}:</span>
+                    <span class="text-danger">− {{ money($credited) }}</span>
+                </div>
+                @endif
                 <div class="d-flex justify-content-between mb-2">
                     <span>{{ __('app.already_paid') }}:</span>
-                    <span class="text-success">{{ number_format($paid, 0, ".", ",") }} Mts</span>
+                    <span class="text-success">{{ money($paid) }}</span>
                 </div>
                 <div class="d-flex justify-content-between">
                     <span>{{ __('app.remaining') }}:</span>
-                    <span class="text-{{ $remaining > 0 ? "danger" : "success" }} fw-bold">{{ number_format($remaining, 0, ".", ",") }} Mts</span>
+                    <span class="text-{{ $remaining > 0 ? "danger" : "success" }} fw-bold">{{ money($remaining) }}</span>
                 </div>
             </div>
         </div>
 
+        @include("mobile-payments._charge", ["order" => $order])
         <div class="card">
             <div class="card-header"><i class="bi bi-cash me-1"></i> {{ __('app.payment_form') }}</div>
             <div class="card-body">
+                @php($tillRequired = !$till && auth()->user()->isCashier())
+                @if($tillRequired)
+                    <div class="alert alert-warning d-flex justify-content-between align-items-center gap-2">
+                        <span><i class="bi bi-safe me-1"></i> {{ __('app.cash_session_required') }}</span>
+                        <a href="{{ route("cash-sessions.current") }}" class="btn btn-sm btn-warning text-nowrap">{{ __('app.open_till') }}</a>
+                    </div>
+                @elseif($till)
+                    <div class="small text-muted mb-3"><i class="bi bi-safe me-1"></i> {{ __('app.payment_goes_to_till', ['till' => $till->label()]) }}</div>
+                @endif
                 <form action="{{ route("payments.store") }}" method="POST">
                     @csrf
                     <input type="hidden" name="order_id" value="{{ $order->id }}">
@@ -43,23 +59,25 @@
                         <label class="form-label">{{ __('app.payment_amount') }} <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <input type="number" name="amount" class="form-control @error("amount") is-invalid @enderror" value="{{ old("amount", $remaining > 0 ? $remaining : 0) }}" required min="1" max="{{ round($remaining, 2) }}">
-                            <span class="input-group-text">Mts</span>
+                            <span class="input-group-text">{{ currency_symbol() }}</span>
                         </div>
                         @error("amount") <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="mb-3">
                         <label class="form-label">{{ __('app.payment_method') }} <span class="text-danger">*</span></label>
                         <select name="method" class="form-select" required>
-                            @foreach(\App\Models\Payment::METHODS as $m)
+                            @foreach($paymentMethods as $m)
                                 <option value="{{ $m }}" {{ old("method") == $m ? "selected" : "" }}>{{ __('app.' . $m) }}</option>
                             @endforeach
                         </select>
                     </div>
+                    @error("method") <div class="text-danger small mb-2">{{ $message }}</div> @enderror
+                    @include("payments._mobile-ref", ["phone" => $order->customer?->phone, "tender" => true])
                     <div class="mb-3">
                         <label class="form-label">{{ __('app.notes') }}</label>
                         <input type="text" name="note" class="form-control" value="{{ old("note") }}">
                     </div>
-                    <button type="submit" class="btn btn-success w-100" @if($remaining <= 0) disabled title="{{ __('app.order_fully_paid') }}" @endif>
+                    <button type="submit" class="btn btn-success w-100" @if($remaining <= 0) disabled title="{{ __('app.order_fully_paid') }}" @elseif($tillRequired) disabled @endif>
                         <i class="bi bi-check-lg"></i> {{ __('app.confirm_payment') }}
                     </button>
                 </form>
@@ -83,9 +101,9 @@
                     <tbody>
                         @foreach($order->payments as $pm)
                         <tr>
-                            <td>{{ $pm->paid_at->format("d/m/Y") }}</td>
-                            <td><span class="badge bg-light text-dark">{{ __('app.' . $pm->method) }}</span></td>
-                            <td>{{ number_format($pm->amount, 0, ".", ",") }} Mts</td>
+                            <td>{{ $pm->paid_at->format(date_fmt()) }}</td>
+                            <td><span class="badge bg-light text-dark">{{ __('app.' . $pm->method) }}</span>@if($pm->transaction_ref) <span class="small font-monospace text-muted">{{ $pm->transaction_ref }}</span>@endif</td>
+                            <td>{{ money($pm->amount) }}</td>
                             <td class="text-end">
                                 <a href="{{ route("payments.receipt", $pm) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="{{ __('app.print_receipt') }}">
                                     <i class="bi bi-printer"></i>

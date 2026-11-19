@@ -21,7 +21,7 @@
                     </div>
                 </div>
                 <div class="col-md-2">
-                    <select name="source" class="form-select" onchange="this.form.submit()">
+                    <select name="source" class="form-select" data-auto-submit>
                         <option value="">{{ __('app.source') }}</option>
                         @foreach(\App\Models\JournalEntry::SOURCES as $src)
                             <option value="{{ $src }}" {{ request("source") == $src ? "selected" : "" }}>{{ __('app.source_' . $src) }}</option>
@@ -29,7 +29,7 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <select name="account_id" class="form-select" onchange="this.form.submit()">
+                    <select name="account_id" class="form-select" data-auto-submit>
                         <option value="">{{ __('app.account_name') }}</option>
                         @foreach($accounts as $account)
                             <option value="{{ $account->id }}" {{ request("account_id") == $account->id ? "selected" : "" }}>{{ $account->code }} — {{ $account->name }}</option>
@@ -66,20 +66,20 @@
                 <tbody>
                     @forelse($entries as $entry)
                     <tr>
-                        <td class="small">{{ $entry->entry_date->format("d/m/Y") }}</td>
+                        <td class="small">{{ $entry->entry_date->format(date_fmt()) }}</td>
                         <td class="fw-medium">{{ $entry->entry_number }}</td>
                         <td>
                             {{ $entry->description }}
                             <div class="small text-muted">
                                 @foreach($entry->lines as $line)
                                     {{ $line->account->code }} {{ $line->account->name }}
-                                    ({{ $line->debit > 0 ? "D " . number_format($line->debit, 0, ".", ",") : "C " . number_format($line->credit, 0, ".", ",") }})@if(!$loop->last), @endif
+                                    ({{ $line->debit > 0 ? "D " . num($line->debit) : "C " . num($line->credit) }})@if(!$loop->last), @endif
                                 @endforeach
                             </div>
                         </td>
-                        <td><span class="badge bg-{{ ["manual" => "primary", "payment" => "success", "expense" => "warning"][$entry->source] }}">{{ __('app.source_' . $entry->source) }}</span></td>
-                        <td class="text-end fw-semibold">{{ number_format($entry->lines->sum("debit"), 0, ".", ",") }}</td>
-                        <td class="text-end fw-semibold">{{ number_format($entry->lines->sum("credit"), 0, ".", ",") }}</td>
+                        <td><span class="badge bg-{{ (["manual" => "primary", "payment" => "success", "expense" => "warning", "credit_sale" => "dark", "cash_session" => "info"][$entry->source] ?? "secondary") }}">{{ __('app.source_' . $entry->source) }}</span></td>
+                        <td class="text-end fw-semibold">{{ num($entry->lines->sum("debit")) }}</td>
+                        <td class="text-end fw-semibold">{{ num($entry->lines->sum("credit")) }}</td>
                         <td class="small">{{ $entry->poster?->name ?? "-" }}</td>
                         <td class="text-center">
                             @if($entry->isManual())
@@ -91,7 +91,7 @@
                                     <i class="bi bi-pencil"></i>
                                 </span>
                             @endif
-                            <form action="{{ route("accounting.journal-entries.destroy", $entry) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.delete_journal_confirm') }}')">
+                            <form action="{{ route("accounting.journal-entries.destroy", $entry) }}" method="POST" class="d-inline" data-confirm="{{ __('app.delete_journal_confirm') }}">
                                 @csrf @method("DELETE")
                                 <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}" {{ $entry->isManual() ? "" : "disabled" }}>
                                     <i class="bi bi-trash"></i>

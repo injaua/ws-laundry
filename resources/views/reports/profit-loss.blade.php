@@ -26,7 +26,7 @@
         <div class="card border-start border-4 border-success">
             <div class="card-body">
                 <div class="text-muted small">{{ __('app.revenue') }}</div>
-                <div class="fs-4 fw-bold text-success">{{ number_format($totalRevenue, 0, ".", ",") }} Mts</div>
+                <div class="fs-4 fw-bold text-success">{{ money($totalRevenue) }}</div>
                 <small class="text-muted">{{ __('app.total_transactions', ['count' => $totalOrders]) }}</small>
             </div>
         </div>
@@ -35,7 +35,7 @@
         <div class="card border-start border-4 border-danger">
             <div class="card-body">
                 <div class="text-muted small">{{ __('app.expenses') }}</div>
-                <div class="fs-4 fw-bold text-danger">{{ number_format($totalExpenses, 0, ".", ",") }} Mts</div>
+                <div class="fs-4 fw-bold text-danger">{{ money($totalExpenses) }}</div>
                 <small class="text-muted">{{ __('app.total_count', ['count' => $expenses->count() ?? 0]) }}</small>
             </div>
         </div>
@@ -45,7 +45,7 @@
             <div class="card-body">
                 <div class="text-muted small">{{ __('app.net_profit_loss') }}</div>
                 <div class="fs-4 fw-bold {{ $netProfit >= 0 ? "text-primary" : "text-warning" }}">
-                    {{ number_format($netProfit, 0, ".", ",") }} Mts
+                    {{ money($netProfit) }}
                 </div>
             </div>
         </div>
@@ -81,35 +81,11 @@
 </div>
 
 @push("scripts")
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script>
-new Chart(document.getElementById("profitChart"), {
-    type: "bar",
-    data: {
-        labels: @json($chartLabels),
-        datasets: [
-            { label: "{{ __('app.revenue') }}", data: @json($chartRevenue), backgroundColor: "rgba(40,167,69,0.7)", borderColor: "#28a745", borderWidth: 1 },
-            { label: "{{ __('app.expenses') }}", data: @json($chartExpense), backgroundColor: "rgba(220,53,69,0.7)", borderColor: "#dc3545", borderWidth: 1 },
-        ]
-    },
-    options: {
-        responsive: true,
-        plugins: { legend: { position: "top" } },
-        scales: { y: { beginAtZero: true } }
-    }
-});
-
-new Chart(document.getElementById("expensePieChart"), {
-    type: "pie",
-    data: {
-        labels: @json($expCatLabels),
-        datasets: [{ data: @json($expCatValues), backgroundColor: ["#dc3545","#fd7e14","#ffc107","#20c997","#6f42c1","#0dcaf0"] }]
-    },
-    options: {
-        responsive: true,
-        plugins: { legend: { position: "bottom" } }
-    }
-});
-</script>
+    <x-page-data name="profit-loss-report" :data="[
+        'labels' => $chartLabels, 'revenue' => $chartRevenue, 'expenses' => $chartExpense,
+        'categories' => ['labels' => $expCatLabels, 'values' => $expCatValues],
+        'texts' => ['revenue' => __('app.revenue'), 'expenses' => __('app.expenses')],
+    ]"/>
+    @vite("resources/js/pages/profit-loss-report.js")
 @endpush
 @endsection

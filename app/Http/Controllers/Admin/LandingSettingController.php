@@ -11,6 +11,7 @@ class LandingSettingController extends Controller
     public function index()
     {
         $settings = SiteSetting::allAsArray();
+
         return view("admin.landing-settings.index", compact("settings"));
     }
 

@@ -15,7 +15,7 @@
         <div class="p-3 border-bottom">
             <form action="{{ route("salaries.index") }}" method="GET" class="row g-2">
                 <div class="col-md-4">
-                    <select name="employee_id" class="form-select" onchange="this.form.submit()">
+                    <select name="employee_id" class="form-select" data-auto-submit>
                         <option value="">{{ __('app.employees') }}</option>
                         @foreach($employees as $employee)
                             <option value="{{ $employee->id }}" {{ request("employee_id") == $employee->id ? "selected" : "" }}>{{ $employee->name }}</option>
@@ -23,7 +23,7 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <select name="month" class="form-select" onchange="this.form.submit()">
+                    <select name="month" class="form-select" data-auto-submit>
                         <option value="">{{ __('app.period_month') }}</option>
                         @for($m = 1; $m <= 12; $m++)
                             <option value="{{ $m }}" {{ request("month") == $m ? "selected" : "" }}>{{ sprintf("%02d", $m) }}</option>
@@ -31,7 +31,7 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <select name="year" class="form-select" onchange="this.form.submit()">
+                    <select name="year" class="form-select" data-auto-submit>
                         <option value="">{{ __('app.period_year') }}</option>
                         @for($y = now()->year; $y >= now()->year - 3; $y--)
                             <option value="{{ $y }}" {{ request("year") == $y ? "selected" : "" }}>{{ $y }}</option>
@@ -64,14 +64,18 @@
                     @forelse($salaries as $salary)
                     <tr>
                         <td class="fw-medium">
+                            @if(auth()->user()->isManager())
                             <a href="{{ route("employees.show", $salary->employee) }}" class="text-decoration-none">{{ $salary->employee->name }}</a>
+                            @else
+                            {{ $salary->employee->name }}
+                            @endif
                         </td>
                         <td>{{ $salary->periodLabel() }}</td>
-                        <td class="text-end">{{ number_format($salary->base_salary, 0, ".", ",") }}</td>
-                        <td class="text-end text-success">{{ number_format($salary->bonus, 0, ".", ",") }}</td>
-                        <td class="text-end text-danger">{{ number_format($salary->deduction, 0, ".", ",") }}</td>
-                        <td class="text-end text-danger">{{ number_format($salary->absence_deduction, 0, ".", ",") }}</td>
-                        <td class="text-end fw-semibold">{{ number_format($salary->net_salary, 0, ".", ",") }} Mts</td>
+                        <td class="text-end">{{ num($salary->base_salary) }}</td>
+                        <td class="text-end text-success">{{ num($salary->bonus) }}</td>
+                        <td class="text-end text-danger">{{ num($salary->deduction) }}</td>
+                        <td class="text-end text-danger">{{ num($salary->absence_deduction) }}</td>
+                        <td class="text-end fw-semibold">{{ money($salary->net_salary) }}</td>
                         <td>
                             <span class="badge bg-{{ $salary->isPaid() ? "success" : "secondary" }}">
                                 {{ $salary->isPaid() ? __('app.paid') : __('app.pending') }}
@@ -79,7 +83,7 @@
                         </td>
                         <td class="text-center">
                             @if($salary->isPaid())
-                                <form action="{{ route("salaries.unpay", $salary) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.unpay') }}?')">
+                                <form action="{{ route("salaries.unpay", $salary) }}" method="POST" class="d-inline" data-confirm="{{ __('app.unpay') }}?">
                                     @csrf @method("PATCH")
                                     <button class="btn btn-sm btn-outline-warning" title="{{ __('app.unpay') }}"><i class="bi bi-arrow-counterclockwise"></i></button>
                                 </form>
@@ -91,7 +95,7 @@
                                 <a href="{{ route("salaries.edit", $salary) }}" class="btn btn-sm btn-outline-primary" title="{{ __('app.edit') }}">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <form action="{{ route("salaries.destroy", $salary) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.delete_payslip_confirm') }}')">
+                                <form action="{{ route("salaries.destroy", $salary) }}" method="POST" class="d-inline" data-confirm="{{ __('app.delete_payslip_confirm') }}">
                                     @csrf @method("DELETE")
                                     <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}"><i class="bi bi-trash"></i></button>
                                 </form>

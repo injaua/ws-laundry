@@ -16,7 +16,7 @@ return new class extends Migration
             $table->date('completed_at')->nullable();
             $table->enum('status', [
                 'received', 'washing', 'drying', 'ironing',
-                'folding', 'ready', 'delivering', 'completed'
+                'folding', 'ready', 'delivering', 'completed',
             ])->default('received');
             $table->decimal('total_price', 12, 2)->default(0);
             $table->text('notes')->nullable();

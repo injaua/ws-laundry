@@ -8,7 +8,7 @@ class Testimonial extends Model
 {
     protected $fillable = [
         "customer_name", "content", "rating",
-        "photo", "is_active", "sort_order"
+        "photo", "is_active", "sort_order",
     ];
 
     protected function casts(): array

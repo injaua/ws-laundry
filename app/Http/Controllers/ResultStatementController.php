@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\CurrentStore;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,7 @@ class ResultStatementController extends Controller
         $rows = DB::table("accounts")
             ->join("journal_lines", "journal_lines.account_id", "=", "accounts.id")
             ->join("journal_entries", "journal_entries.id", "=", "journal_lines.journal_entry_id")
+            ->where("journal_entries.store_id", CurrentStore::id())
             ->where("accounts.is_group", false)
             ->whereIn("accounts.type", ["revenue", "expense"])
             ->whereBetween("journal_entries.entry_date", [
@@ -47,16 +49,16 @@ class ResultStatementController extends Controller
             ->filter(fn ($row) => abs($row->balance) > 0.004)
             ->values();
 
-        $rendimentos = $this->sections($rows->where("type", "revenue"));
-        $gastos = $this->sections($rows->where("type", "expense"));
+        $income = $this->sections($rows->where("type", "revenue"));
+        $expenses = $this->sections($rows->where("type", "expense"));
 
         $totals = [
-            "rendimentos" => round((float) $rendimentos->sum("subtotal"), 2),
-            "gastos" => round((float) $gastos->sum("subtotal"), 2),
+            "income" => round((float) $income->sum("subtotal"), 2),
+            "expenses" => round((float) $expenses->sum("subtotal"), 2),
         ];
-        $totals["resultado"] = round($totals["rendimentos"] - $totals["gastos"], 2);
+        $totals["net_result"] = round($totals["income"] - $totals["expenses"], 2);
 
-        return view("accounting.resultados", compact("rendimentos", "gastos", "totals", "from", "to"));
+        return view("accounting.income-statement", compact("income", "expenses", "totals", "from", "to"));
     }
 
     /**
@@ -67,7 +69,7 @@ class ResultStatementController extends Controller
         return $rows->groupBy("group")
             ->sortKeys()
             ->map(function ($groupRows, $group) {
-                $key = "app.dr_group_" . str_replace(".", "_", $group);
+                $key = "app.income_group_" . str_replace(".", "_", $group);
                 $label = __($key);
 
                 return (object) [

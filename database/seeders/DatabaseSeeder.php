@@ -5,31 +5,36 @@ namespace Database\Seeders;
 use App\Models\SiteSetting;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        User::factory()->create([
-            "name" => "Laundry Admin",
-            "email" => "admin@ws-cleanlaundry.example",
-            "password" => bcrypt("password"),
-            "role" => "admin",
-        ]);
+        $accounts = [
+            ["Laundry Admin", "admin@ws-cleanlaundry.example", "admin"],
+            ["Laundry Cashier", "cashier@ws-cleanlaundry.example", "cashier"],
+            ["Laundry Owner", "owner@ws-cleanlaundry.example", "owner"],
+        ];
 
-        User::factory()->create([
-            "name" => "Laundry Cashier",
-            "email" => "cashier@ws-cleanlaundry.example",
-            "password" => bcrypt("password"),
-            "role" => "cashier",
-        ]);
+        // The well-known "password" is only acceptable on a developer machine or in tests.
+        // Anywhere else each account gets a random password, printed once to the console.
+        $useDefault = app()->environment("local", "testing");
 
-        User::factory()->create([
-            "name" => "Laundry Owner",
-            "email" => "owner@ws-cleanlaundry.example",
-            "password" => bcrypt("password"),
-            "role" => "owner",
-        ]);
+        foreach ($accounts as [$name, $email, $role]) {
+            $password = $useDefault ? "password" : Str::password(16);
+
+            User::factory()->create([
+                "name" => $name,
+                "email" => $email,
+                "password" => bcrypt($password),
+                "role" => $role,
+            ]);
+
+            if (!$useDefault) {
+                $this->command?->warn("{$email}: {$password}");
+            }
+        }
 
         // Default site settings for landing page
         $defaults = [
@@ -52,6 +57,7 @@ class DatabaseSeeder extends Seeder
             ServiceSeeder::class,
             CustomerSeeder::class,
             EmployeeSeeder::class,
+            MessageTemplateSeeder::class,
         ]);
     }
 }

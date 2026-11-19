@@ -1,4 +1,5 @@
 <?php
+
 // Throwaway: white knockout variant of the transparent logo for dark surfaces.
 $src = __DIR__ . '/../public/images/logo.png';
 $out = __DIR__ . '/../public/images/logo-light.png';

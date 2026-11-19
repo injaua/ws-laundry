@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ExpenseRequest;
+use App\Models\AccountingPeriod;
 use App\Models\EmployeeSalary;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
@@ -17,8 +19,10 @@ class ExpenseController extends Controller
         $query = Expense::with("user");
 
         if ($search = $request->search) {
-            $query->where("title", "like", "%{$search}%")
-                  ->orWhere("description", "like", "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->where("title", "like", "%{$search}%")
+                    ->orWhere("description", "like", "%{$search}%");
+            });
         }
 
         if ($category = $request->category) {
@@ -38,9 +42,10 @@ class ExpenseController extends Controller
         return view("expenses.create", compact("categories"));
     }
 
-    public function store(Request $request)
+    public function store(ExpenseRequest $request)
     {
-        $validated = $this->validateExpense($request);
+        $validated = $request->expenseData();
+        AccountingPeriod::assertOpen($validated["expense_date"], "expense_date");
 
         $validated["user_id"] = auth()->id();
 
@@ -57,9 +62,11 @@ class ExpenseController extends Controller
         return view("expenses.edit", compact("expense", "categories"));
     }
 
-    public function update(Request $request, Expense $expense)
+    public function update(ExpenseRequest $request, Expense $expense)
     {
-        $validated = $this->validateExpense($request);
+        $validated = $request->expenseData();
+        AccountingPeriod::assertOpen($expense->expense_date, "expense_date");
+        AccountingPeriod::assertOpen($validated["expense_date"], "expense_date");
 
         $expense->update($validated);
 
@@ -71,6 +78,11 @@ class ExpenseController extends Controller
 
     public function destroy(Expense $expense)
     {
+        if ($period = AccountingPeriod::closedOn($expense->expense_date)) {
+            return redirect()->route("expenses.index")
+                ->with("error", __("app.period_closed", ["period" => $period->label()]));
+        }
+
         // Drop pointers from the resources module so a deleted expense never leaves
         // a movement/job referencing a missing row.
         InventoryMovement::where("expense_id", $expense->id)->update(["expense_id" => null]);
@@ -96,22 +108,4 @@ class ExpenseController extends Controller
 
         return response()->json(["amount" => $amount]);
     }
-
-    private function validateExpense(Request $request): array
-    {
-        $validated = $request->validate([
-            "title" => "required|string|max:200",
-            "description" => "nullable|string",
-            "category" => "required|exists:expense_categories,key",
-            "period_type" => "nullable|in:monthly,once",
-            "amount" => "required|numeric|min:0",
-            "expense_date" => "required|date",
-        ]);
-
-        $category = ExpenseCategory::firstWhere("key", $validated["category"]);
-        $validated["period_type"] = $category->is_fixed ? ($validated["period_type"] ?? "monthly") : null;
-
-        return $validated;
-    }
-
 }

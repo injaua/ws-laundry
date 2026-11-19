@@ -18,7 +18,7 @@
         <div class="p-3 border-bottom">
             <form action="{{ route("leaves.index") }}" method="GET" class="row g-2">
                 <div class="col-md-4">
-                    <select name="employee_id" class="form-select" onchange="this.form.submit()">
+                    <select name="employee_id" class="form-select" data-auto-submit>
                         <option value="">{{ __('app.employees') }}</option>
                         @foreach($employees as $employee)
                             <option value="{{ $employee->id }}" {{ request("employee_id") == $employee->id ? "selected" : "" }}>{{ $employee->name }}</option>
@@ -26,7 +26,7 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <select name="status" class="form-select" onchange="this.form.submit()">
+                    <select name="status" class="form-select" data-auto-submit>
                         <option value="">{{ __('app.status') }}</option>
                         @foreach(\App\Models\Leave::STATUSES as $st)
                             <option value="{{ $st }}" {{ request("status") == $st ? "selected" : "" }}>{{ __('app.' . $st) }}</option>
@@ -58,7 +58,7 @@
                         <td class="fw-medium">
                             <a href="{{ route("employees.show", $leave->employee) }}" class="text-decoration-none">{{ $leave->employee->name }}</a>
                         </td>
-                        <td>{{ $leave->leave_date->format("d/m/Y") }}</td>
+                        <td>{{ $leave->leave_date->format(date_fmt()) }}</td>
                         <td>{{ $leave->hours }}</td>
                         <td class="small">{{ $leave->reason }}</td>
                         <td>
@@ -82,7 +82,7 @@
                                     <button class="btn btn-sm btn-outline-danger" title="{{ __('app.reject') }}"><i class="bi bi-x"></i></button>
                                 </form>
                             @endif
-                            <form action="{{ route("leaves.destroy", $leave) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.delete_dispensation_confirm') }}')">
+                            <form action="{{ route("leaves.destroy", $leave) }}" method="POST" class="d-inline" data-confirm="{{ __('app.delete_dispensation_confirm') }}">
                                 @csrf @method("DELETE")
                                 <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}">
                                     <i class="bi bi-trash"></i>

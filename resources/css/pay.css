@@ -1,0 +1,15 @@
+@import './utilities.css';
+
+/* Public payment pages (layouts/pay) */
+body {
+    background: #f5f7fa;
+    min-height: 100vh;
+}
+.pay-card {
+    max-width: 460px;
+    margin: 0 auto;
+}
+.brand {
+    color: #1a237e;
+    font-weight: 700;
+}

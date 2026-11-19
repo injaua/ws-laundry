@@ -7,7 +7,7 @@
     <div class="col-lg-8">
         <div class="card">
             <div class="card-body">
-                <form method="POST" enctype="multipart/form-data">
+                <form action="{{ route("admin.testimonials.update", $testimonial) }}" method="POST" enctype="multipart/form-data">
                     @csrf @method("PUT")
                     <div class="mb-3">
                         <label class="form-label">Customer Name</label>
@@ -30,23 +30,23 @@
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Urutan</label>
+                            <label class="form-label">{{ __('app.sort_order') }}</label>
                             <input type="number" name="sort_order" class="form-control" value="{{ old("sort_order",$testimonial->sort_order) }}" min="0">
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Active</label>
+                            <label class="form-label">{{ __('app.active') }}</label>
                             <div class="form-check mt-2">
                                 <input type="checkbox" name="is_active" class="form-check-input" value="1"
                                     {{ $testimonial->is_active ? "checked" : "" }} id="active">
-                                <label class="form-check-label" for="active">Tampilkan</label>
+                                <label class="form-check-label" for="active">{{ __('app.show_on_site') }}</label>
                             </div>
                         </div>
                     </div>
                     <div class="mb-4">
-                        <label class="form-label">Photo</label>
+                        <label class="form-label">{{ __('app.photo') }}</label>
                         @if($testimonial->photo)
                             <div class="mb-2">
-                                <img src="{{ Storage::url($testimonial->photo) }}" class="rounded" style="max-height:80px">
+                                <img src="{{ Storage::url($testimonial->photo) }}" class="rounded mh-80px">
                             </div>
                         @endif
                         <input type="file" name="photo" class="form-control @error("photo") is-invalid @enderror"
@@ -55,7 +55,7 @@
                     </div>
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Save</button>
-                        <a href="{{ route("admin.testimonials.index") }}" class="btn btn-outline-secondary">Batal</a>
+                        <a href="{{ route("admin.testimonials.index") }}" class="btn btn-outline-secondary">{{ __('app.cancel') }}</a>
                     </div>
                 </form>
             </div>

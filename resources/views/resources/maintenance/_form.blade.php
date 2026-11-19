@@ -57,7 +57,7 @@
         <label class="form-label">{{ __('app.cost') }}</label>
         <div class="input-group">
             <input type="number" name="cost" class="form-control" min="0" step="1" value="{{ old('cost', $maintenance?->cost ?? 0) }}">
-            <span class="input-group-text">Mts</span>
+            <span class="input-group-text">{{ currency_symbol() }}</span>
         </div>
     </div>
 
@@ -68,9 +68,9 @@
         </div>
         <div class="mt-1">
             <label class="form-label small">{{ __('app.expense_category') }}</label>
-            <select name="expense_category" class="form-select form-select-sm" style="max-width:280px">
+            <select name="expense_category" class="form-select form-select-sm mw-280px">
                 @foreach($categories as $category)
-                    <option value="{{ $category->key }}" {{ old("expense_category", $maintenance?->expense->category ?? "manutencao") == $category->key ? "selected" : "" }}>{{ $category->name }}</option>
+                    <option value="{{ $category->key }}" {{ old("expense_category", $maintenance?->expense->category ?? "maintenance") == $category->key ? "selected" : "" }}>{{ $category->name }}</option>
                 @endforeach
             </select>
         </div>

@@ -3,9 +3,17 @@
 @section("page_title", __('app.new_transaction'))
 
 @section("content")
-<form action="{{ route("orders.store") }}" method="POST" id="order-form">
+<form action="{{ route("orders.store") }}" method="POST" id="order-form" enctype="multipart/form-data">
     @csrf
     <input type="hidden" name="total_price" id="total-price" value="{{ old("total_price", 0) }}">
+    @if($pickup)
+    <input type="hidden" name="pickup_job_id" value="{{ $pickup->id }}">
+    <div class="alert alert-info d-flex align-items-center gap-2">
+        <i class="bi bi-box-arrow-in-down fs-4"></i>
+        <div>{{ __('app.order_from_pickup', ["date" => $pickup->completed_at?->format(datetime_fmt()), "fee" => money($pickup->fee)]) }}@if($pickup->zone?->free_from !== null) {{ __('app.free_from_amount', ["amount" => money($pickup->zone->free_from)]) }}@endif</div>
+    </div>
+    @error("pickup_job_id") <div class="alert alert-danger">{{ $message }}</div> @enderror
+    @endif
 
     <div class="row g-3">
         <div class="col-lg-4">
@@ -18,7 +26,7 @@
                         <select name="customer_id" id="customer_id" class="form-select @error("customer_id") is-invalid @enderror" required>
                             <option value="">{{ __('app.select_customer') }}</option>
                             @foreach($customers as $c)
-                                <option value="{{ $c->id }}" @selected(old("customer_id") == $c->id)>{{ $c->name }} · {{ $c->phone }}</option>
+                                <option value="{{ $c->id }}" data-credit="{{ $c->is_credit_customer ? 1 : 0 }}" data-terms="{{ $c->credit_terms_days ?? 30 }}" data-limit="{{ $c->credit_limit ?? 0 }}" data-business="{{ $c->isBusiness() ? 1 : 0 }}" @selected(old("customer_id", $pickup?->customer_id) == $c->id)>{{ $c->name }} · {{ $c->phone }}@if($c->is_credit_customer) ★@endif</option>
                             @endforeach
                         </select>
                         @error("customer_id") <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -40,11 +48,68 @@
                         <label class="form-label" for="delivery_date">{{ __('app.delivery_date') }}</label>
                         <input type="date" name="delivery_date" id="delivery_date" class="form-control @error("delivery_date") is-invalid @enderror" value="{{ old("delivery_date") }}">
                         @error("delivery_date") <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        <div id="promiseHint" class="form-text"></div>
                     </div>
+                    <div id="creditOption" class="mb-3 d-none">
+                        <div class="border rounded p-2 bg-body-tertiary">
+                            <div class="form-check form-switch">
+                                <input type="hidden" name="is_credit" value="0">
+                                <input class="form-check-input" type="checkbox" role="switch" id="is_credit" name="is_credit" value="1" @checked(old("is_credit") || old("credit_override_note"))>
+                                <label class="form-check-label fw-semibold" for="is_credit">{{ __('app.bill_on_credit') }}</label>
+                            </div>
+                            <div class="small text-muted mt-1" id="creditHint"></div>
+                            <div class="mt-2 d-none" id="creditOverrideWrap">
+                                <label class="form-label small" for="credit_override_note">{{ __('app.credit_override_note') }}</label>
+                                <textarea name="credit_override_note" id="credit_override_note" rows="2" class="form-control form-control-sm @error("credit_override_note") is-invalid @enderror">{{ old("credit_override_note") }}</textarea>
+                                @error("credit_override_note") <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                <div class="form-text">{{ __('app.credit_override_note_hint') }}</div>
+                            </div>
+                            @error("is_credit") <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                        </div>
+                    </div>
+                    <div id="purchaseOrderWrap" class="mb-3 d-none">
+                        <label class="form-label" for="purchase_order_ref">{{ __('app.purchase_order_ref') }}</label>
+                        <input type="text" name="purchase_order_ref" id="purchase_order_ref" maxlength="60" class="form-control @error("purchase_order_ref") is-invalid @enderror" value="{{ old("purchase_order_ref") }}">
+                        @error("purchase_order_ref") <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        <div class="form-text">{{ __('app.purchase_order_ref_hint') }}</div>
+                    </div>
+                    <div id="pricingNotice" class="alert alert-info py-2 small d-none"><i class="bi bi-tags"></i> {{ __('app.customer_special_prices_applied') }}</div>
+                    @if($express["enabled"])
+                    <div class="mb-3 border rounded p-2">
+                        <div class="form-check form-switch">
+                            <input type="hidden" name="is_express" value="0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="is_express" name="is_express" value="1" @checked(old("is_express"))>
+                            <label class="form-check-label fw-semibold" for="is_express"><i class="bi bi-lightning-charge text-warning"></i> {{ __('app.express_service') }}</label>
+                        </div>
+                        <div class="small text-muted mt-1">{{ __('app.express_hint', ["fee" => $express["type"] === "percent" ? qty($express["value"]) . "%" : money($express["value"]), "days" => $express["days"]]) }}</div>
+                    </div>
+                    @endif
                     <div>
                         <label class="form-label" for="notes">{{ __('app.notes') }}</label>
                         <textarea name="notes" id="notes" class="form-control" rows="3">{{ old("notes") }}</textarea>
                     </div>
+                </div>
+            </div>
+
+            {{-- Intake inspection: care instructions, damage already present, photos --}}
+            <div class="card mb-3">
+                <div class="card-header"><i class="bi bi-clipboard-check me-1"></i> {{ __('app.intake_inspection') }}</div>
+                <div class="card-body">
+                    <div class="row g-1 mb-2">
+                        @foreach(\App\Models\Order::CARE_FLAGS as $flag)
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="care_flags[]" value="{{ $flag }}" id="care_{{ $flag }}" @checked(in_array($flag, old("care_flags", [])))>
+                                    <label class="form-check-label small" for="care_{{ $flag }}">{{ __('app.care_' . $flag) }}</label>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    <label class="form-label small mb-0" for="intake_notes">{{ __('app.intake_notes') }}</label>
+                    <textarea name="intake_notes" id="intake_notes" rows="2" maxlength="1000" class="form-control form-control-sm mb-2" placeholder="{{ __('app.intake_notes_placeholder') }}">{{ old("intake_notes") }}</textarea>
+                    <label class="form-label small mb-0" for="photos">{{ __('app.intake_photos') }}</label>
+                    <input type="file" name="photos[]" id="photos" accept="image/*" capture="environment" multiple class="form-control form-control-sm @error("photos.*") is-invalid @enderror">
+                    @error("photos.*") <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
             </div>
 
@@ -55,19 +120,29 @@
                         <span>{{ __('app.service_items') }}</span>
                         <strong id="summary-items">0</strong>
                     </div>
-                    @if(($ivaRate ?? 0) > 0)
+                    @if($pickup)
+                    <div class="summary-row" id="pickup-row">
+                        <span><i class="bi bi-truck"></i> {{ __('app.delivery_fee') }}</span>
+                        <strong id="pickup-display">{{ money(0) }}</strong>
+                    </div>
+                    @endif
+                    <div class="summary-row d-none" id="express-row">
+                        <span><i class="bi bi-lightning-charge text-warning"></i> {{ __('app.express_fee') }}</span>
+                        <strong id="express-display">{{ money(0) }}</strong>
+                    </div>
+                    @if(($vatRate ?? 0) > 0)
                     <div class="summary-row">
                         <span>{{ __('app.subtotal') }}</span>
-                        <strong id="subtotal-display">0 Mts</strong>
+                        <strong id="subtotal-display">{{ money(0) }}</strong>
                     </div>
                     <div class="summary-row">
-                        <span>{{ __('app.iva') }} {{ rtrim(rtrim(number_format($ivaRate, 2, ".", ","), "0"), ".") }}%</span>
-                        <strong id="iva-display">0 Mts</strong>
+                        <span>{{ __('app.vat') }} {{ qty($vatRate) }}%</span>
+                        <strong id="vat-display">{{ money(0) }}</strong>
                     </div>
                     @endif
                     <div class="summary-row">
                         <span>{{ __('app.total') }}</span>
-                        <strong class="summary-total" id="total-display">0 Mts</strong>
+                        <strong class="summary-total" id="total-display">{{ money(0) }}</strong>
                     </div>
                     <div class="d-grid gap-2 mt-3">
                         <button type="submit" class="btn btn-primary">
@@ -90,6 +165,7 @@
                 </div>
                 <div class="card-body">
                     <div id="items-container" class="d-flex flex-column gap-3"></div>
+                    @include("orders._item-template")
 
                     <div class="empty-items d-none" id="items-empty">
                         <i class="bi bi-cart-plus"></i>
@@ -109,282 +185,10 @@
 @endsection
 
 @push("styles")
-<style>
-    .item-card {
-        border: 1px solid #e9ecef; border-radius: 12px; padding: 1rem 1.1rem;
-        background: #fbfcfe; transition: box-shadow .2s, border-color .2s;
-    }
-    [data-bs-theme="dark"] .item-card { background: #232336; border-color: #2d2d2d; }
-    .item-card:focus-within { border-color: var(--bs-primary); box-shadow: 0 0 0 3px rgba(26,35,126,.09); }
-    .item-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .75rem; }
-    .item-index {
-        font-size: .78rem; font-weight: 700;
-        display: flex; align-items: center; gap: .4rem;
-    }
-    .item-index .pill {
-        display: inline-flex; align-items: center; justify-content: center;
-        min-width: 22px; height: 22px; padding: 0 .45rem; border-radius: 100px;
-        background: var(--bs-primary); color: #fff; font-size: .72rem; font-weight: 700;
-    }
-    [data-bs-theme="dark"] .item-index .pill { background: #3949ab; }
-    .item-subtotal { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .field-label { display: block; font-size: .72rem; font-weight: 600; color: #6c757d; margin-bottom: .3rem; }
-    [data-bs-theme="dark"] .field-label { color: var(--text-muted, #9e9e9e); }
-    .order-summary-card .summary-row {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: .35rem 0; font-size: .9rem; color: #6c757d;
-    }
-    .order-summary-card .summary-total { font-size: 1.4rem; color: var(--bs-primary); font-variant-numeric: tabular-nums; }
-    [data-bs-theme="dark"] .order-summary-card .summary-total { color: #90caf9; }
-    .empty-items {
-        border: 2px dashed #d7dce6; border-radius: 12px; padding: 2.5rem 1rem;
-        text-align: center; color: #6c757d;
-    }
-    [data-bs-theme="dark"] .empty-items { border-color: #3a3a4a; }
-    .empty-items i { font-size: 2rem; display: block; margin-bottom: .6rem; }
-    .empty-items p { margin-bottom: .9rem; font-size: .9rem; }
-</style>
+    @vite("resources/css/pages/order-form.css")
 @endpush
 
 @push("scripts")
-<script>
-const services = @json($services);
-const packages = @json($packages);
-const LBL = {
-    item: @json(__('app.item')),
-    service: @json(__('app.service')),
-    price: @json(__('app.price')),
-    weight: @json(__('app.weight')),
-    quantity: @json(__('app.quantity')),
-    pieces: @json(__('app.pieces')),
-    packages: @json(__('app.packages')),
-    by_package: @json(__('app.by_package')),
-    select_service: @json(__('app.select_service')),
-    pick_service_first: @json(__('app.pick_service_first')),
-    delete: @json(__('app.delete')),
-};
-let itemSeq = 0;
-const container = document.getElementById("items-container");
-
-function fmt(n) {
-    return Math.round(n).toLocaleString("en-US");
-}
-
-function itemOptions(serviceId, packageId) {
-    let html = '<option value="">' + LBL.select_service + "</option>";
-    html += '<optgroup label="' + LBL.service + '">';
-    services.forEach(s => {
-        const sel = String(serviceId) === String(s.id) ? " selected" : "";
-        html += '<option value="s' + s.id + '" data-kind="service" data-id="' + s.id + '" data-type="' + s.type + '" data-price="' + s.price + '" data-days="' + (s.estimated_days || 0) + '"' + sel + ">"
-            + s.name + " · " + fmt(s.price) + " Mts/" + (s.type === "by_weight" ? "kg" : LBL.pieces)
-            + "</option>";
-    });
-    html += "</optgroup>";
-    if (packages.length) {
-        html += '<optgroup label="' + LBL.packages + '">';
-        packages.forEach(p => {
-            const sel = String(packageId) === String(p.id) ? " selected" : "";
-            html += '<option value="p' + p.id + '" data-kind="package" data-id="' + p.id + '" data-type="by_package" data-price="' + p.price + '"' + sel + ">"
-                + p.name + " · " + p.weight_kg + " kg · " + fmt(p.price) + " Mts"
-                + "</option>";
-        });
-        html += "</optgroup>";
-    }
-    return html;
-}
-
-function addItem(data = null) {
-    const idx = itemSeq++;
-    const row = document.createElement("div");
-    row.className = "item-card";
-    row.innerHTML = `
-        <div class="item-head">
-            <span class="item-index"><span class="pill" data-index-label></span> ${LBL.item}</span>
-            <button type="button" class="btn btn-sm btn-outline-danger" data-remove aria-label="${LBL.delete}">
-                <i class="bi bi-x-lg"></i>
-            </button>
-        </div>
-        <div class="row g-3">
-            <div class="col-lg-5">
-                <label class="field-label">${LBL.service} / ${LBL.packages} <span class="text-danger">*</span></label>
-                <select class="form-select item-select" data-item-select required>
-                    ${itemOptions(data ? data.service_id : null, data ? data.package_id : null)}
-                </select>
-                <input type="hidden" name="items[${idx}][service_id]" class="service-id-input" value="${data && data.service_id ? data.service_id : ""}">
-                <input type="hidden" name="items[${idx}][package_id]" class="package-id-input" value="${data && data.package_id ? data.package_id : ""}">
-            </div>
-            <div class="col-lg-3">
-                <div class="measure-weight d-none">
-                    <label class="field-label">${LBL.weight} (kg) <span class="text-danger">*</span></label>
-                    <input type="number" name="items[${idx}][weight]" class="form-control weight-input" step="0.5" min="0.5" placeholder="0.5" value="${data ? (data.weight || "") : ""}">
-                </div>
-                <div class="measure-piece d-none">
-                    <label class="field-label">${LBL.quantity} (${LBL.pieces}) <span class="text-danger">*</span></label>
-                    <input type="number" name="items[${idx}][amount]" class="form-control amount-input" min="1" value="${data ? (data.amount || 1) : 1}">
-                </div>
-                <div class="measure-package d-none">
-                    <label class="field-label">${LBL.quantity} (${LBL.by_package}) <span class="text-danger">*</span></label>
-                    <input type="number" name="items[${idx}][amount]" class="form-control amount-input" min="1" value="${data ? (data.amount || 1) : 1}">
-                </div>
-                <div class="measure-placeholder text-muted small">${LBL.pick_service_first}</div>
-            </div>
-            <div class="col-lg-4">
-                <label class="field-label">${LBL.price}</label>
-                <div class="input-group">
-                    <input type="number" name="items[${idx}][price]" class="form-control price-input" readonly tabindex="-1" value="${data ? data.unit_price : ""}">
-                    <span class="input-group-text">Mts</span>
-                </div>
-                <input type="hidden" name="items[${idx}][subtotal]" class="subtotal-input" value="${data ? (data.subtotal || 0) : 0}">
-                <div class="d-flex justify-content-between align-items-center mt-2">
-                    <span class="unit-suffix text-muted small"></span>
-                    <span class="item-subtotal">0 Mts</span>
-                </div>
-            </div>
-        </div>
-    `;
-    container.appendChild(row);
-    row.querySelector(".item-select").addEventListener("change", () => {
-        const opt = row.querySelector(".item-select").selectedOptions[0];
-        const isPkg = opt && opt.dataset.kind === "package";
-        row.querySelector(".service-id-input").value = isPkg ? "" : (opt ? opt.dataset.id : "");
-        row.querySelector(".package-id-input").value = isPkg ? opt.dataset.id : "";
-        updateItem(row);
-    });
-    row.querySelectorAll(".weight-input, .amount-input").forEach(i => i.addEventListener("input", () => calcSubtotal(row)));
-    row.querySelector("[data-remove]").addEventListener("click", () => removeItem(row));
-
-    if (data && (data.service_id || data.package_id)) updateItem(row);
-    refreshChrome();
-}
-
-function updateItem(row) {
-    const opt = row.querySelector(".item-select").selectedOptions[0];
-    const type = opt?.dataset.type || "";
-    const mw = row.querySelector(".measure-weight");
-    const mp = row.querySelector(".measure-piece");
-    const mpk = row.querySelector(".measure-package");
-    const ph = row.querySelector(".measure-placeholder");
-
-    // Disabled inputs are not submitted; each row has two amount inputs (piece/package)
-    // and the browser would otherwise send both, with the hidden one overwriting the real value.
-    const wi = row.querySelector(".weight-input");
-    const pieceInput = mp.querySelector(".amount-input");
-    const pkgInput = mpk.querySelector(".amount-input");
-    wi.disabled = type !== "by_weight";
-    pieceInput.disabled = type !== "by_piece";
-    pkgInput.disabled = type !== "by_package";
-
-    if (!type) {
-        mw.classList.add("d-none");
-        mp.classList.add("d-none");
-        mpk.classList.add("d-none");
-        ph.classList.remove("d-none");
-        row.querySelector(".price-input").value = "";
-        row.querySelector(".unit-suffix").textContent = "";
-    } else {
-        ph.classList.add("d-none");
-        const price = parseFloat(opt.dataset.price) || 0;
-        row.querySelector(".price-input").value = price;
-        row.querySelector(".unit-suffix").textContent = fmt(price) + " Mts/" + (type === "by_weight" ? "kg" : (type === "by_package" ? LBL.by_package : LBL.pieces));
-        mw.classList.toggle("d-none", type !== "by_weight");
-        mp.classList.toggle("d-none", type !== "by_piece");
-        mpk.classList.toggle("d-none", type !== "by_package");
-    }
-    calcSubtotal(row);
-}
-
-function calcSubtotal(row) {
-    const opt = row.querySelector(".item-select").selectedOptions[0];
-    const type = opt?.dataset.type || "";
-    const price = parseFloat(row.querySelector(".price-input").value) || 0;
-    let subtotal = 0;
-
-    if (type === "by_weight") {
-        subtotal = price * (parseFloat(row.querySelector(".weight-input").value) || 0);
-    } else if (type === "by_piece" || type === "by_package") {
-        const scope = type === "by_package" ? ".measure-package" : ".measure-piece";
-        subtotal = price * (parseInt(row.querySelector(scope + " .amount-input").value) || 0);
-    }
-    row.dataset.subtotal = Math.round(subtotal);
-    row.querySelector(".subtotal-input").value = Math.round(subtotal);
-    row.querySelector(".item-subtotal").textContent = fmt(subtotal) + " Mts";
-    updateTotal();
-}
-
-function removeItem(row) {
-    row.remove();
-    updateTotal();
-    refreshChrome();
-}
-
-function refreshChrome() {
-    const rs = Array.from(container.querySelectorAll(".item-card"));
-    rs.forEach((r, i) => {
-        r.querySelector("[data-index-label]").textContent = i + 1;
-    });
-    document.getElementById("items-empty").classList.toggle("d-none", rs.length > 0);
-}
-
-function updateTotal() {
-    const rs = Array.from(container.querySelectorAll(".item-card"));
-    const subtotal = rs.reduce((sum, r) => sum + (parseInt(r.dataset.subtotal) || 0), 0);
-    const iva = Math.round(subtotal * {{ $ivaRate ?? 0 }} / 100);
-    const total = subtotal + iva;
-    const sub = document.getElementById("subtotal-display");
-    const ivaEl = document.getElementById("iva-display");
-    if (sub) sub.textContent = fmt(subtotal) + " Mts";
-    if (ivaEl) ivaEl.textContent = fmt(iva) + " Mts";
-    document.getElementById("total-display").textContent = fmt(total) + " Mts";
-    document.getElementById("total-price").value = total;
-    document.getElementById("summary-items").textContent = rs.length;
-    estimateDelivery();
-}
-
-// Delivery date defaults to the expected completion date (entry date + longest service lead time)
-const deliveryInput = document.getElementById("delivery_date");
-const receivedInput = document.getElementById("received_at");
-let deliveryManual = deliveryInput.value !== "";
-
-function estimateDelivery() {
-    if (deliveryManual) return;
-    let days = 0;
-    container.querySelectorAll(".item-select").forEach(sel => {
-        const opt = sel.selectedOptions[0];
-        if (opt && opt.dataset.days) days = Math.max(days, parseInt(opt.dataset.days) || 0);
-    });
-    if (!days || !receivedInput.value) { deliveryInput.value = ""; return; }
-    const d = new Date(receivedInput.value + "T00:00:00");
-    d.setDate(d.getDate() + days);
-    deliveryInput.value = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-}
-
-deliveryInput.addEventListener("change", () => { deliveryManual = deliveryInput.value !== ""; });
-receivedInput.addEventListener("change", estimateDelivery);
-
-// Repopulate after validation errors, else start with one blank row
-const oldItems = @json(old("items"));
-if (oldItems && Object.keys(oldItems).length) {
-    Object.values(oldItems).forEach(it => {
-        if (!it || (!it.service_id && !it.package_id)) return;
-        addItem({ service_id: it.service_id, package_id: it.package_id, weight: it.weight, amount: it.amount, unit_price: it.price, subtotal: it.subtotal });
-    });
-} else {
-    addItem();
-}
-
-document.getElementById("addItemBtn").addEventListener("click", () => addItem());
-document.getElementById("addFirstItemBtn").addEventListener("click", () => addItem());
-
-document.getElementById("refreshCustomersBtn").addEventListener("click", function() {
-    const btn = this;
-    btn.disabled = true;
-    fetch("{{ route("orders.create") }}").then(r => r.text()).then(html => {
-        const src = new DOMParser().parseFromString(html, "text/html").querySelector("select[name='customer_id']");
-        const cur = document.getElementById("customer_id");
-        const keep = cur.value;
-        cur.innerHTML = src.innerHTML;
-        if ([...cur.options].some(o => o.value === keep)) cur.value = keep;
-    }).finally(() => { btn.disabled = false; });
-});
-</script>
+    <x-page-data name="order-form" :data="$formData"/>
+    @vite("resources/js/pages/order-form.js")
 @endpush

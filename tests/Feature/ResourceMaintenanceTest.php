@@ -47,7 +47,7 @@ class ResourceMaintenanceTest extends TestCase
             "status" => "completed",
             "cost" => 5000,
             "register_expense" => 1,
-            "expense_category" => "manutencao",
+            "expense_category" => "maintenance",
         ], $overrides);
     }
 
@@ -72,7 +72,7 @@ class ResourceMaintenanceTest extends TestCase
 
         $expense = Expense::firstWhere("source_type", "maintenance_job");
         $this->assertNotNull($expense);
-        $this->assertSame("manutencao", $expense->category);
+        $this->assertSame("maintenance", $expense->category);
         $this->assertSame(5000, (int) $expense->amount);
 
         $entry = JournalEntry::firstWhere("source", "expense");

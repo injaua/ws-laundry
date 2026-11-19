@@ -46,7 +46,7 @@
                         <label class="form-label">{{ __('app.base_salary') }} <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <input type="number" name="base_salary" id="baseSalary" class="form-control @error("base_salary") is-invalid @enderror" value="{{ old("base_salary", $salary->base_salary ?? 0) }}" required min="0">
-                            <span class="input-group-text">Mts</span>
+                            <span class="input-group-text">{{ currency_symbol() }}</span>
                             @error("base_salary") <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
@@ -56,7 +56,7 @@
                             <label class="form-label">{{ __('app.bonus') }}</label>
                             <div class="input-group">
                                 <input type="number" name="bonus" id="bonusField" class="form-control @error("bonus") is-invalid @enderror" value="{{ old("bonus", $salary->bonus ?? 0) }}" min="0">
-                                <span class="input-group-text">Mts</span>
+                                <span class="input-group-text">{{ currency_symbol() }}</span>
                                 @error("bonus") <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
                         </div>
@@ -64,7 +64,7 @@
                             <label class="form-label">{{ __('app.deduction') }}</label>
                             <div class="input-group">
                                 <input type="number" name="deduction" id="deductionField" class="form-control @error("deduction") is-invalid @enderror" value="{{ old("deduction", $salary->deduction ?? 0) }}" min="0">
-                                <span class="input-group-text">Mts</span>
+                                <span class="input-group-text">{{ currency_symbol() }}</span>
                                 @error("deduction") <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
                         </div>
@@ -74,7 +74,7 @@
                         <label class="form-label">{{ __('app.absence_deduction') }}</label>
                         <div class="input-group">
                             <input type="number" name="absence_deduction" id="absenceField" class="form-control @error("absence_deduction") is-invalid @enderror" value="{{ old("absence_deduction", $salary->absence_deduction ?? 0) }}" min="0">
-                            <span class="input-group-text">Mts</span>
+                            <span class="input-group-text">{{ currency_symbol() }}</span>
                             @error("absence_deduction") <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                         <div id="absenceHint" class="form-text"></div>
@@ -83,8 +83,8 @@
                     <div class="mb-3">
                         <label class="form-label">{{ __('app.net_salary') }}</label>
                         <div class="input-group">
-                            <input type="text" id="netSalary" class="form-control fw-bold" readonly value="{{ number_format(($salary->net_salary ?? 0), 0, ".", ",") }}">
-                            <span class="input-group-text">Mts</span>
+                            <input type="text" id="netSalary" class="form-control fw-bold" readonly value="{{ num(($salary->net_salary ?? 0)) }}">
+                            <span class="input-group-text">{{ currency_symbol() }}</span>
                         </div>
                     </div>
 
@@ -105,57 +105,6 @@
 </div>
 
 @push("scripts")
-<script>
-    (function() {
-        var base = document.getElementById("baseSalary");
-        var bonus = document.getElementById("bonusField");
-        var deduction = document.getElementById("deductionField");
-        var absence = document.getElementById("absenceField");
-        var absenceHint = document.getElementById("absenceHint");
-        var net = document.getElementById("netSalary");
-        var employee = document.getElementById("payslipEmployee");
-        var month = document.getElementById("periodMonth");
-        var year = document.getElementById("periodYear");
-        var suggestionUrl = @json(route("salaries.absence-suggestion"));
-        var hintText = @json(__("app.absence_deduction_hint"));
-
-        function refreshNet() {
-            var value = (Number(base.value) || 0) + (Number(bonus.value) || 0)
-                - (Number(deduction.value) || 0) - (Number(absence.value) || 0);
-            net.value = value.toLocaleString("pt", { maximumFractionDigits: 0 });
-        }
-
-        function refreshAbsence() {
-            if (!employee.value || !year.value || !month.value) { return; }
-            var url = suggestionUrl + "?employee_id=" + encodeURIComponent(employee.value) +
-                "&period_year=" + encodeURIComponent(year.value) +
-                "&period_month=" + encodeURIComponent(month.value);
-            fetch(url, { headers: { "Accept": "application/json" } })
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    absence.value = data.amount;
-                    absenceHint.textContent = hintText
-                        .replace(":days", data.days)
-                        .replace(":rate", Number(data.daily_rate).toLocaleString("pt", { maximumFractionDigits: 0 }));
-                    refreshNet();
-                });
-        }
-
-        [base, bonus, deduction, absence].forEach(function(el) { el.addEventListener("input", refreshNet); });
-
-        employee.addEventListener("change", function() {
-            var selected = employee.options[employee.selectedIndex];
-            if (selected && selected.dataset.base !== undefined) {
-                base.value = selected.dataset.base;
-                refreshNet();
-            }
-            refreshAbsence();
-        });
-        month.addEventListener("change", refreshAbsence);
-        year.addEventListener("change", refreshAbsence);
-
-        refreshNet();
-        refreshAbsence();
-    })();
-</script>
+    <x-page-data name="payslip-form" :data="['suggestionUrl' => route('salaries.absence-suggestion'), 'hintText' => __('app.absence_deduction_hint')]"/>
+    @vite("resources/js/pages/payslip-form.js")
 @endpush

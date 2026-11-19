@@ -6,14 +6,16 @@
 <div class="page-title">
     <span>{{ __('app.total_transactions', ['count' => $orders->total()]) }}</span>
     <div class="d-flex gap-2">
-        @if(!auth()->user()->isCashier())
+        @if(auth()->user()->isManager())
         <a href="{{ route("orders.trash") }}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-trash"></i> {{ __('app.trash') }}
         </a>
         @endif
+        @can("create", \App\Models\Order::class)
         <a href="{{ route("orders.create") }}" class="btn btn-primary">
             <i class="bi bi-plus-lg"></i> {{ __('app.new_transaction') }}
         </a>
+        @endcan
     </div>
 </div>
 
@@ -28,7 +30,7 @@
                     </div>
                 </div>
                 <div class="col-md-2">
-                    <select name="status" class="form-select" onchange="this.form.submit()">
+                    <select name="status" class="form-select" data-auto-submit>
                         <option value="">{{ __('app.all_statuses') }}</option>
                         <option value="received" {{ request("status") == "received" ? "selected" : "" }}>{{ __('app.status_received') }}</option>
                         <option value="washing" {{ request("status") == "washing" ? "selected" : "" }}>{{ __('app.status_washing') }}</option>
@@ -63,17 +65,17 @@
                 <tbody>
                     @forelse($orders as $order)
                     <tr>
-                        <td class="fw-semibold">{{ $order->order_number }}</td>
+                        <td class="fw-semibold">{{ $order->order_number }}@if($order->is_express) <i class="bi bi-lightning-charge-fill text-warning" title="{{ __('app.express') }}"></i>@endif</td>
                         <td>{{ $order->customer->name }}</td>
-                        <td class="small">{{ $order->received_at->format("d/m/Y") }}</td>
-                        <td class="small">{{ $order->completed_at?->format("d/m/Y") ?? "-" }}</td>
+                        <td class="small">{{ $order->received_at->format(date_fmt()) }}</td>
+                        <td class="small">{{ $order->completed_at?->format(date_fmt()) ?? "-" }}</td>
                         <td>
                             <span class="badge bg-{{ $order->status_color }} badge-status">
                                 <i class="bi bi-{{ $order->status == "completed" ? "check-circle" : "hourglass-split" }}"></i>
                                 {{ $order->status_label }}
                             </span>
                         </td>
-                        <td class="fw-semibold">{{ number_format($order->total_price, 0, ".", ",") }} Mts</td>
+                        <td class="fw-semibold">{{ money($order->total_price) }}</td>
                         <td class="text-center">
                             <a href="{{ route("orders.show", $order) }}" class="btn btn-sm btn-outline-info" title="{{ __('app.view') }}">
                                 <i class="bi bi-eye"></i>
@@ -83,15 +85,17 @@
                                     <i class="bi bi-three-dots-vertical"></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end">
-                                    @if(!auth()->user()->isCashier())
+                                    @if(auth()->user()->isManager())
                                     <li><a href="{{ route("orders.edit", $order) }}" class="dropdown-item"><i class="bi bi-pencil me-2"></i>{{ __('app.edit') }}</a></li>
                                     @endif
+                                    @can("update", $order)
                                     <li><a href="{{ route("orders.payment", $order) }}" class="dropdown-item"><i class="bi bi-cash me-2"></i>{{ __('app.payment') }}</a></li>
+                                    @endcan
                                     <li><a href="{{ route("orders.invoice", $order) }}" class="dropdown-item" target="_blank"><i class="bi bi-printer me-2"></i>{{ __('app.invoice') }}</a></li>
-                                    @if(!auth()->user()->isCashier())
+                                    @if(auth()->user()->isManager())
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
-                                        <form action="{{ route("orders.destroy", $order) }}" method="POST" onsubmit="return confirm('{{ __('app.delete_order_confirm') }}')">
+                                        <form action="{{ route("orders.destroy", $order) }}" method="POST" data-confirm="{{ __('app.delete_order_confirm') }}">
                                             @csrf @method("DELETE")
                                             <button class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>{{ __('app.delete') }}</button>
                                         </form>
@@ -105,7 +109,7 @@
                     <tr>
                         <td colspan="7" class="text-center py-4 text-muted">
                             <i class="bi bi-receipt fs-1 d-block mb-2"></i>
-                            {{ __('app.no_transactions') }} <a href="{{ route("orders.create") }}">{{ __('app.create_new_transaction') }}</a>.
+                            {{ __('app.no_transactions') }}@can("create", \App\Models\Order::class) <a href="{{ route("orders.create") }}">{{ __('app.create_new_transaction') }}</a>@endcan.
                         </td>
                     </tr>
                     @endforelse

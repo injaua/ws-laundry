@@ -2,8 +2,8 @@
 <nav class="lp-nav {{ ($navOnDark ?? true) ? "on-dark" : "" }}" id="navbar">
     <div class="container">
         <a href="{{ route("home") }}" class="lp-brand">
-            <img src="{{ asset("images/logo.png") }}" alt="{{ config("app.name") }}">
-            <span>WS Clean &amp; Laundry<small>Serviços, Lda</small></span>
+            <img src="{{ \App\Support\SystemSettings::logoUrl() }}" alt="{{ config("app.name") }}">
+            <span>{{ \App\Support\SystemSettings::companyName() }}</span>
         </a>
         <button class="lp-nav-toggler" id="navToggler" aria-label="{{ __('app.menu') }}" aria-controls="navLinks" aria-expanded="false"><i class="bi bi-list"></i></button>
         <div class="nav-links" id="navLinks">
@@ -15,15 +15,18 @@
                 <a href="#about">{{ __('app.nav_about') }}</a>
                 @if($testimonials->isNotEmpty())<a href="#testimonial">{{ __('app.nav_testimonials') }}</a>@endif
                 @if($galleries->isNotEmpty())<a href="#gallery">{{ __('app.nav_gallery') }}</a>@endif
+                @if(($zones ?? collect())->isNotEmpty())<a href="#pickup">{{ __('app.nav_pickup') }}</a>@endif
                 <a href="#contact">{{ __('app.nav_contact') }}</a>
+                @if(\App\Services\MobileMoney\MobileMoneySettings::enabledProviders() !== [])<a href="{{ route('pay.lookup') }}">{{ __('app.nav_pay') }}</a>@endif
             @endif
             <div class="dropdown">
-                <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown" style="text-decoration:none;">
+                <a href="#" class="dropdown-toggle text-decoration-none" data-bs-toggle="dropdown">
                     <i class="bi bi-translate"></i> {{ strtoupper(app()->getLocale()) }}
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item {{ app()->getLocale() == 'pt' ? 'active' : '' }}" href="{{ route('language.switch', 'pt') }}">🇵🇹 Português</a></li>
-                    <li><a class="dropdown-item {{ app()->getLocale() == 'en' ? 'active' : '' }}" href="{{ route('language.switch', 'en') }}">🇬🇧 English</a></li>
+                    @foreach(\App\Support\Languages::active() as $lang)
+                        <li><a class="dropdown-item {{ app()->getLocale() == $lang->code ? 'active' : '' }}" href="{{ route('language.switch', $lang->code) }}">{{ $lang->label() }}</a></li>
+                    @endforeach
                 </ul>
             </div>
             <a href="{{ route("login") }}" class="btn-pill btn-login-sm"><i class="bi bi-box-arrow-in-right"></i> {{ __('app.login') }}</a>

@@ -18,7 +18,7 @@
         <div class="p-3 border-bottom">
             <form action="{{ route("vacations.index") }}" method="GET" class="row g-2">
                 <div class="col-md-4">
-                    <select name="employee_id" class="form-select" onchange="this.form.submit()">
+                    <select name="employee_id" class="form-select" data-auto-submit>
                         <option value="">{{ __('app.employees') }}</option>
                         @foreach($employees as $employee)
                             <option value="{{ $employee->id }}" {{ request("employee_id") == $employee->id ? "selected" : "" }}>{{ $employee->name }}</option>
@@ -26,7 +26,7 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <select name="status" class="form-select" onchange="this.form.submit()">
+                    <select name="status" class="form-select" data-auto-submit>
                         <option value="">{{ __('app.status') }}</option>
                         @foreach(\App\Models\Vacation::STATUSES as $st)
                             <option value="{{ $st }}" {{ request("status") == $st ? "selected" : "" }}>{{ __('app.' . $st) }}</option>
@@ -60,8 +60,8 @@
                             <a href="{{ route("employees.show", $vacation->employee) }}" class="text-decoration-none">{{ $vacation->employee->name }}</a>
                         </td>
                         <td class="small">{{ __('app.vacation_type_' . $vacation->type) }}</td>
-                        <td>{{ $vacation->start_date->format("d/m/Y") }}</td>
-                        <td>{{ $vacation->end_date->format("d/m/Y") }}</td>
+                        <td>{{ $vacation->start_date->format(date_fmt()) }}</td>
+                        <td>{{ $vacation->end_date->format(date_fmt()) }}</td>
                         <td>{{ $vacation->days }}</td>
                         <td>
                             <span class="badge bg-{{ $reviewColors[$vacation->status] }}">
@@ -87,7 +87,7 @@
                             <a href="{{ route("vacations.edit", $vacation) }}" class="btn btn-sm btn-outline-primary" title="{{ __('app.edit') }}">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <form action="{{ route("vacations.destroy", $vacation) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.delete_vacation_confirm') }}')">
+                            <form action="{{ route("vacations.destroy", $vacation) }}" method="POST" class="d-inline" data-confirm="{{ __('app.delete_vacation_confirm') }}">
                                 @csrf @method("DELETE")
                                 <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}">
                                     <i class="bi bi-trash"></i>

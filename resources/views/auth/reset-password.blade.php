@@ -19,7 +19,7 @@
             <input id="password" type="password" name="password"
                 class="form-control @error("password") is-invalid @enderror"
                 required autocomplete="new-password">
-            <button class="btn btn-outline-secondary" type="button" onclick="togglePw('password', this)" aria-label="{{ __('app.show_password') }}" aria-pressed="false"><i class="bi bi-eye"></i></button>
+            <button class="btn btn-outline-secondary" type="button" data-toggle-password="password" aria-label="{{ __('app.show_password') }}" aria-pressed="false"><i class="bi bi-eye"></i></button>
             @error("password") <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
     </div>
@@ -29,7 +29,7 @@
             <input id="password_confirmation" type="password" name="password_confirmation"
                 class="form-control @error("password_confirmation") is-invalid @enderror"
                 required autocomplete="new-password">
-            <button class="btn btn-outline-secondary" type="button" onclick="togglePw('password_confirmation', this)" aria-label="{{ __('app.show_password') }}" aria-pressed="false"><i class="bi bi-eye"></i></button>
+            <button class="btn btn-outline-secondary" type="button" data-toggle-password="password_confirmation" aria-label="{{ __('app.show_password') }}" aria-pressed="false"><i class="bi bi-eye"></i></button>
             @error("password_confirmation") <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
     </div>

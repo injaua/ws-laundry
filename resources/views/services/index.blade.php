@@ -51,13 +51,13 @@
                                 <span class="badge bg-warning text-dark"><i class="bi bi-box"></i> {{ __('app.by_piece_type') }}</span>
                             @endif
                         </td>
-                        <td class="fw-semibold">{{ number_format($service->price, 0, ".", ",") }} Mts</td>
+                        <td class="fw-semibold">{{ money($service->price) }}</td>
                         <td>{{ $service->estimated_days }} {{ __('app.days') }}</td>
                         <td class="text-center">
                             <a href="{{ route("services.edit", $service) }}" class="btn btn-sm btn-outline-primary" title="{{ __('app.edit') }}">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <form action="{{ route("services.destroy", $service) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.delete_service_confirm') }}')">
+                            <form action="{{ route("services.destroy", $service) }}" method="POST" class="d-inline" data-confirm="{{ __('app.delete_service_confirm') }}">
                                 @csrf @method("DELETE")
                                 <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}">
                                     <i class="bi bi-trash"></i>

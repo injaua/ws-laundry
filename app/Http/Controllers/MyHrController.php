@@ -12,7 +12,7 @@ class MyHrController extends Controller
     {
         $employee = $this->employeeFor($request);
 
-        if (! $employee) {
+        if (!$employee) {
             return view("hr.payslips", ["employee" => null, "salaries" => collect()]);
         }
 
@@ -27,7 +27,7 @@ class MyHrController extends Controller
     {
         $employee = $this->employeeFor($request);
 
-        if (! $employee) {
+        if (!$employee) {
             return view("hr.attendance", [
                 "employee" => null,
                 "month" => now()->format("Y-m"),

@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\Package;
+use App\Models\Service;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -21,7 +23,7 @@ class OrderDeliveryDateTest extends TestCase
             "received_at" => now()->format("Y-m-d"),
             "total_price" => 5000,
             "items" => [
-                ["service_id" => \App\Models\Service::create(["name" => "Lavagem", "type" => "by_weight", "price" => 2500, "estimated_days" => 1])->id,
+                ["service_id" => Service::create(["name" => "Lavagem", "type" => "by_weight", "price" => 2500, "estimated_days" => 1])->id,
                     "weight" => 2, "price" => 2500, "subtotal" => 5000],
             ],
         ], $overrides);
@@ -58,10 +60,10 @@ class OrderDeliveryDateTest extends TestCase
     {
         $admin = User::factory()->create();
 
-        $package = \App\Models\Package::create(["name" => "Pacote X", "weight_kg" => 5, "price" => 5000, "is_active" => true]);
+        $package = Package::create(["name" => "Pacote X", "weight_kg" => 5, "price" => 5000, "is_active" => true]);
 
         $this->actingAs($admin)->post("/orders", [
-            "customer_id" => \App\Models\Customer::create(["name" => "P", "phone" => "+258840000011", "address" => "A"])->id,
+            "customer_id" => Customer::create(["name" => "P", "phone" => "+258840000011", "address" => "A"])->id,
             "received_at" => now()->format("Y-m-d"),
             "total_price" => 5000,
             "items" => [

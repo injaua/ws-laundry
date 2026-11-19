@@ -8,10 +8,10 @@
     <div class="col-lg-6">
         <div class="card">
             <div class="card-body">
-                <form method="POST" enctype="multipart/form-data">
+                <form action="{{ route("admin.galleries.store") }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="mb-3">
-                        <label class="form-label">Photo</label>
+                        <label class="form-label">{{ __('app.photo') }}</label>
                         <input type="file" name="photo" class="form-control @error("photo") is-invalid @enderror"
                             accept="image/jpeg,image/png,image/webp" required>
                         @error("photo") <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -22,20 +22,20 @@
                     </div>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label class="form-label">Urutan</label>
+                            <label class="form-label">{{ __('app.sort_order') }}</label>
                             <input type="number" name="sort_order" class="form-control" value="{{ old("sort_order",0) }}" min="0">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Active</label>
+                            <label class="form-label">{{ __('app.active') }}</label>
                             <div class="form-check mt-2">
                                 <input type="checkbox" name="is_active" class="form-check-input" value="1" checked id="active">
-                                <label class="form-check-label" for="active">Tampilkan</label>
+                                <label class="form-check-label" for="active">{{ __('app.show_on_site') }}</label>
                             </div>
                         </div>
                     </div>
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary"><i class="bi bi-upload me-1"></i> {{ __('app.upload') }}</button>
-                        <a href="{{ route("admin.galleries.index") }}" class="btn btn-outline-secondary">Batal</a>
+                        <a href="{{ route("admin.galleries.index") }}" class="btn btn-outline-secondary">{{ __('app.cancel') }}</a>
                     </div>
                 </form>
             </div>

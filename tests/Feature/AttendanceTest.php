@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Attendance;
 use App\Models\Employee;
-use App\Models\Leave;
 use App\Models\User;
 use App\Models\Vacation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -191,7 +190,7 @@ class AttendanceTest extends TestCase
 
     public function test_daily_matrix_shows_status_per_employee_and_day(): void
     {
-        $a = Employee::factory()->create(["name" => "Alpha"] );
+        $a = Employee::factory()->create(["name" => "Alpha"]);
         $b = Employee::factory()->create(["name" => "Bravo"]);
         Attendance::factory()->create([
             "employee_id" => $a->id, "attendance_date" => now()->toDateString(), "status" => "present",
@@ -256,7 +255,7 @@ class AttendanceTest extends TestCase
 
                 return $row !== null
                     && $row[$recent] === "present"
-                    && ! isset($row[$old]);
+                    && !isset($row[$old]);
             });
     }
 }

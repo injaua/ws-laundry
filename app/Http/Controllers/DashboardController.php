@@ -2,21 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CreditNote;
 use App\Models\Customer;
 use App\Models\Equipment;
 use App\Models\InventoryItem;
+use App\Models\InventoryLot;
 use App\Models\MaintenanceJob;
 use App\Models\Order;
 use App\Models\Payment;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use App\Services\AccountsReceivable;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $isManager = auth()->user()->isAdmin() || auth()->user()->isOwner();
+        // Couriers work from their route; the dashboard figures are not theirs to see.
+        if (auth()->user()->isCourier()) {
+            return redirect()->route("courier.route");
+        }
+
+        // Managers and the accountant see the whole business; cashiers their own takings.
+        $isManager = auth()->user()->seesFinance();
 
         $totalCustomers = Customer::count();
         $newCustomers = Customer::whereMonth("created_at", now()->month)->count();
@@ -25,10 +31,13 @@ class DashboardController extends Controller
         $readyOrders = Order::where("status", "ready")->count();
 
         $todayRevenueQuery = Payment::whereDate("paid_at", today());
-        if (! $isManager) {
+        if (!$isManager) {
             $todayRevenueQuery->where("user_id", auth()->id());
         }
-        $todayRevenue = $todayRevenueQuery->sum("amount");
+        // Refunds handed back are not revenue.
+        $todayRefunds = CreditNote::valid()->refunds()->whereDate("issued_at", today())
+            ->when(!$isManager, fn ($q) => $q->where("user_id", auth()->id()));
+        $todayRevenue = $todayRevenueQuery->sum("amount") - $todayRefunds->sum("amount");
 
         $monthRevenue = 0;
         $chartLabels = [];
@@ -37,13 +46,16 @@ class DashboardController extends Controller
         if ($isManager) {
             $monthRevenue = Payment::whereMonth("paid_at", now()->month)
                 ->whereYear("paid_at", now()->year)
-                ->sum("amount");
+                ->sum("amount")
+                - CreditNote::valid()->refunds()->whereMonth("issued_at", now()->month)
+                    ->whereYear("issued_at", now()->year)->sum("amount");
 
             // 7 days chart
             for ($i = 6; $i >= 0; $i--) {
                 $date = today()->subDays($i);
                 $chartLabels[] = $date->format("d M");
-                $total = Payment::whereDate("paid_at", $date)->sum("amount");
+                $total = Payment::whereDate("paid_at", $date)->sum("amount")
+                    - CreditNote::valid()->refunds()->whereDate("issued_at", $date)->sum("amount");
                 $chartData[] = (float) $total;
             }
         }
@@ -54,7 +66,7 @@ class DashboardController extends Controller
             ->get();
 
         $resourceAlerts = null;
-        if ($isManager) {
+        if (auth()->user()->isManager()) {
             $resourceAlerts = [
                 "low_stock" => InventoryItem::where("is_active", true)
                     ->where("min_stock_qty", ">", 0)
@@ -66,13 +78,21 @@ class DashboardController extends Controller
                     ->whereNotNull("next_service_date")
                     ->whereDate("next_service_date", "<=", now()->addDays(7)->toDateString())
                     ->count(),
+                "expiring_lots" => InventoryLot::open()->expiringSoon()->count(),
+                "expired_lots" => InventoryLot::open()->expired()->count(),
             ];
+        }
+
+        $receivablesAlerts = null;
+        if ($isManager) {
+            $ar = app(AccountsReceivable::class);
+            $receivablesAlerts = $ar->summary($ar->outstandingOrders());
         }
 
         return view("dashboard", compact(
             "isManager", "totalCustomers", "newCustomers", "todayOrders", "processingOrders",
             "readyOrders", "todayRevenue", "monthRevenue",
-            "latestOrders", "chartLabels", "chartData", "resourceAlerts"
+            "latestOrders", "chartLabels", "chartData", "resourceAlerts", "receivablesAlerts"
         ));
     }
 }

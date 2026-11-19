@@ -22,7 +22,7 @@
                 @foreach($unjustified as $att)
                 <tr>
                     <td class="fw-medium">{{ $att->employee->name }}</td>
-                    <td class="small">{{ $att->attendance_date->format("d/m/Y") }}</td>
+                    <td class="small">{{ $att->attendance_date->format(date_fmt()) }}</td>
                     <td>
                         <span class="badge bg-{{ ["present" => "success", "absent" => "danger", "late" => "warning", "excused" => "info", "vacation" => "primary"][$att->status] }}">
                             {{ __('app.' . ($att->status === "vacation" ? "on_vacation" : $att->status)) }}
@@ -45,7 +45,7 @@
         <div class="p-3 border-bottom">
             <form action="{{ route("justifications.index") }}" method="GET" class="row g-2">
                 <div class="col-md-4">
-                    <select name="employee_id" class="form-select" onchange="this.form.submit()">
+                    <select name="employee_id" class="form-select" data-auto-submit>
                         <option value="">{{ __('app.employees') }}</option>
                         @foreach($employees as $employee)
                             <option value="{{ $employee->id }}" {{ request("employee_id") == $employee->id ? "selected" : "" }}>{{ $employee->name }}</option>
@@ -53,7 +53,7 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <select name="status" class="form-select" onchange="this.form.submit()">
+                    <select name="status" class="form-select" data-auto-submit>
                         <option value="">{{ __('app.status') }}</option>
                         @foreach(\App\Models\AbsenceJustification::STATUSES as $st)
                             <option value="{{ $st }}" {{ request("status") == $st ? "selected" : "" }}>{{ __('app.' . $st) }}</option>
@@ -84,7 +84,7 @@
                         <td class="fw-medium">
                             <a href="{{ route("employees.show", $justification->employee) }}" class="text-decoration-none">{{ $justification->employee->name }}</a>
                         </td>
-                        <td class="small">{{ $justification->absence_date->format("d/m/Y") }}</td>
+                        <td class="small">{{ $justification->absence_date->format(date_fmt()) }}</td>
                         <td>
                             {{ $justification->reason }}
                             @if($justification->notes)
@@ -112,7 +112,7 @@
                                     <button class="btn btn-sm btn-outline-danger" title="{{ __('app.reject') }}"><i class="bi bi-x"></i></button>
                                 </form>
                             @endif
-                            <form action="{{ route("justifications.destroy", $justification) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.delete_justification_confirm') }}')">
+                            <form action="{{ route("justifications.destroy", $justification) }}" method="POST" class="d-inline" data-confirm="{{ __('app.delete_justification_confirm') }}">
                                 @csrf @method("DELETE")
                                 <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}">
                                     <i class="bi bi-trash"></i>

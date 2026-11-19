@@ -34,7 +34,7 @@
                             <th>{{ __('app.employee') }}</th>
                             <th>{{ __('app.position') }}</th>
                             <th>{{ __('app.status') }}</th>
-                            <th style="min-width: 180px;">{{ __('app.attendance') }}</th>
+                            <th class="minw-180px">{{ __('app.attendance') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -85,7 +85,7 @@
 
 @if($registered->isNotEmpty())
 <div class="card mt-3">
-    <div class="card-header"><i class="bi bi-clock-history me-1"></i> {{ __('app.register_attendance') }} — {{ \Carbon\Carbon::parse($date)->format("d/m/Y") }}</div>
+    <div class="card-header"><i class="bi bi-clock-history me-1"></i> {{ __('app.register_attendance') }} — {{ \Carbon\Carbon::parse($date)->format(date_fmt()) }}</div>
     <div class="table-responsive">
         <table class="table table-hover mb-0">
             <tbody>
@@ -94,7 +94,7 @@
                     <td>{{ $att->employee->name }}</td>
                     <td><span class="badge bg-{{ $statusColors[$att->status] }}">{{ __('app.' . ($att->status === "vacation" ? "on_vacation" : $att->status)) }}</span></td>
                     <td class="text-center">
-                        <form action="{{ route("attendance.destroy", $att) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.delete') }}?')">
+                        <form action="{{ route("attendance.destroy", $att) }}" method="POST" class="d-inline" data-confirm="{{ __('app.delete') }}?">
                             @csrf @method("DELETE")
                             <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}"><i class="bi bi-trash"></i></button>
                         </form>

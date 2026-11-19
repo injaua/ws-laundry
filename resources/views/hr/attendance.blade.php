@@ -48,7 +48,7 @@
             <tbody>
                 @forelse($attendances as $att)
                 <tr>
-                    <td>{{ $att->attendance_date->format("d/m/Y") }}</td>
+                    <td>{{ $att->attendance_date->format(date_fmt()) }}</td>
                     <td>
                         <span class="badge bg-{{ $statusColors[$att->status] }}">
                             {{ __('app.' . ($att->status === "vacation" ? "on_vacation" : $att->status)) }}

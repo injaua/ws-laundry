@@ -1,4 +1,5 @@
 <?php
+
 // Throwaway: white-background matte extraction of logo-source.jpg -> transparent logo.png
 $src = __DIR__ . '/../public/images/logo-source.jpg';
 $out = __DIR__ . '/../public/images/logo.png';
@@ -16,14 +17,19 @@ $ramp = 65;   // pixels become fully opaque at floor - ramp
 for ($y = 0; $y < $h; $y++) {
     for ($x = 0; $x < $w; $x++) {
         $rgb = imagecolorat($img, $x, $y);
-        $r = ($rgb >> 16) & 255; $g = ($rgb >> 8) & 255; $b = $rgb & 255;
+        $r = ($rgb >> 16) & 255;
+        $g = ($rgb >> 8) & 255;
+        $b = $rgb & 255;
         $m = min($r, $g, $b);
         if ($m >= $floor) {
             imagesetpixel($img, $x, $y, 0x7F000000);
+
             continue;
         }
         $a = (($floor - $m) / $ramp);
-        if ($a > 1) $a = 1;
+        if ($a > 1) {
+            $a = 1;
+        }
         // unpremultiply against white backdrop
         $nr = (int) round(max(0, min(255, ($r - (1 - $a) * 255) / $a)));
         $ng = (int) round(max(0, min(255, ($g - (1 - $a) * 255) / $a)));

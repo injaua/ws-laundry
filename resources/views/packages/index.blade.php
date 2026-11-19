@@ -46,8 +46,8 @@
                         <td>{{ $loop->iteration }}</td>
                         <td class="fw-medium">{{ $package->name }}</td>
                         <td><small class="text-muted">{{ $package->description ? Str::limit($package->description, 50) : "-" }}</small></td>
-                        <td>{{ number_format($package->weight_kg, 2, ".", ",") }} kg</td>
-                        <td class="fw-semibold">{{ number_format($package->price, 0, ".", ",") }} Mts</td>
+                        <td>{{ num($package->weight_kg, 2) }} kg</td>
+                        <td class="fw-semibold">{{ money($package->price) }}</td>
                         <td class="text-center">
                             @if($package->is_active)
                                 <span class="badge bg-success">{{ __('app.active') }}</span>
@@ -59,7 +59,7 @@
                             <a href="{{ route("packages.edit", $package) }}" class="btn btn-sm btn-outline-primary" title="{{ __('app.edit') }}">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <form action="{{ route("packages.destroy", $package) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.delete_package_confirm') }}')">
+                            <form action="{{ route("packages.destroy", $package) }}" method="POST" class="d-inline" data-confirm="{{ __('app.delete_package_confirm') }}">
                                 @csrf @method("DELETE")
                                 <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}">
                                     <i class="bi bi-trash"></i>

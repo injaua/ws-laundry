@@ -6,6 +6,8 @@ use App\Models\Account;
 use App\Models\Expense;
 use App\Models\InventoryItem;
 use App\Models\InventoryMovement;
+use App\Models\JournalEntry;
+use App\Models\JournalLine;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -39,7 +41,7 @@ class ResourceStockTest extends TestCase
             "reason" => "purchase",
             "moved_at" => now()->toDateString(),
             "register_expense" => 1,
-            "expense_category" => "produtos",
+            "expense_category" => "cleaning_products",
         ], $overrides);
     }
 
@@ -79,11 +81,11 @@ class ResourceStockTest extends TestCase
 
         $expense = Expense::firstWhere("source_type", "inventory_movement");
         $this->assertNotNull($expense);
-        $this->assertSame("produtos", $expense->category);
+        $this->assertSame("cleaning_products", $expense->category);
         $this->assertSame(25000, (int) $expense->amount);
 
         // Gross 25000 at 16% -> VAT 3448, net 21552
-        $entry = \App\Models\JournalEntry::firstWhere("source", "expense");
+        $entry = JournalEntry::firstWhere("source", "expense");
         $this->assertNotNull($entry);
         $lines = $entry->lines()->get()->keyBy("account_id");
         $this->assertSame(21552, (int) $lines[Account::findByCode("6.1.1")->id]->debit);
@@ -100,7 +102,7 @@ class ResourceStockTest extends TestCase
         $this->actingAs($this->admin())->put("/resources/movements/{$movement->id}", $this->purchasePayload(["unit_cost" => 2600]))
             ->assertSessionHasNoErrors();
 
-        $this->assertSame(1, \App\Models\JournalEntry::where("source", "expense")->count());
+        $this->assertSame(1, JournalEntry::where("source", "expense")->count());
         $this->assertSame(26000, (int) Expense::firstWhere("source_type", "inventory_movement")->amount);
     }
 
@@ -131,8 +133,8 @@ class ResourceStockTest extends TestCase
 
         $this->assertSame("0.00", (string) $item->fresh()->stock_qty);
         $this->assertSame(0, Expense::where("source_type", "inventory_movement")->count());
-        $this->assertSame(0, \App\Models\JournalEntry::where("source", "expense")->count());
-        $this->assertSame(0, \App\Models\JournalLine::count());
+        $this->assertSame(0, JournalEntry::where("source", "expense")->count());
+        $this->assertSame(0, JournalLine::count());
     }
 
     public function test_item_with_movements_cannot_be_deleted(): void
@@ -158,7 +160,7 @@ class ResourceStockTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $this->assertSame(0, Expense::where("source_type", "inventory_movement")->count());
-        $this->assertSame(0, \App\Models\JournalEntry::where("source", "expense")->count());
+        $this->assertSame(0, JournalEntry::where("source", "expense")->count());
         $this->assertSame("10.00", (string) $item->fresh()->stock_qty);
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Account;
+use App\Models\AccountingPeriod;
 use App\Models\JournalEntry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -16,7 +17,7 @@ class JournalEntryController extends Controller
         if ($search = $request->search) {
             $query->where(function ($q) use ($search) {
                 $q->where("entry_number", "like", "%{$search}%")
-                  ->orWhere("description", "like", "%{$search}%");
+                    ->orWhere("description", "like", "%{$search}%");
             });
         }
 
@@ -56,6 +57,8 @@ class JournalEntryController extends Controller
             "entry_date" => "required|date",
             "description" => "required|string|max:255",
         ]);
+
+        AccountingPeriod::assertOpen($validated["entry_date"], "entry_date");
 
         $rows = $this->collectPairs($request);
 
@@ -105,6 +108,9 @@ class JournalEntryController extends Controller
             "description" => "required|string|max:255",
         ]);
 
+        AccountingPeriod::assertOpen($journal_entry->entry_date, "entry_date");
+        AccountingPeriod::assertOpen($validated["entry_date"], "entry_date");
+
         $rows = $this->collectPairs($request);
 
         if (($errors = $this->pairErrors($rows)) !== []) {
@@ -124,6 +130,11 @@ class JournalEntryController extends Controller
         if (!$journal_entry->isManual()) {
             return redirect()->route("accounting.journal-entries.index")
                 ->with("error", __("app.journal_auto_locked"));
+        }
+
+        if ($period = AccountingPeriod::closedOn($journal_entry->entry_date)) {
+            return redirect()->route("accounting.journal-entries.index")
+                ->with("error", __("app.period_closed", ["period" => $period->label()]));
         }
 
         $journal_entry->delete();

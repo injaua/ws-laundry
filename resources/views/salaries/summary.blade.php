@@ -14,7 +14,7 @@
     <div class="card-body p-3">
         <form action="{{ route("salaries.summary") }}" method="GET" class="row g-2">
             <div class="col-md-2">
-                <select name="month" class="form-select" onchange="this.form.submit()">
+                <select name="month" class="form-select" data-auto-submit>
                     <option value="">{{ __('app.period_month') }}</option>
                     @for($m = 1; $m <= 12; $m++)
                         <option value="{{ $m }}" {{ $month == $m ? "selected" : "" }}>{{ sprintf("%02d", $m) }}</option>
@@ -22,7 +22,7 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <select name="year" class="form-select" onchange="this.form.submit()">
+                <select name="year" class="form-select" data-auto-submit>
                     <option value="">{{ __('app.period_year') }}</option>
                     @for($y = now()->year; $y >= now()->year - 3; $y--)
                         <option value="{{ $y }}" {{ $year == $y ? "selected" : "" }}>{{ $y }}</option>
@@ -42,7 +42,7 @@
         <div class="card h-100">
             <div class="card-body text-center">
                 <div class="small text-muted">{{ __('app.month_total') }}</div>
-                <div class="fs-3 fw-bold">{{ number_format($totalPaid + $totalPending, 0, ".", ",") }} Mts</div>
+                <div class="fs-3 fw-bold">{{ money($totalPaid + $totalPending) }}</div>
             </div>
         </div>
     </div>
@@ -50,7 +50,7 @@
         <div class="card h-100">
             <div class="card-body text-center">
                 <div class="small text-muted">{{ __('app.total_paid_salaries') }}</div>
-                <div class="fs-3 fw-bold text-success">{{ number_format($totalPaid, 0, ".", ",") }} Mts</div>
+                <div class="fs-3 fw-bold text-success">{{ money($totalPaid) }}</div>
             </div>
         </div>
     </div>
@@ -58,7 +58,7 @@
         <div class="card h-100">
             <div class="card-body text-center">
                 <div class="small text-muted">{{ __('app.total_pending_salaries') }}</div>
-                <div class="fs-3 fw-bold text-warning">{{ number_format($totalPending, 0, ".", ",") }} Mts</div>
+                <div class="fs-3 fw-bold text-warning">{{ money($totalPending) }}</div>
             </div>
         </div>
     </div>
@@ -85,13 +85,17 @@
                 @forelse($salaries as $salary)
                 <tr>
                     <td class="fw-medium">
+                        @if(auth()->user()->isManager())
                         <a href="{{ route("employees.show", $salary->employee) }}" class="text-decoration-none">{{ $salary->employee->name }}</a>
+                        @else
+                        {{ $salary->employee->name }}
+                        @endif
                     </td>
-                    <td class="text-end">{{ number_format($salary->base_salary, 0, ".", ",") }}</td>
-                    <td class="text-end text-success">{{ number_format($salary->bonus, 0, ".", ",") }}</td>
-                    <td class="text-end text-danger">{{ number_format($salary->deduction, 0, ".", ",") }}</td>
-                    <td class="text-end text-danger">{{ number_format($salary->absence_deduction, 0, ".", ",") }}</td>
-                    <td class="text-end fw-semibold">{{ number_format($salary->net_salary, 0, ".", ",") }} Mts</td>
+                    <td class="text-end">{{ num($salary->base_salary) }}</td>
+                    <td class="text-end text-success">{{ num($salary->bonus) }}</td>
+                    <td class="text-end text-danger">{{ num($salary->deduction) }}</td>
+                    <td class="text-end text-danger">{{ num($salary->absence_deduction) }}</td>
+                    <td class="text-end fw-semibold">{{ money($salary->net_salary) }}</td>
                     <td>
                         <span class="badge bg-{{ $salary->isPaid() ? "success" : "secondary" }}">
                             {{ $salary->isPaid() ? __('app.paid') : __('app.pending') }}
@@ -111,11 +115,11 @@
             <tfoot>
                 <tr class="table-light fw-semibold">
                     <td>{{ __('app.month_total') }}</td>
-                    <td class="text-end">{{ number_format($salaries->sum("base_salary"), 0, ".", ",") }}</td>
-                    <td class="text-end">{{ number_format($salaries->sum("bonus"), 0, ".", ",") }}</td>
-                    <td class="text-end">{{ number_format($salaries->sum("deduction"), 0, ".", ",") }}</td>
-                    <td class="text-end">{{ number_format($salaries->sum("absence_deduction"), 0, ".", ",") }}</td>
-                    <td class="text-end">{{ number_format($salaries->sum("net_salary"), 0, ".", ",") }} Mts</td>
+                    <td class="text-end">{{ num($salaries->sum("base_salary")) }}</td>
+                    <td class="text-end">{{ num($salaries->sum("bonus")) }}</td>
+                    <td class="text-end">{{ num($salaries->sum("deduction")) }}</td>
+                    <td class="text-end">{{ num($salaries->sum("absence_deduction")) }}</td>
+                    <td class="text-end">{{ money($salaries->sum("net_salary")) }}</td>
                     <td></td>
                 </tr>
             </tfoot>

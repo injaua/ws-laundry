@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Account;
-use App\Models\Employee;
 use App\Models\EmployeeSalary;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
@@ -22,10 +21,10 @@ class ExpenseCategoryTest extends TestCase
 
     public function test_default_categories_are_seeded(): void
     {
-        $this->assertDatabaseHas("expense_categories", ["key" => "gaji", "is_salary" => true]);
+        $this->assertDatabaseHas("expense_categories", ["key" => "salary", "is_salary" => true]);
         $this->assertDatabaseHas("expense_categories", ["key" => "detergent"]);
-        $this->assertDatabaseHas("expense_categories", ["key" => "produtos"]);
-        $this->assertDatabaseHas("expense_categories", ["key" => "manutencao"]);
+        $this->assertDatabaseHas("expense_categories", ["key" => "cleaning_products"]);
+        $this->assertDatabaseHas("expense_categories", ["key" => "maintenance"]);
         $this->assertSame(7, ExpenseCategory::count());
     }
 

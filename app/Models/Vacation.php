@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Vacation extends Model
 {
+    use BelongsToStore;
     use HasFactory, Loggable;
 
     public const STATUSES = ["pending", "approved", "rejected"];
@@ -45,7 +47,7 @@ class Vacation extends Model
         $last = Carbon::parse($end);
 
         while ($current->lte($last)) {
-            if (! $current->isSunday()) {
+            if (!$current->isSunday()) {
                 $days++;
             }
             $current = $current->copy()->addDay();

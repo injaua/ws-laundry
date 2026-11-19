@@ -13,7 +13,7 @@
         <div class="row g-3">
             <div class="col-md-2">
                 <label class="form-label">{{ __('app.direction') }}</label>
-                <select name="direction" id="m-direction" class="form-select" onchange="toggleExpense()" required>
+                <select name="direction" id="m-direction" class="form-select" required>
                     <option value="in" {{ old("direction", $movement->direction) == "in" ? "selected" : "" }}>{{ __('app.movement_in') }}</option>
                     <option value="out" {{ old("direction", $movement->direction) == "out" ? "selected" : "" }}>{{ __('app.movement_out') }}</option>
                 </select>
@@ -26,12 +26,12 @@
                 <label class="form-label">{{ __('app.unit_cost') }}</label>
                 <div class="input-group">
                     <input type="number" name="unit_cost" id="m-unit-cost" class="form-control" min="0" step="1" value="{{ old("unit_cost", $movement->unit_cost) }}">
-                    <span class="input-group-text">Mts</span>
+                    <span class="input-group-text">{{ currency_symbol() }}</span>
                 </div>
             </div>
             <div class="col-md-3">
                 <label class="form-label">{{ __('app.reason') }}</label>
-                <select name="reason" id="m-reason" class="form-select" onchange="toggleExpense()">
+                <select name="reason" id="m-reason" class="form-select">
                     @foreach(\App\Http\Controllers\InventoryMovementController::FORM_REASONS as $rs)
                         <option value="{{ $rs }}" {{ old("reason", $movement->reason) == $rs ? "selected" : "" }}>{{ __('app.movement_reason_' . $rs) }}</option>
                     @endforeach
@@ -47,16 +47,16 @@
             </div>
         </div>
 
-        <div id="expense-fields" class="mt-3">
+        <div id="expense-fields" class="mt-3" data-show-if="direction=in&reason=purchase">
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="register_expense" value="1" id="register_expense" {{ old("register_expense", (bool) $movement->expense_id) ? "checked" : "" }}>
                 <label class="form-check-label small" for="register_expense">{{ __('app.register_expense') }}</label>
             </div>
             <div class="mt-1">
                 <label class="form-label small">{{ __('app.expense_category') }}</label>
-                <select name="expense_category" class="form-select form-select-sm" style="max-width:280px">
+                <select name="expense_category" class="form-select form-select-sm mw-280px">
                     @foreach($categories as $category)
-                        <option value="{{ $category->key }}" {{ old("expense_category", $movement->expense->category ?? ($item->kind == "product" ? "produtos" : "lainnya")) == $category->key ? "selected" : "" }}>{{ $category->name }}</option>
+                        <option value="{{ $category->key }}" {{ old("expense_category", $movement->expense->category ?? ($item->kind == "product" ? "cleaning_products" : "other")) == $category->key ? "selected" : "" }}>{{ $category->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -69,12 +69,4 @@
     </form>
 </div>
 
-<script>
-function toggleExpense() {
-    var dir = document.getElementById("m-direction").value;
-    var reason = document.getElementById("m-reason").value;
-    document.getElementById("expense-fields").style.display = (dir === "in" && reason === "purchase") ? "" : "none";
-}
-toggleExpense();
-</script>
 @endsection

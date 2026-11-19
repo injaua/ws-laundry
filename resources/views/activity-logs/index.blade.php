@@ -4,17 +4,7 @@
 @section("page_title", __('app.activity_logs_title'))
 
 @push("styles")
-<style>
-    .log-entry { transition: background-color 0.15s; }
-    .log-entry:hover { background-color: #f8f9fa; }
-    [data-bs-theme="dark"] .log-entry:hover { background-color: rgba(255,255,255,0.03); }
-    .log-action { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-    .log-time { font-size: 0.8rem; color: #6c757d; }
-    [data-bs-theme="dark"] .log-time { color: var(--text-muted); }
-    .log-desc { font-weight: 500; overflow-wrap: anywhere; }
-    .filter-card { background: #fff; border-radius: 12px; border: 1px solid #e9ecef; padding: 1.25rem; margin-bottom: 1.5rem; }
-    [data-bs-theme="dark"] .filter-card { background: var(--card-bg); border-color: var(--card-border); }
-</style>
+    @vite("resources/css/pages/activity-logs.css")
 @endpush
 
 @section("content")
@@ -26,7 +16,7 @@
                 <option value="">{{ __('app.all_actions') }}</option>
                 @foreach($actionTypes as $type)
                     <option value="{{ $type }}" {{ request("action") == $type ? "selected" : "" }}>
-                        {{ ucfirst($type) }}
+                        {{ __('app.log_action_' . $type) }}
                     </option>
                 @endforeach
             </select>
@@ -42,6 +32,18 @@
                 @endforeach
             </select>
         </div>
+        @if($stores->isNotEmpty())
+        <div class="col-md-4">
+            <label class="form-label small fw-semibold">{{ __('app.store') }}</label>
+            <select name="store" class="form-select">
+                <option value="">{{ __('app.stores_all') }}</option>
+                <option value="global" @selected(request("store") === "global")>{{ __('app.log_company_wide') }}</option>
+                @foreach($stores as $store)
+                    <option value="{{ $store->id }}" @selected(request("store") == $store->id)>{{ $store->label() }}</option>
+                @endforeach
+            </select>
+        </div>
+        @endif
         <div class="col-md-4">
             <button type="submit" class="btn btn-primary w-100">
                 <i class="bi bi-funnel"></i> {{ __('app.filter') }}
@@ -53,7 +55,14 @@
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <span><i class="bi bi-clock-history me-1"></i> {{ __('app.activity_logs_title') }}</span>
-        <span class="badge bg-secondary">{{ __('app.total_count', ['count' => $logs->total()]) }}</span>
+        <span class="d-flex gap-2">
+            @if($integrity['ok'])
+                <span class="badge bg-success" title="{{ __('app.audit_intact_help') }}"><i class="bi bi-shield-check"></i> {{ __('app.audit_intact') }}</span>
+            @else
+                <span class="badge bg-danger" title="{{ __('app.audit_broken_help') }}"><i class="bi bi-shield-exclamation"></i> {{ __('app.audit_broken', ['id' => $integrity['broken_id']]) }}</span>
+            @endif
+            <span class="badge bg-secondary">{{ __('app.total_count', ['count' => $logs->total()]) }}</span>
+        </span>
     </div>
     <div class="card-body p-0">
         @if($logs->count())
@@ -62,10 +71,12 @@
                     <thead>
                         <tr>
                             <th>{{ __('app.time') }}</th>
+                            @if($stores->isNotEmpty())<th>{{ __('app.store') }}</th>@endif
                             <th>{{ __('app.user') }}</th>
                             <th>{{ __('app.actions') }}</th>
                             <th>{{ __('app.subject_type') }}</th>
                             <th>{{ __('app.description') }}</th>
+                            <th>IP</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -73,8 +84,13 @@
                             <tr class="log-entry">
                                 <td class="log-time">
                                     <i class="bi bi-clock me-1"></i>
-                                    {{ $log->created_at->format("d/m/Y H:i") }}
+                                    {{ $log->created_at->format(datetime_fmt()) }}
                                 </td>
+                                @if($stores->isNotEmpty())
+                                    <td class="small">
+                                        @if($log->store){{ $log->store->name }}@else<span class="text-muted fst-italic">{{ __('app.log_company_wide') }}</span>@endif
+                                    </td>
+                                @endif
                                 <td>
                                     @if($log->actor)
                                         <span class="fw-medium">{{ $log->actor->name }}</span>
@@ -89,16 +105,19 @@
                                             "created" => "bg-success",
                                             "updated" => "bg-primary",
                                             "deleted" => "bg-danger",
+                                            "login_failed", "lockout", "two_factor_failed" => "bg-danger",
+                                            "login", "logout" => "bg-info text-dark",
                                             default => "bg-secondary",
                                         };
                                     @endphp
-                                    <span class="badge {{ $badgeClass }} log-action">{{ $log->action }}</span>
+                                    <span class="badge {{ $badgeClass }} log-action">{{ __('app.log_action_' . $log->action) }}</span>
                                 </td>
                                 <td>
                                     <span class="fw-medium">{{ class_basename($log->subject_type) }}</span>
                                     <span class="text-muted">#{{ $log->subject_id }}</span>
                                 </td>
                                 <td class="log-desc">{{ $log->description }}</td>
+                                <td class="small text-muted" title="{{ $log->user_agent }}">{{ $log->ip_address ?? '—' }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -109,7 +128,7 @@
             </div>
         @else
             <div class="text-center py-5 text-muted">
-                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                <i class="bi bi-inbox text-2rem"></i>
                 <p class="mt-2 mb-0">{{ __('app.no_activity_logs') }}</p>
             </div>
         @endif

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AccountingPeriod;
 use App\Models\ExpenseCategory;
 use App\Models\InventoryItem;
+use App\Models\InventoryLot;
 use App\Models\InventoryMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -15,19 +17,45 @@ class InventoryMovementController extends Controller
     public function store(Request $request, InventoryItem $item)
     {
         $data = $this->validated($request);
-        $movementData = Arr::except($data, ["register_expense", "expense_category"]);
+        $movementData = Arr::only($data, ["direction", "quantity", "unit_cost", "reason", "moved_at", "notes"]);
 
-        if ($movementData["direction"] === "out" && (float) $movementData["quantity"] > (float) $item->stock_qty) {
-            return back()->withInput()->with("error", __('app.movement_insufficient_stock'));
+        if (!empty($data["register_expense"])) {
+            AccountingPeriod::assertOpen($movementData["moved_at"], "moved_at");
         }
 
-        $movementData["user_id"] = $request->user()->id;
+        if ($movementData["direction"] === "out") {
+            if ((float) $movementData["quantity"] > (float) $item->stock_qty) {
+                return back()->withInput()->with("error", __('app.movement_insufficient_stock'));
+            }
 
-        InventoryMovement::record(
+            $result = InventoryMovement::consume(
+                $item,
+                (float) $movementData["quantity"],
+                $movementData + ["user_id" => $request->user()->id],
+                (bool) ($data["allow_expired"] ?? false),
+            );
+
+            if ((bool) ($data["allow_expired"] ?? false) && $this->usedExpiredLot($result["movements"])) {
+                return redirect()->route("resources.items.show", $item)
+                    ->with("warning", __('app.movement_expired_lots'));
+            }
+
+            return redirect()->route("resources.items.show", $item)
+                ->with("success", __('app.movement_created'));
+        }
+
+        if (!empty($data["lot_number"]) && InventoryLot::where("inventory_item_id", $item->id)
+            ->where("lot_number", $data["lot_number"])->exists()) {
+            return back()->withInput()
+                ->withErrors(["lot_number" => __('app.lot_number_taken')]);
+        }
+
+        $movement = InventoryMovement::record(
             $item,
-            $movementData,
+            $movementData + ["user_id" => $request->user()->id],
             (bool) ($data["register_expense"] ?? false),
             $data["expense_category"] ?? $this->defaultCategory($item->kind),
+            Arr::only($data, ["lot_number", "expires_at"]),
         );
 
         return redirect()->route("resources.items.show", $item)
@@ -36,6 +64,11 @@ class InventoryMovementController extends Controller
 
     public function edit(InventoryMovement $movement)
     {
+        if ($movement->isLocked() || $movement->inventory_lot_id !== null) {
+            return redirect()->route("resources.items.show", $movement->inventory_item_id)
+                ->with("error", $movement->isLocked() ? __('app.movement_locked_via_job') : __('app.movement_locked_via_lot'));
+        }
+
         $movement->load("item");
         $categories = ExpenseCategory::orderBy("name")->get();
 
@@ -44,13 +77,18 @@ class InventoryMovementController extends Controller
 
     public function update(Request $request, InventoryMovement $movement)
     {
-        if ($movement->reason === "maintenance") {
+        if ($movement->isLocked() || $movement->inventory_lot_id !== null) {
             return redirect()->route("resources.items.show", $movement->inventory_item_id)
-                ->with("error", __('app.movement_locked_via_job'));
+                ->with("error", $movement->isLocked() ? __('app.movement_locked_via_job') : __('app.movement_locked_via_lot'));
         }
 
         $data = $this->validated($request);
-        $movementData = Arr::except($data, ["register_expense", "expense_category"]);
+        $movementData = Arr::except($data, ["register_expense", "expense_category", "allow_expired", "lot_number", "expires_at"]);
+
+        if ($movement->expense_id || !empty($data["register_expense"])) {
+            AccountingPeriod::assertOpen($movement->moved_at, "moved_at");
+            AccountingPeriod::assertOpen($movementData["moved_at"], "moved_at");
+        }
 
         $stock = (float) $movement->item->stock_qty;
         $available = $stock - $movement->stockDelta();
@@ -74,14 +112,19 @@ class InventoryMovementController extends Controller
     {
         $itemId = $movement->inventory_item_id;
 
-        if ($movement->reason === "maintenance") {
+        if ($movement->expense_id && $period = AccountingPeriod::closedOn($movement->moved_at)) {
+            return redirect()->route("resources.items.show", $itemId)
+                ->with("error", __("app.period_closed", ["period" => $period->label()]));
+        }
+
+        if ($movement->isLocked()) {
             return redirect()->route("resources.items.show", $itemId)
                 ->with("error", __('app.movement_locked_via_job'));
         }
 
         if ($movement->direction === "in") {
             $after = (float) $movement->item->stock_qty - $movement->stockDelta();
-            if ($after < 0) {
+            if ($after < 0 || $movement->wouldBreakLot()) {
                 return redirect()->route("resources.items.show", $itemId)
                     ->with("error", __('app.movement_revert_conflict'));
             }
@@ -102,13 +145,24 @@ class InventoryMovementController extends Controller
             "reason" => "required|in:".implode(",", self::FORM_REASONS),
             "moved_at" => "required|date",
             "notes" => "nullable|string|max:1000",
+            "lot_number" => "nullable|string|max:60",
+            "expires_at" => "nullable|date",
+            "allow_expired" => "nullable|boolean",
             "register_expense" => "nullable|boolean",
             "expense_category" => "nullable|required_if:register_expense,1|exists:expense_categories,key",
         ]);
     }
 
+    /** True when an outbound had to reach expired lots (only possible with allow_expired). */
+    private function usedExpiredLot(array $movements): bool
+    {
+        return collect($movements)->contains(
+            fn (InventoryMovement $m) => $m->inventory_lot_id && $m->lot->isExpired()
+        );
+    }
+
     private function defaultCategory(string $kind): string
     {
-        return $kind === "product" ? "produtos" : "lainnya";
+        return $kind === "product" ? "cleaning_products" : "other";
     }
 }

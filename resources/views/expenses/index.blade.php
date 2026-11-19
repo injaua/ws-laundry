@@ -22,7 +22,7 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <select name="category" class="form-select" onchange="this.form.submit()">
+                    <select name="category" class="form-select" data-auto-submit>
                         <option value="">{{ __('app.all_categories') }}</option>
                         @foreach($categories as $category)
                             <option value="{{ $category->key }}" {{ request("category") == $category->key ? "selected" : "" }}>{{ $category->name }}</option>
@@ -70,14 +70,14 @@
                                 @endif
                             @endif
                         </td>
-                        <td class="fw-semibold">{{ number_format($expense->amount, 0, ".", ",") }} Mts</td>
-                        <td class="small">{{ $expense->expense_date->format("d/m/Y") }}</td>
+                        <td class="fw-semibold">{{ money($expense->amount) }}</td>
+                        <td class="small">{{ $expense->expense_date->format(date_fmt()) }}</td>
                         <td class="small">{{ $expense->user?->name ?? "-" }}</td>
                         <td class="text-center">
                             <a href="{{ route("expenses.edit", $expense) }}" class="btn btn-sm btn-outline-primary" title="{{ __('app.edit') }}">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <form action="{{ route("expenses.destroy", $expense) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.delete_expense_confirm') }}')">
+                            <form action="{{ route("expenses.destroy", $expense) }}" method="POST" class="d-inline" data-confirm="{{ __('app.delete_expense_confirm') }}">
                                 @csrf @method("DELETE")
                                 <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}">
                                     <i class="bi bi-trash"></i>

@@ -21,7 +21,7 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <select name="type" class="form-select" onchange="this.form.submit()">
+                    <select name="type" class="form-select" data-auto-submit>
                         <option value="">{{ __('app.equipment_type') }}</option>
                         @foreach(\App\Models\Equipment::TYPES as $tp)
                             <option value="{{ $tp }}" {{ request("type") == $tp ? "selected" : "" }}>{{ __('app.eq_type_' . $tp) }}</option>
@@ -29,7 +29,7 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <select name="status" class="form-select" onchange="this.form.submit()">
+                    <select name="status" class="form-select" data-auto-submit>
                         <option value="">{{ __('app.status') }}</option>
                         @foreach(\App\Models\Equipment::STATUSES as $st)
                             <option value="{{ $st }}" {{ request("status") == $st ? "selected" : "" }}>{{ __('app.status_' . $st) }}</option>
@@ -69,7 +69,7 @@
                         </td>
                         <td class="small">{{ __('app.eq_type_' . $equipment->type) }}</td>
                         <td class="small">{{ $equipment->location ?: "—" }}</td>
-                        <td class="small">{{ $equipment->warranty_until ? $equipment->warranty_until->format("d/m/Y") : "—" }}</td>
+                        <td class="small">{{ $equipment->warranty_until ? $equipment->warranty_until->format(date_fmt()) : "—" }}</td>
                         <td>
                             <span class="badge badge-status bg-{{ $equipment->status_color }}">{{ __('app.status_' . $equipment->status) }}</span>
                         </td>
@@ -77,7 +77,7 @@
                         <td class="text-center">
                             <a href="{{ route("resources.equipments.show", $equipment) }}" class="btn btn-sm btn-outline-secondary" title="{{ __('app.view') }}"><i class="bi bi-eye"></i></a>
                             <a href="{{ route("resources.equipments.edit", $equipment) }}" class="btn btn-sm btn-outline-primary" title="{{ __('app.edit') }}"><i class="bi bi-pencil"></i></a>
-                            <form action="{{ route("resources.equipments.destroy", $equipment) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.delete_confirm') }}')">
+                            <form action="{{ route("resources.equipments.destroy", $equipment) }}" method="POST" class="d-inline" data-confirm="{{ __('app.delete_confirm') }}">
                                 @csrf @method("DELETE")
                                 <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}"><i class="bi bi-trash"></i></button>
                             </form>

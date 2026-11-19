@@ -73,7 +73,7 @@
                         <label class="form-label">{{ __('app.amount') }} <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <input type="number" name="amount" id="expenseAmount" class="form-control @error("amount") is-invalid @enderror" value="{{ old("amount", $expense->amount ?? "") }}" required min="0">
-                            <span class="input-group-text">Mts</span>
+                            <span class="input-group-text">{{ currency_symbol() }}</span>
                             @error("amount") <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
@@ -101,66 +101,6 @@
 </div>
 
 @push("scripts")
-<script>
-    (function() {
-        var select = document.getElementById("expenseCategory");
-        var amount = document.getElementById("expenseAmount");
-        var title = document.getElementById("expenseTitle");
-        var fixedBox = document.getElementById("fixedPeriodBox");
-        var periodBox = document.getElementById("salaryPeriodBox");
-        var month = document.getElementById("salaryMonth");
-        var year = document.getElementById("salaryYear");
-        var importBtn = document.getElementById("salaryImportBtn");
-        var totalUrl = @json(route("expenses.salary-total"));
-        var amountTouched = {{ $isEdit ? "true" : "false" }};
-        var autoTitle = "";
-
-        amount.addEventListener("input", function() { amountTouched = true; });
-
-        function currentData() {
-            return select.options[select.selectedIndex] ? select.options[select.selectedIndex].dataset : {};
-        }
-
-        function pad(n) { return (n < 10 ? "0" : "") + n; }
-
-        function fetchTotal() {
-            var url = totalUrl + "?month=" + encodeURIComponent(month.value) + "&year=" + encodeURIComponent(year.value);
-            fetch(url, { headers: { "Accept": "application/json" } })
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    amount.value = data.amount;
-                    amountTouched = true;
-                    var generated = currentData().name + " " + pad(month.value) + "/" + year.value;
-                    if (!title.value || title.value === autoTitle) {
-                        title.value = generated;
-                        autoTitle = generated;
-                    }
-                });
-        }
-
-        select.addEventListener("change", function() {
-            var d = currentData();
-            fixedBox.classList.toggle("d-none", d.fixed !== "1");
-            if (d.salary === "1") {
-                periodBox.classList.remove("d-none");
-                fetchTotal();
-            } else {
-                periodBox.classList.add("d-none");
-                if (d.fixed === "1" && !amountTouched) {
-                    amount.value = d.default;
-                }
-            }
-        });
-
-        importBtn.addEventListener("click", fetchTotal);
-
-        var initial = currentData();
-        if (initial.fixed === "1") {
-            fixedBox.classList.remove("d-none");
-        }
-        if (initial.salary === "1") {
-            periodBox.classList.remove("d-none");
-        }
-    })();
-</script>
+    <x-page-data name="expense-form" :data="['totalUrl' => route('expenses.salary-total'), 'isEdit' => (bool) $isEdit]"/>
+    @vite("resources/js/pages/expense-form.js")
 @endpush

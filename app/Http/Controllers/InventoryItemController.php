@@ -50,7 +50,7 @@ class InventoryItemController extends Controller
 
     public function show(InventoryItem $item)
     {
-        $item->load(["movements" => fn ($q) => $q->with("user")->latest("moved_at")->latest("id")->limit(50)]);
+        $item->load(["movements" => fn ($q) => $q->with("user", "lot")->latest("moved_at")->latest("id")->limit(50)]);
 
         $jobParts = $item->kind === "part"
             ? $item->jobItems()->with("job.equipment")->latest()->limit(20)->get()

@@ -68,7 +68,7 @@ class AbsenceJustificationController extends Controller
             ]);
         }
 
-        if (! Attendance::where("employee_id", $validated["employee_id"])
+        if (!Attendance::where("employee_id", $validated["employee_id"])
             ->where("attendance_date", $validated["absence_date"])
             ->where("status", "absent")->exists()) {
             return back()->withInput()->withErrors([

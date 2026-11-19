@@ -27,3 +27,6 @@ Homestead.yaml
 Thumbs.db
 /.qwen/
 /storage/backups/
+
+# Ad-hoc debug/verification scripts
+/_tmp_*

@@ -28,7 +28,7 @@
                         <label class="form-label">{{ __('app.price') }} <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <input type="number" name="price" class="form-control @error("price") is-invalid @enderror" value="{{ old("price") }}" required min="0" max="10000">
-                            <span class="input-group-text">Mts</span>
+                            <span class="input-group-text">{{ currency_symbol() }}</span>
                             @error("price") <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
@@ -42,12 +42,12 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">{{ __('app.service_photo') }}</label>
-                        <input type="file" name="photo" class="form-control @error("photo") is-invalid @enderror" accept="image/jpeg,image/png,image/webp">
+                        <input type="file" name="photo" data-preview="#photoPreview" class="form-control @error("photo") is-invalid @enderror" accept="image/jpeg,image/png,image/webp">
                         <div class="form-text">{{ __('app.photo_optional_hint') }}</div>
                         @error("photo") <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="mb-3 d-none" id="photoPreviewWrap">
-                        <img id="photoPreview" class="rounded border" style="max-height:160px" alt="">
+                        <img id="photoPreview" class="rounded border mh-160px" alt="">
                     </div>
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> {{ __('app.save') }}</button>
@@ -60,14 +60,3 @@
 </div>
 @endsection
 
-@push("scripts")
-<script>
-    document.querySelector("input[name=photo]").addEventListener("change", function() {
-        var f = this.files[0];
-        if (f) {
-            document.getElementById("photoPreview").src = URL.createObjectURL(f);
-            document.getElementById("photoPreviewWrap").classList.remove("d-none");
-        }
-    });
-</script>
-@endpush

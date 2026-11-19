@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Employee;
 use App\Models\Equipment;
 use App\Models\MaintenanceJob;
 use App\Models\User;

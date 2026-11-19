@@ -2,8 +2,11 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Languages;
+use App\Support\SystemSettings;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cookie;
 
@@ -14,18 +17,19 @@ class SetLocale
         $locale = $request->query('lang')
             ?? session('locale')
             ?? $request->cookie('locale')
-            ?? config('app.locale', 'pt');
+            ?? SystemSettings::defaultLocale();
 
-        if (!in_array($locale, ['pt', 'en'])) {
-            $locale = config('app.locale', 'pt');
+        if (!Languages::isActive($locale)) {
+            $locale = SystemSettings::defaultLocale();
         }
 
-        if ($request->has('lang') && in_array($request->query('lang'), ['pt', 'en'])) {
+        if ($request->has('lang') && Languages::isActive($request->query('lang'))) {
             session(['locale' => $locale]);
             Cookie::queue(Cookie::make('locale', $locale, 60 * 24 * 365));
         }
 
         App::setLocale($locale);
+        Carbon::setLocale($locale);
 
         return $next($request);
     }

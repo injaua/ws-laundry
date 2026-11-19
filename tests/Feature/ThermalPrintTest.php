@@ -59,15 +59,15 @@ class ThermalPrintTest extends TestCase
 
         $this->actingAs($admin)->get("/orders/{$order->id}/invoice")
             ->assertOk()
-            ->assertSee("size: 80mm auto", false);
+            ->assertSee("class=\"ticket-80\"", false);
 
         $this->actingAs($admin)->get("/orders/{$order->id}/invoice?w=58")
             ->assertOk()
-            ->assertSee("size: 58mm auto", false);
+            ->assertSee("class=\"ticket-58\"", false);
 
         $this->actingAs($admin)->get("/orders/{$order->id}/invoice?w=99")
             ->assertOk()
-            ->assertSee("size: 80mm auto", false);
+            ->assertSee("class=\"ticket-80\"", false);
     }
 
     public function test_label_supports_thermal_mode(): void
@@ -77,10 +77,10 @@ class ThermalPrintTest extends TestCase
 
         $this->actingAs($admin)->get("/orders/{$order->id}/label?type=thermal")
             ->assertOk()
-            ->assertSee("size: 40mm auto", false);
+            ->assertSee("class=\"label-thermal\"", false);
 
         $this->actingAs($admin)->get("/orders/{$order->id}/label")
             ->assertOk()
-            ->assertDontSee("size: 40mm auto", false);
+            ->assertSee("class=\"label-a4\"", false);
     }
 }

@@ -6,7 +6,7 @@
     $showSectionLinks = true;
 @endphp
 <!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}">
+<html lang="{{ app()->getLocale() }}" dir="{{ is_rtl() ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
@@ -71,8 +71,8 @@
                 @if($cheapest)
                     <div class="hero-float">
                         <div class="label">{{ __('app.from_price') }}</div>
-                        <div class="value">{{ number_format($cheapest->price, 0, ".", ",") }} <small>Mts</small></div>
-                        <div class="svc"><i class="bi bi-tag me-1" style="color:var(--accent)"></i>{{ $cheapest->name }}</div>
+                        <div class="value">{{ money($cheapest->price) }}</div>
+                        <div class="svc"><i class="bi bi-tag me-1 text-accent"></i>{{ $cheapest->name }}</div>
                     </div>
                 @endif
             </div>
@@ -103,11 +103,11 @@
                         </div>
                     @endif
                     <h5>{{ $s->name }}</h5>
-                    <div class="svc-price">{{ number_format($s->price, 0, ".", ",") }} <small>Mts / {{ $s->type == "by_weight" ? "kg" : __('app.pieces') }}</small></div>
+                    <div class="svc-price">{{ num($s->price) }} <small>{{ currency_symbol() }} / {{ $s->type == "by_weight" ? "kg" : __('app.pieces') }}</small></div>
                     <div class="svc-days"><i class="bi bi-clock"></i>{{ $s->estimated_days }} {{ __('app.working_days') }}</div>
                 </div>
             @empty
-                <div class="os-panel text-center text-muted" style="grid-column:1/-1">
+                <div class="os-panel text-center text-muted grid-full">
                     <i class="bi bi-inbox fs-2 d-block mb-2"></i>
                     <p class="mb-0">{{ __('app.no_services_available') }}</p>
                 </div>
@@ -118,7 +118,7 @@
 
 @if($packages->isNotEmpty())
 {{-- Packages --}}
-<section id="packages" style="background:var(--surface)">
+<section class="bg-surface" id="packages">
     <div class="container">
         <div class="mb-4" data-reveal>
             <div class="section-label">{{ __('app.packages_section') }}</div>
@@ -137,7 +137,7 @@
                     @if($p->description)
                         <p class="svc-desc">{{ Str::limit($p->description, 90) }}</p>
                     @endif
-                    <div class="svc-price">{{ number_format($p->price, 0, ".", ",") }} <small>Mts / {{ __('app.by_package') }}</small></div>
+                    <div class="svc-price">{{ num($p->price) }} <small>{{ currency_symbol() }} / {{ __('app.by_package') }}</small></div>
                     <div class="svc-days"><i class="bi bi-boxes"></i>{{ __('app.package_includes', ['kg' => $kg]) }}</div>
                 </div>
             @endforeach
@@ -147,7 +147,7 @@
 @endif
 
 {{-- How it works --}}
-<section class="lp-how" id="how" style="background:var(--surface)">
+<section class="lp-how bg-surface" id="how">
     <div class="container">
         <div class="text-center mb-5" data-reveal>
             <div class="section-label">{{ __('app.how_section') }}</div>
@@ -251,6 +251,10 @@
 </section>
 @endif
 
+@if($zones->isNotEmpty())
+@include("landing.partials.pickup")
+@endif
+
 {{-- CTA --}}
 <section class="lp-cta" id="contact">
     <div class="container">
@@ -276,7 +280,7 @@
 
 {{-- Map --}}
 @if($settings["map_embed_url"] ?? null)
-<section class="lp-map" id="map" style="padding:0">
+<section class="lp-map p-0" id="map">
     <iframe src="{{ $settings["map_embed_url"] }}" height="360" loading="lazy" title="{{ __('app.nav_contact') }}"></iframe>
 </section>
 @endif

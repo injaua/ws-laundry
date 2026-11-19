@@ -1,6 +1,12 @@
 <?php
 
 use App\Http\Middleware\CheckRole;
+use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\PublicStore;
+use App\Http\Middleware\RequireTwoFactor;
+use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\SessionIdleTimeout;
+use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,11 +20,18 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
-            \App\Http\Middleware\SetLocale::class,
-            \App\Http\Middleware\EnsureUserIsActive::class,
+            SetLocale::class,
+            EnsureUserIsActive::class,
+            SessionIdleTimeout::class,
+            RequireTwoFactor::class,
         ]);
+        // Browser protections on every response, including the public pages.
+        $middleware->append(SecurityHeaders::class);
+        // Meta signs webhook calls (X-Hub-Signature-256) instead of sending a CSRF token.
+        $middleware->validateCsrfTokens(except: ['webhooks/whatsapp', 'webhooks/whatsapp-web']);
         $middleware->alias([
             'role' => CheckRole::class,
+            'store.public' => PublicStore::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

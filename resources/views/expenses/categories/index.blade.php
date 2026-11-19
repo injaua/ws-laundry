@@ -30,7 +30,7 @@
                         <span class="badge bg-{{ $category->color }}">{{ $category->color }}</span>
                         @if($category->is_fixed)
                             <span class="badge bg-dark">{{ __('app.category_fixed') }}</span>
-                            <small class="text-muted">{{ number_format($category->default_amount, 0, ".", ",") }} Mts</small>
+                            <small class="text-muted">{{ money($category->default_amount) }}</small>
                         @endif
                         @if($category->is_salary)
                             <span class="badge bg-success">{{ __('app.category_salary') }}</span>
@@ -51,7 +51,7 @@
                         <a href="{{ route("expense-categories.edit", $category) }}" class="btn btn-sm btn-outline-primary" title="{{ __('app.edit') }}">
                             <i class="bi bi-pencil"></i>
                         </a>
-                        <form action="{{ route("expense-categories.destroy", $category) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('app.delete_category_confirm') }}')">
+                        <form action="{{ route("expense-categories.destroy", $category) }}" method="POST" class="d-inline" data-confirm="{{ __('app.delete_category_confirm') }}">
                             @csrf @method("DELETE")
                             <button class="btn btn-sm btn-outline-danger" title="{{ __('app.delete') }}" {{ $category->expenseCount() > 0 ? "disabled" : "" }}>
                                 <i class="bi bi-trash"></i>

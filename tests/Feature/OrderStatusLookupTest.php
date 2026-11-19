@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Customer;
 use App\Models\Order;
-use App\Models\Service;
 use App\Models\OrderItem;
+use App\Models\Service;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -43,7 +43,7 @@ class OrderStatusLookupTest extends TestCase
     {
         $this->makeOrder();
 
-        $this->get("/order-status?order_number=ORDTEST0001")
+        $this->get("/order-status?order_number=ORDTEST0001&phone_last4=0001")
             ->assertOk()
             ->assertSee("Test Customer");
     }
@@ -52,7 +52,7 @@ class OrderStatusLookupTest extends TestCase
     {
         $this->makeOrder();
 
-        $this->get("/order-status?order_number=ordtest0001")
+        $this->get("/order-status?order_number=ordtest0001&phone_last4=0001")
             ->assertOk()
             ->assertSee("Test Customer");
     }
@@ -61,7 +61,7 @@ class OrderStatusLookupTest extends TestCase
     {
         $this->makeOrder();
 
-        $this->get("/order-status?order_number=%20ORDTEST0001%20")
+        $this->get("/order-status?order_number=%20ORDTEST0001%20&phone_last4=0001")
             ->assertOk()
             ->assertSee("Test Customer");
     }
@@ -70,7 +70,7 @@ class OrderStatusLookupTest extends TestCase
     {
         $this->makeOrder();
 
-        $this->get("/order-status?order_number=ORDNOPE9999")
+        $this->get("/order-status?order_number=ORDNOPE9999&phone_last4=0001")
             ->assertOk()
             ->assertSee("ORDNOPE9999")
             ->assertDontSee("Test Customer");
@@ -83,5 +83,33 @@ class OrderStatusLookupTest extends TestCase
         $this->get("/order-status")
             ->assertOk()
             ->assertDontSee("Test Customer");
+    }
+
+    public function test_wrong_phone_digits_hide_the_order(): void
+    {
+        $this->makeOrder();
+
+        $this->get("/order-status?order_number=ORDTEST0001&phone_last4=9999")
+            ->assertOk()
+            ->assertSee(__("app.order_not_found"))
+            ->assertDontSee("Test Customer");
+    }
+
+    public function test_missing_phone_digits_hide_the_order(): void
+    {
+        $this->makeOrder();
+
+        $this->get("/order-status?order_number=ORDTEST0001")
+            ->assertOk()
+            ->assertDontSee("Test Customer");
+    }
+
+    public function test_phone_digits_with_separators_are_accepted(): void
+    {
+        $this->makeOrder();
+
+        $this->get("/order-status?order_number=ORDTEST0001&phone_last4=00-01")
+            ->assertOk()
+            ->assertSee("Test Customer");
     }
 }

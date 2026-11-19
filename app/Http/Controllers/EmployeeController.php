@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Attendance;
 use App\Models\Employee;
 use App\Models\User;
+use App\Support\CurrentStore;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -32,7 +33,7 @@ class EmployeeController extends Controller
 
     public function create()
     {
-        $linkableUsers = User::whereDoesntHave("employee")->orderBy("name")->get();
+        $linkableUsers = User::inStore()->whereDoesntHave("employee")->orderBy("name")->get();
 
         return view("employees.create", compact("linkableUsers"));
     }
@@ -71,7 +72,7 @@ class EmployeeController extends Controller
 
     public function edit(Employee $employee)
     {
-        $linkableUsers = User::where(function ($q) use ($employee) {
+        $linkableUsers = User::inStore()->where(function ($q) use ($employee) {
             $q->whereDoesntHave("employee")
                 ->orWhere("id", $employee->user_id);
         })->orderBy("name")->get();
@@ -141,13 +142,14 @@ class EmployeeController extends Controller
             "probation_ends_at" => "nullable|date",
             "contract_type" => "required|in:full_time,part_time,fixed_term",
             "base_salary" => "required|numeric|min:0",
-            "user_id" => ["nullable", "exists:users,id", Rule::unique("employees", "user_id")->ignore($employee?->id)],
+            // Only an account of this store can be linked to the employee.
+            "user_id" => ["nullable", Rule::exists("users", "id")->where("store_id", CurrentStore::id()), Rule::unique("employees", "user_id")->ignore($employee?->id)],
             "notes" => "nullable|string",
         ]);
 
         $validated["user_id"] = $validated["user_id"] ?? null;
 
-        if (! $employee) {
+        if (!$employee) {
             $validated["status"] = "probation";
         }
 

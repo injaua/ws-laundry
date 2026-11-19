@@ -1,0 +1,191 @@
+/* Order bag label (orders/label): .label-a4 (148 mm, colour) or .label-thermal (40 mm roll). */
+@page label-thermal {
+    size: 40mm auto;
+    margin: 0;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #1a237e;
+    background: #fff;
+}
+.label-container {
+    width: 148mm;
+    min-height: 105mm;
+    padding: 8mm;
+    margin: 0 auto;
+}
+.label-box {
+    border: 2px solid #1a237e;
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    position: relative;
+}
+.label-box .brand {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a237e;
+    margin-bottom: 2px;
+}
+.label-box .no-order {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #1a237e;
+    margin: 6px 0;
+}
+.label-box .barcode-wrapper {
+    margin: 8px auto;
+    display: flex;
+    justify-content: center;
+}
+.label-box .barcode-wrapper svg {
+    max-width: 100%;
+    height: auto;
+}
+.label-box .barcode-text {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: #333;
+    margin-top: 2px;
+}
+.label-box .info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px dashed #ccc;
+    font-size: 10px;
+}
+.label-box .info-row .label-item {
+    text-align: center;
+    flex: 1;
+}
+.label-box .info-row .label-item .value {
+    font-weight: 700;
+    font-size: 12px;
+    color: #1a237e;
+}
+.label-box .info-row .label-item .key {
+    color: #6c757d;
+    font-size: 8px;
+    text-transform: uppercase;
+}
+
+/* 40 mm thermal roll: black, compact, one value per line */
+.label-thermal {
+    font-size: 8.5px;
+    color: #000;
+}
+.label-thermal .label-container {
+    width: 40mm;
+    min-height: 0;
+    padding: 1.5mm;
+    page: label-thermal;
+}
+.label-thermal .label-box {
+    border: 1px solid #000;
+    border-radius: 0;
+    padding: 5px;
+}
+.label-thermal .label-box .brand {
+    font-size: 8px;
+    color: #000;
+}
+.label-thermal .label-box .no-order {
+    font-size: 13px;
+    color: #000;
+    margin: 2px 0;
+}
+.label-thermal .label-box .barcode-wrapper {
+    margin: 3px auto;
+}
+.label-thermal .label-box .barcode-text {
+    font-size: 9px;
+}
+.label-thermal .label-box .info-row {
+    display: block;
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px dashed #000;
+    font-size: inherit;
+}
+.label-thermal .label-box .info-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+}
+.label-thermal .label-box .info-line .key {
+    text-transform: uppercase;
+    font-size: 7.5px;
+    color: #444;
+    white-space: nowrap;
+}
+.label-thermal .label-box .info-line .value {
+    font-weight: 700;
+    font-size: 9px;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.cut-line {
+    text-align: center;
+    margin: 4px 0;
+    color: #adb5bd;
+    font-size: 8px;
+}
+.cut-line span {
+    letter-spacing: 4px;
+}
+.toolbar {
+    text-align: center;
+    padding: 10px;
+    background: #f5f7fa;
+    margin-bottom: 10px;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 12px;
+}
+.toolbar a {
+    display: inline-block;
+    padding: 8px 24px;
+    border-radius: 6px;
+    border: 1px solid #1a237e;
+    background: #1a237e;
+    color: #fff;
+    text-decoration: none;
+    margin: 0 4px;
+    font-weight: 600;
+}
+.toolbar .alt {
+    background: #fff;
+    color: #1a237e;
+}
+.toolbar .on {
+    background: #64b5f6;
+    border-color: #64b5f6;
+    color: #000;
+}
+.toolbar .muted {
+    background: #6c757d;
+    border-color: #6c757d;
+}
+
+@media print {
+    body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    .toolbar,
+    .cut-line {
+        display: none;
+    }
+}
