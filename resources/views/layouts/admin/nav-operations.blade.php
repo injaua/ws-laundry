@@ -5,8 +5,8 @@
 </a>
 
 {{-- Counter staff work here; the accountant only consults orders, customers, tills and payments. --}}
-@php($staff = auth()->user()->hasRole(["admin", "owner", "cashier"]))
-@if($staff || auth()->user()->isAccountant())
+@php($staff = auth()->user()->can("work-counter"))
+@if(auth()->user()->can("view-records"))
 <a href="{{ route("orders.index") }}" class="nav-link {{ request()->routeIs("orders.*") ? "active" : "" }}">
     <i class="bi bi-receipt"></i> {{ __('app.transactions') }}
 </a>
@@ -28,7 +28,7 @@
     <i class="bi bi-file-earmark-minus"></i> {{ __('app.credit_notes') }}
 </a>
 @endif
-@if($staff || auth()->user()->isAccountant())
+@if(auth()->user()->can("view-records"))
 <a href="{{ route("customers.index") }}" class="nav-link {{ request()->routeIs("customers.*") ? "active" : "" }}">
     <i class="bi bi-people"></i> {{ __('app.customers') }}
 </a>
@@ -48,12 +48,12 @@
     @if($navBadges['late_orders'])<span class="badge rounded-pill bg-danger nav-badge" title="{{ __('app.late_orders') }}">{{ $navBadges['late_orders'] }}</span>@endif
 </a>
 @endif
-@if($staff || auth()->user()->isAccountant())
+@if(auth()->user()->can("view-mobile-payments"))
 <a href="{{ route("mobile-payments.index") }}" class="nav-link {{ request()->routeIs("mobile-payments.*") ? "active" : "" }}">
     <i class="bi bi-phone"></i> {{ __('app.mobile_payments') }}
 </a>
 @endif
-@if(auth()->user()->seesFinance())
+@if(auth()->user()->can("manage-finance"))
 <a href="{{ route("treasury.cheques") }}" class="nav-link d-flex justify-content-between align-items-center {{ request()->routeIs("treasury.*") || request()->routeIs("wallet-reconciliation.*") ? "active" : "" }}">
     <span><i class="bi bi-bank"></i> {{ __('app.treasury') }}</span>
     @if($navBadges['cheques_in_hand'])<span class="badge rounded-pill bg-primary nav-badge" title="{{ __('app.cheque_status_in_hand') }}">{{ $navBadges['cheques_in_hand'] }}</span>@endif
@@ -66,13 +66,13 @@
 </a>
 @endif
 
-@if(auth()->user()->isAdmin())
+@if(auth()->user()->can("manage-catalog"))
 <a href="{{ route("services.index") }}" class="nav-link {{ request()->routeIs("services.*") ? "active" : "" }}">
     <i class="bi bi-gear"></i> {{ __('app.services') }}
 </a>
 @endif
 
-@if(auth()->user()->seesFinance())
+@if(auth()->user()->can("view-reports"))
 <a href="{{ route("management.index") }}" class="nav-link {{ request()->routeIs("management.*") ? "active" : "" }}">
     <i class="bi bi-speedometer2"></i> {{ __('app.management_indicators') }}
 </a>
@@ -94,19 +94,19 @@
 </div>
 @endif
 
-@if(auth()->user()->isAdmin())
+@if(auth()->user()->can("manage-catalog"))
 <a href="{{ route("packages.index") }}" class="nav-link {{ request()->routeIs("packages.*") ? "active" : "" }}">
     <i class="bi bi-box-seam"></i> {{ __('app.packages') }}
 </a>
 @endif
 
-@if(auth()->user()->isAdmin() || auth()->user()->isOwner())
+@if(auth()->user()->can("manage-store"))
 <a href="{{ route("promotions.index") }}" class="nav-link {{ request()->routeIs("promotions.*") ? "active" : "" }}">
     <i class="bi bi-megaphone"></i> {{ __('app.promotions') }}
 </a>
 @endif
 
-@if(auth()->user()->seesFinance())
+@if(auth()->user()->can("manage-finance"))
 @php($expensesActive = request()->routeIs("expenses.*") || request()->routeIs("expense-categories.*"))
 <a class="nav-link d-flex justify-content-between align-items-center {{ $expensesActive ? "" : "collapsed" }}" data-bs-toggle="collapse" href="#collapseExpenses" role="button" aria-expanded="{{ $expensesActive ? "true" : "false" }}" aria-controls="collapseExpenses">
     <span><i class="bi bi-cash-stack"></i> {{ __('app.expenses') }}</span>

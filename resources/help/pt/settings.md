@@ -9,10 +9,12 @@
 | Política de cheques | Ninguém, só empresas ou todos. |
 | Limite de numerário em caixa | A partir daqui o sistema pede uma sangria. |
 
+<!-- roles:admin -->
 ## Definições do sistema
 
+Só o administrador as gere; não fazem parte das definições de uma loja.
+
 - **Geral**: nome comercial, NUIT, endereço, contactos, logótipo e cores (faturas, talões). Valem para a **loja em uso**; o que a loja não definir vem da empresa.
-<!-- roles:admin -->
 - **Localização**: idioma por omissão, fuso horário, formatos de data e número (iguais em todas as lojas).
 - **Idiomas**: crie idiomas e traduza os textos do sistema no ecrã; exporte / importe as traduções.
 - **Moedas**: lista de moedas e moeda por omissão.
@@ -31,14 +33,21 @@ As definições do negócio, as notificações automáticas e os modelos de mens
 - **Notificações automáticas** (só pela API oficial): ative cada evento — encomenda recebida, pronta, pagamento recebido, lembrete de pagamento, fatura vencida, peças por levantar, recolha agendada, estafeta a caminho, encomenda atrasada — e ligue-o a um **modelo**.
 - **Modelos**: use as variáveis `{customer}`, `{order}`, `{amount}`, `{due_date}`, `{delivery_date}`, `{days}`.
 
-<!-- roles:admin -->
+<!-- roles:owner -->
+- O **proprietário** configura o WhatsApp **da sua loja**: canal das conversas e das notificações, credenciais da API oficial ou ligação por código QR (com o telemóvel da loja). Enquanto não gravar, a loja usa a configuração da empresa; ao gravar, a loja passa a ter configuração própria, preenchida de raiz. Voltar à configuração da empresa só o administrador pode fazer.
+<!-- /roles -->
+
 ## Pagamentos e carteiras móveis
 
+<!-- roles:admin -->
 Como no WhatsApp, escolha no topo **Empresa** ou **Loja**: uma loja pode ter a sua configuração de pagamentos.
+<!-- /roles -->
+<!-- roles:owner -->
+O **proprietário** configura os pagamentos **da sua loja** (métodos aceites e credenciais M-Pesa / e-Mola). As credenciais da empresa não são copiadas: introduza as da loja.
+<!-- /roles -->
 
 - **Métodos de pagamento aceites**: só os métodos marcados aparecem nos pagamentos, na entrega e no faturamento. Os pagamentos já registados mantêm o seu método.
 - **Pagamentos móveis**: credenciais de M-Pesa e e-Mola e modo — desligado, **simulação** (formação, sem dinheiro), sandbox (testes do operador) ou produção. Os pedidos de pagamento só funcionam se o método (M-Pesa ou e-Mola) também estiver aceite.
-<!-- /roles -->
 
 <!-- roles:admin -->
 ## Site público

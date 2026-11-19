@@ -4,6 +4,16 @@
     that sends the store back to the company configuration.
 --}}
 @php($onStore = $bar['level'] !== null)
+@if(!auth()->user()->isAdmin())
+{{-- The store owner configures their own store only. --}}
+<div class="card mb-3">
+    <div class="card-body py-2 small">
+        <span class="fw-semibold me-1">{{ __('app.settings_level_editing') }}</span>
+        <span class="badge bg-info text-dark"><i class="bi bi-shop"></i> {{ __('app.settings_level_store', ['name' => $bar['store']?->name]) }}</span>
+        <div class="text-muted mt-2">{{ $bar['owns'] ? __('app.settings_level_store_own_help') : __('app.settings_level_owner_new_help') }}</div>
+    </div>
+</div>
+@else
 <div class="card mb-3">
     <div class="card-body py-2 small">
         <div class="d-flex flex-wrap align-items-center gap-2">
@@ -46,3 +56,4 @@
         @endif
     </div>
 </div>
+@endif

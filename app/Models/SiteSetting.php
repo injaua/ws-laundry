@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Traits\Loggable;
 use App\Support\CurrentStore;
+use App\Support\SettingsCache;
 use App\Support\SystemSettings;
 use Illuminate\Database\Eloquent\Model;
 
@@ -40,6 +41,19 @@ class SiteSetting extends Model
 
     public const GLOBAL_PREFIXES = ["security_", "mm_", "whatsapp_cloud_"];
 
+    protected static function booted(): void
+    {
+        // Settings are read once per request (SettingsCache): any change empties it.
+        static::saved(fn () => self::flushCaches());
+        static::deleted(fn () => self::flushCaches());
+    }
+
+    private static function flushCaches(): void
+    {
+        SettingsCache::instance()->flush();
+        SystemSettings::flush();
+    }
+
     public static function isGlobal(string $key): bool
     {
         if (in_array($key, self::GLOBAL_KEYS, true)) {
@@ -75,18 +89,16 @@ class SiteSetting extends Model
      */
     public static function many(array $keys): array
     {
-        $storeId = CurrentStore::id();
-        $rows = static::whereIn("key", $keys)
-            ->where(fn ($q) => $q->whereNull("store_id")->when($storeId, fn ($q) => $q->orWhere("store_id", $storeId)))
-            ->get(["key", "value", "store_id"]);
+        $cache = SettingsCache::instance();
+        $wanted = array_flip($keys);
+        $values = array_intersect_key($cache->level(null), $wanted);
 
-        $values = [];
-        foreach ($rows->whereNull("store_id") as $row) {
-            $values[$row->key] = $row->value;
-        }
-        foreach ($rows->whereNotNull("store_id") as $row) {
-            if (!self::isGlobal($row->key)) {
-                $values[$row->key] = $row->value;
+        $storeId = CurrentStore::id();
+        if ($storeId) {
+            foreach (array_intersect_key($cache->level($storeId), $wanted) as $key => $value) {
+                if (!self::isGlobal($key)) {
+                    $values[$key] = $value;
+                }
             }
         }
 
@@ -99,7 +111,7 @@ class SiteSetting extends Model
             ["store_id" => self::storeFor($key), "key" => $key],
             ["value" => $value]
         );
-        SystemSettings::flush();
+        self::flushCaches();
     }
 
     /**
@@ -109,33 +121,30 @@ class SiteSetting extends Model
      */
     public static function valuesAt(?int $storeId, array $keys): array
     {
-        return static::whereIn("key", $keys)
-            ->when($storeId, fn ($q) => $q->where("store_id", $storeId), fn ($q) => $q->whereNull("store_id"))
-            ->pluck("value", "key")
-            ->all();
+        return array_intersect_key(SettingsCache::instance()->level($storeId), array_flip($keys));
     }
 
     /** Writes a value at exactly one level (null = company), whatever the key. */
     public static function setAt(?int $storeId, string $key, mixed $value): void
     {
         static::updateOrCreate(["store_id" => $storeId, "key" => $key], ["value" => $value]);
-        SystemSettings::flush();
+        self::flushCaches();
     }
 
     /** Removes a store's own values of these keys (it falls back to the company values again). */
     public static function forgetAt(int $storeId, array $keys): void
     {
         static::where("store_id", $storeId)->whereIn("key", $keys)->get()->each->delete();
-        SystemSettings::flush();
+        self::flushCaches();
     }
 
     /** Every setting as seen from the current store (company values + the store's overrides). */
     public static function allAsArray(): array
     {
         $storeId = CurrentStore::id();
-        $values = static::whereNull("store_id")->pluck("value", "key")->toArray();
+        $values = SettingsCache::instance()->level(null);
         if ($storeId) {
-            foreach (static::where("store_id", $storeId)->pluck("value", "key") as $key => $value) {
+            foreach (SettingsCache::instance()->level($storeId) as $key => $value) {
                 if (!self::isGlobal($key)) {
                     $values[$key] = $value;
                 }

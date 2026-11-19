@@ -11,9 +11,19 @@ use App\Models\MaintenanceJob;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Services\AccountsReceivable;
+use App\Services\ManagementIndicators;
+use App\Support\CurrentStore;
+use App\Support\StoreReadiness;
+use App\Support\SystemSettings;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardController extends Controller
 {
+    /** Management indicators shown on the dashboard (all of them: Management indicators page). */
+    private const KPI_CACHE_MINUTES = 10;
+
+    private const DASHBOARD_KPIS = ["revenue", "operating_result", "operating_margin", "orders", "avg_ticket", "on_time_rate", "active_customers", "receivables"];
+
     public function index()
     {
         // Couriers work from their route; the dashboard figures are not theirs to see.
@@ -50,13 +60,16 @@ class DashboardController extends Controller
                 - CreditNote::valid()->refunds()->whereMonth("issued_at", now()->month)
                     ->whereYear("issued_at", now()->year)->sum("amount");
 
-            // 7 days chart
+            // 7 days chart: takings less refunds per day, one grouped query each.
+            $since = today()->subDays(6);
+            $paid = Payment::where("paid_at", ">=", $since)
+                ->selectRaw("DATE(paid_at) as day, SUM(amount) as total")->groupBy("day")->pluck("total", "day");
+            $refunded = CreditNote::valid()->refunds()->where("issued_at", ">=", $since)
+                ->selectRaw("DATE(issued_at) as day, SUM(amount) as total")->groupBy("day")->pluck("total", "day");
             for ($i = 6; $i >= 0; $i--) {
                 $date = today()->subDays($i);
                 $chartLabels[] = $date->format("d M");
-                $total = Payment::whereDate("paid_at", $date)->sum("amount")
-                    - CreditNote::valid()->refunds()->whereDate("issued_at", $date)->sum("amount");
-                $chartData[] = (float) $total;
+                $chartData[] = (float) ($paid[$date->toDateString()] ?? 0) - (float) ($refunded[$date->toDateString()] ?? 0);
             }
         }
 
@@ -89,7 +102,29 @@ class DashboardController extends Controller
             $receivablesAlerts = $ar->summary($ar->outstandingOrders());
         }
 
+        // Management (admin / owner): the key indicators of the store this month, against the period
+        // before. Heavy to compute, so kept for a few minutes per store and day.
+        $storeKpis = null;
+        $kpiStore = null;
+        $kpiComputedAt = null;
+        if (auth()->user()->can("manage-store")) {
+            $kpiStore = CurrentStore::store();
+            [$storeKpis, $kpiComputedAt] = Cache::remember(
+                "dashboard-kpis:" . ($kpiStore?->id ?? 0) . ":" . today()->toDateString(),
+                now()->addMinutes(self::KPI_CACHE_MINUTES),
+                fn () => [
+                    collect(app(ManagementIndicators::class)->build(now()->startOfMonth(), now())["indicators"])
+                        ->only(self::DASHBOARD_KPIS)->all(),
+                    now()->format((string) SystemSettings::get("time_format") ?: "H:i"),
+                ],
+            );
+        }
+
+        // Is the store ready to take payments and talk to customers? (admin / owner)
+        $storeReadiness = auth()->user()->can("configure-store") ? StoreReadiness::for(CurrentStore::id()) : null;
+
         return view("dashboard", compact(
+            "storeKpis", "kpiStore", "kpiComputedAt", "storeReadiness",
             "isManager", "totalCustomers", "newCustomers", "todayOrders", "processingOrders",
             "readyOrders", "todayRevenue", "monthRevenue",
             "latestOrders", "chartLabels", "chartData", "resourceAlerts", "receivablesAlerts"

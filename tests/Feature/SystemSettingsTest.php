@@ -25,12 +25,14 @@ class SystemSettingsTest extends TestCase
         ], $overrides);
     }
 
-    public function test_pages_are_for_admin_and_owner_only(): void
+    public function test_pages_are_for_admin_only(): void
     {
-        foreach (["admin", "owner"] as $role) {
-            $user = User::factory()->create(["role" => $role]);
-            $this->actingAs($user)->get(route("admin.system-settings.general"))->assertOk()->assertSee(__("app.company_trade_name"));
-        }
+        $this->actingAs(User::factory()->create())->get(route("admin.system-settings.general"))->assertOk()->assertSee(__("app.company_trade_name"));
+        // System settings are not part of a store's settings: the owner neither sees nor edits them.
+        $owner = User::factory()->owner()->create();
+        $this->actingAs($owner)->get(route("admin.system-settings.general"))->assertForbidden();
+        $this->actingAs($owner)->post(route("admin.system-settings.general.update"), ["company_name" => "X"])->assertForbidden();
+        $this->actingAs($owner)->get("/dashboard")->assertOk()->assertDontSee(route("admin.system-settings.general"));
         // Localization is company-wide (every store): admin only.
         $this->actingAs(User::factory()->create())->get(route("admin.system-settings.localization"))->assertOk()->assertSee(__("app.default_timezone"));
         $this->actingAs(User::factory()->owner()->create())->get(route("admin.system-settings.localization"))->assertForbidden();

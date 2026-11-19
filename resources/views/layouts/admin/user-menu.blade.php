@@ -27,7 +27,7 @@
                 <i class="bi bi-shield-check me-2"></i>{{ __('app.manage_security') }}
             </a>
         </li>
-        @if($user->isCashier())
+        @if($user->can("hr-self-service"))
             <li>
                 <a class="dropdown-item {{ request()->routeIs("hr.payslips") ? "active" : "" }}" href="{{ route("hr.payslips") }}">
                     <i class="bi bi-cash-coin me-2"></i>{{ __('app.my_payslips') }}
@@ -39,7 +39,7 @@
                 </a>
             </li>
         @endif
-        @if($user->hasRole(["admin", "owner"]))
+        @if($user->can("manage-store"))
             <li>
                 <a class="dropdown-item {{ request()->routeIs("activity-logs.*") ? "active" : "" }}" href="{{ route("activity-logs.index") }}">
                     <i class="bi bi-clock-history me-2"></i>{{ __('app.activity_log') }}

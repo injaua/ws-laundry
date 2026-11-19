@@ -28,12 +28,16 @@ No topo do ecrã, abra o menu com o nome da loja e escolha outra. Tudo o que vê
 
 | De cada loja | Da empresa (só o administrador altera) |
 |--------------|----------------------------------------|
-| Nome comercial, NUIT, logótipo e dados de faturação (**Definições → Geral**; sem valor próprio, usa o da empresa) | Localização, idiomas e moedas |
-| Definições do negócio (IVA, expresso, capacidade, cheques, limite de caixa) | Site público, galeria e testemunhos |
-| Notificações automáticas e modelos de mensagem | Segurança e cópias de segurança |
-| Numeração de encomendas, faturas, notas de crédito e reclamações | |
+| Definições do negócio (IVA, expresso, capacidade, cheques, limite de caixa) | Definições do sistema: nome comercial, NUIT, logótipo e dados de faturação (**Definições do sistema → Geral**, na loja em uso; sem valor próprio, usa o da empresa) |
+| Serviços e pacotes | Localização, idiomas e moedas |
+| Notificações automáticas e modelos de mensagem | Site público, galeria e testemunhos |
+| Numeração de encomendas, faturas, notas de crédito e reclamações | Segurança e cópias de segurança |
 
-**WhatsApp** (canal, número da API oficial ou código QR) e **pagamentos** (métodos aceites, M-Pesa e e-Mola) são da empresa, mas o administrador pode dar a uma loja a sua **configuração própria**: nas respetivas páginas de definições, escolha **Loja** no topo e grave. Uma loja nova usa a configuração da empresa até ter a sua.
+**WhatsApp** (canal, número da API oficial ou código QR) e **pagamentos** (métodos aceites, M-Pesa e e-Mola) usam a configuração da empresa até a loja ter a sua. O **proprietário** configura os da sua loja (começa de raiz, sem copiar as credenciais da empresa); o administrador escolhe **Empresa** ou **Loja** no topo das páginas e pode copiar a configuração da empresa para a loja. **Voltar a usar a configuração da empresa** é só do administrador.
+
+## Estado das lojas
+
+Na lista de lojas, a coluna **Pronta?** mostra se cada loja ativa está pronta para receber pagamentos e falar com os clientes: *Pronta*, *Com avisos* ou *Por configurar*. Passe o rato por cima para ver o que falta. O mesmo cartão aparece no **Painel** da loja.
 
 ## Desativar uma loja
 

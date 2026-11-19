@@ -3,7 +3,7 @@
 **Produção** mostra os pedidos em colunas por etapa: Recebido, Lavagem, Secagem, Engomadoria e Dobragem. Os pedidos **atrasados** e **expressos** aparecem destacados.
 
 - **Avançar** move o pedido para a etapa seguinte e regista quem fez o trabalho.
-- **Receção**: atualize os cuidados especiais e as notas, e anexe **fotografias** do estado da roupa (úteis numa reclamação).
+- **recepção**: atualize os cuidados especiais e as notas, e anexe **fotografias** do estado da roupa (úteis numa reclamação).
 - **Reagendar**: para um pedido atrasado, indique a nova data e o **motivo**; o cliente pode ser avisado por WhatsApp.
 
 ## Controlo de qualidade

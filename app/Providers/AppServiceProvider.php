@@ -8,6 +8,8 @@ use App\Services\WhatsApp\WhatsAppChannels;
 use App\Services\WhatsApp\WhatsAppGateway;
 use App\Services\WhatsApp\WhatsAppSettings;
 use App\Support\DatabaseTranslationLoader;
+use App\Support\Permissions;
+use App\Support\SettingsCache;
 use App\Support\StorePresenceVerifier;
 use App\Support\SystemSettings;
 use App\View\Composers\AdminNavigationComposer;
@@ -19,6 +21,7 @@ use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
+use Illuminate\Database\Events\MigrationsEnded;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\View;
@@ -40,6 +43,8 @@ class AppServiceProvider extends ServiceProvider
         // resolved on each use, since a store may have its own WhatsApp configuration.
         $this->app->bind(WhatsAppGateway::class, fn ($app) => $app->make(WhatsAppChannels::class)->conversationGateway());
         $this->app->singleton(WhatsAppChannels::class);
+        // Settings rows, read once per request / queued job (reset between them).
+        $this->app->scoped(SettingsCache::class);
         // One count of the sidebar badges per request, however many times the layout renders.
         $this->app->singleton(AdminNavigationComposer::class);
 
@@ -59,6 +64,9 @@ class AppServiceProvider extends ServiceProvider
         // Laravel's default links() markup is Tailwind; this app only loads Bootstrap 5.
         Paginator::useBootstrapFive();
 
+        // Who may do what (routes "can:…", @can in the views): App\Support\Permissions.
+        Permissions::register();
+
         // Admin → System settings: company name, time zone (read fresh on every boot).
         SystemSettings::flush();
         SystemSettings::apply();
@@ -77,6 +85,9 @@ class AppServiceProvider extends ServiceProvider
         Password::defaults(fn () => Password::min(10)->letters()->mixedCase()->numbers());
 
         $this->registerSecurityEvents();
+
+        // Migrations may write settings directly (DB::table): read them afresh afterwards.
+        Event::listen(MigrationsEnded::class, fn () => SettingsCache::instance()->flush());
     }
 
     /** Logins, failed attempts, logouts and lockouts go to the audit trail. */

@@ -1,12 +1,12 @@
 {{-- Sidebar · Resources (admin / owner; the accountant sees suppliers and purchases), accounting and finance. --}}
-@if(auth()->user()->seesFinance())
+@if(auth()->user()->can("manage-finance"))
 @php($resourcesActive = request()->routeIs("resources.*"))
 <a class="nav-link d-flex justify-content-between align-items-center {{ $resourcesActive ? "" : "collapsed" }}" data-bs-toggle="collapse" href="#collapseResources" role="button" aria-expanded="{{ $resourcesActive ? "true" : "false" }}" aria-controls="collapseResources">
     <span><i class="bi bi-inboxes"></i> {{ __('app.resources') }}</span>
     <i class="bi bi-chevron-down chev"></i>
 </a>
 <div class="collapse {{ $resourcesActive ? "show" : "" }}" id="collapseResources">
-    @if(auth()->user()->isManager())
+    @if(auth()->user()->can("manage-store"))
     <a href="{{ route("resources.equipments.index") }}" class="nav-link ms-3 {{ request()->routeIs("resources.equipments.*") ? "active" : "" }} nav-sub">
         <i class="bi bi-gear-wide-connected"></i> {{ __('app.equipments') }}
     </a>
@@ -26,7 +26,7 @@
     <a href="{{ route("resources.purchases.index") }}" class="nav-link ms-3 {{ request()->routeIs("resources.purchases.*") ? "active" : "" }} nav-sub">
         <i class="bi bi-bag-plus"></i> {{ __('app.purchase_orders') }}
     </a>
-    @if(auth()->user()->isManager())
+    @if(auth()->user()->can("manage-store"))
     <a href="{{ route("resources.maintenance.index") }}" class="nav-link ms-3 {{ request()->routeIs("resources.maintenance.*") || (request()->routeIs("resources.items.*") && request("kind") == "part") ? "active" : "" }} nav-sub">
         <i class="bi bi-tools"></i> {{ __('app.maintenance') }}
     </a>
@@ -34,7 +34,7 @@
 </div>
 @endif
 
-@if(auth()->user()->seesFinance())
+@if(auth()->user()->can("manage-finance"))
 @php($accountingActive = request()->routeIs("accounting.*") || request()->routeIs("receivables.*") || request()->routeIs("invoices.*"))
 <a class="nav-link d-flex justify-content-between align-items-center {{ $accountingActive ? "" : "collapsed" }}" data-bs-toggle="collapse" href="#collapseAccounting" role="button" aria-expanded="{{ $accountingActive ? "true" : "false" }}" aria-controls="collapseAccounting">
     <span><i class="bi bi-journal-text"></i> {{ __('app.accounting') }}</span>

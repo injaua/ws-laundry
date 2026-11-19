@@ -23,7 +23,7 @@ Como proprietário pode criar **contabilistas**, **operadores de caixa** e **est
 | Perfil | Faz |
 |--------|-----|
 | Administrador | Tudo, incluindo catálogo, segurança e credenciais. |
-| Proprietário | Gestão, finanças, RH, recursos e definições do negócio. |
+| Proprietário | Gestão, finanças, RH, recursos, catálogo (serviços e pacotes) e definições da loja: negócio, pagamentos e WhatsApp. |
 | Contabilista | Contabilidade e finanças; consulta da operação. |
 | Operador de caixa | Balcão, caixa, produção e logística. |
 | Estafeta | Só a sua rota. |

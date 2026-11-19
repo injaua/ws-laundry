@@ -223,7 +223,7 @@ class UserManagementTest extends TestCase
         $this->actingAs($owner)->get("/orders")->assertOk();
         $this->actingAs($owner)->get("/customers")->assertOk();
         $this->actingAs($owner)->get("/reports")->assertOk();
-        $this->actingAs($owner)->get("/services")->assertForbidden();
+        $this->actingAs($owner)->get("/services")->assertOk();
         $this->actingAs($owner)->get("/users")->assertOk();
 
         // owner keeps management actions
@@ -250,9 +250,10 @@ class UserManagementTest extends TestCase
         $this->actingAs($owner)->get("/admin/testimonials")->assertForbidden();
         $this->actingAs($owner)->get("/admin/galleries")->assertForbidden();
 
-        // still admin-only
-        $this->actingAs($owner)->get("/services")->assertForbidden();
-        $this->actingAs($owner)->get("/packages")->assertForbidden();
+        // The store's catalogue: the owner manages services and packages; system settings stay admin-only.
+        $this->actingAs($owner)->get("/services")->assertOk();
+        $this->actingAs($owner)->get("/packages")->assertOk();
+        $this->actingAs($owner)->get("/admin/system-settings/general")->assertForbidden();
 
         $cashier = User::factory()->cashier()->create();
         $this->actingAs($cashier)->get("/expenses")->assertForbidden();

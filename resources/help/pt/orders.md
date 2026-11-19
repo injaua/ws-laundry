@@ -3,7 +3,7 @@
 1. **Pedidos → Novo pedido**.
 2. Escolha o **cliente** (ou crie-o no momento). Se tiver crédito, o sistema mostra o limite e o saldo disponível.
 3. Adicione as linhas: serviços **ao quilo** (peso), **à peça** (quantidade) ou **pacotes**. O preço vem sempre do catálogo.
-4. Opcional: marque **Expresso**, indique **cuidados especiais** (delicado, separar cores, sem amaciador…) e notas de receção.
+4. Opcional: marque **Expresso**, indique **cuidados especiais** (delicado, separar cores, sem amaciador…) e notas de recepção.
 5. Confirme a **data de entrega** proposta (calculada pela capacidade da lavandaria).
 6. Para clientes com crédito, escolha se é **venda a crédito**.
 7. Guarde. O pedido fica no estado **Recebido** com um número único.

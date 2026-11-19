@@ -78,6 +78,41 @@
     </div>
 </div>
 
+@if($storeReadiness)
+    @include('partials.store-readiness', ['readiness' => $storeReadiness])
+@endif
+
+@if($storeKpis)
+{{-- Management indicators of the store worked in (this month). --}}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span><i class="bi bi-speedometer2 me-1"></i> {{ __('app.store_kpis_title') }}@if($kpiStore) · <span class="fw-semibold">{{ $kpiStore->name }}</span>@endif
+            <span class="text-muted small">— {{ __('app.period_this_month') }} · {{ __('app.kpi_updated_at', ['time' => $kpiComputedAt]) }}</span></span>
+        <a href="{{ route('management.index') }}" class="btn btn-sm btn-outline-primary">{{ __('app.management_indicators') }} <i class="bi bi-arrow-right"></i></a>
+    </div>
+    <div class="card-body">
+        <div class="row g-2">
+            @foreach($storeKpis as $kpi)
+            <div class="col-6 col-md-3">
+                <div class="border rounded p-2 h-100">
+                    <div class="small text-muted">{{ __('app.kpi_' . $kpi['key']) }}</div>
+                    <div class="fs-5 fw-bold">@include('management._value', ['value' => $kpi['value'], 'format' => $kpi['format']])</div>
+                    @if($kpi['trend'])
+                        @php($tColor = $kpi['trend']['good'] === null ? 'text-muted' : ($kpi['trend']['good'] ? 'text-success' : 'text-danger'))
+                        <div class="small {{ $tColor }}">
+                            <i class="bi bi-{{ $kpi['trend']['direction'] === 'up' ? 'arrow-up-right' : ($kpi['trend']['direction'] === 'down' ? 'arrow-down-right' : 'dash') }}"></i>{{ $kpi['change'] !== null ? abs($kpi['change']) . '%' : '' }}
+                        </div>
+                    @elseif($kpi['snapshot'] ?? false)
+                        <div class="small text-muted">{{ __('app.kpi_now') }}</div>
+                    @endif
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+</div>
+@endif
+
 @if($resourceAlerts && array_sum($resourceAlerts) > 0)
 <div class="row mb-1">
     @if($resourceAlerts["low_stock"] > 0)

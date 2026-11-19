@@ -17,9 +17,12 @@ use App\Services\WhatsApp\WhatsAppChannels;
 use App\Services\WhatsApp\WhatsAppGateway;
 use App\Services\WhatsApp\WhatsAppSettings;
 use App\Support\CurrentStore;
+use App\Support\StoreReadiness;
 use App\Support\StoreSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -55,6 +58,114 @@ class StoreOwnSettingsTest extends TestCase
         ])->assertRedirect();
         $this->second = Store::where("code", "LJ02")->firstOrFail();
         $this->post(route("admin.stores.switch", $this->second));
+    }
+
+    // ---------- Store owner ----------
+
+    public function test_the_owner_configures_payments_and_whatsapp_of_their_store_only(): void
+    {
+        MobileMoneySettings::save("mpesa", ["mode" => "live", "api_key" => "company-key", "public_key" => "PUB", "service_provider_code" => "100000"]);
+        $owner = User::factory()->owner()->create(["store_id" => $this->second->id]);
+        $this->actingAs($owner);
+
+        $this->get(route("admin.mobile-money.edit"))->assertOk()
+            ->assertSee(__("app.settings_level_owner_new_help"))
+            ->assertDontSee(__("app.settings_level_company"))
+            ->assertDontSee("100000");
+
+        // Even asking for the company level, the owner saves their own store, from scratch.
+        $this->put(route("admin.mobile-money.methods"), ["level" => "company", "methods" => ["cash", "mpesa"]])->assertRedirect();
+        $this->put(route("admin.mobile-money.update", "mpesa"), ["level" => "company", "mode" => "sandbox", "service_provider_code" => "200000"])->assertRedirect();
+
+        $this->assertTrue(StoreSettings::owns("payments", $this->second->id));
+        $this->assertSame(["cash", "mpesa"], PaymentMethods::enabled($this->second->id));
+        $this->assertSame("200000", MobileMoneySettings::get("mpesa", $this->second->id)["service_provider_code"]);
+        $this->assertNull(MobileMoneySettings::get("mpesa", $this->second->id)["api_key"]); // company key not copied
+        $this->assertSame("live", MobileMoneySettings::mode("mpesa", null)); // company untouched
+        $this->assertSame("100000", MobileMoneySettings::get("mpesa", null)["service_provider_code"]);
+
+        // WhatsApp channels of the store.
+        $this->get(route("admin.notifications.index"))->assertOk()->assertSee(route("admin.notifications.channels"));
+        $this->post(route("admin.notifications.channels"), ["level" => "company", "driver" => "cloud", "cloud" => ["phone_number_id" => "999"]])->assertRedirect();
+        $this->assertTrue(StoreSettings::owns("whatsapp", $this->second->id));
+        $this->assertSame("cloud", WhatsAppSettings::forLevel($this->second->id)["driver"]);
+        $this->assertSame("log", WhatsAppSettings::forLevel(null)["driver"]);
+
+        // Going back to the company configuration is the admin's decision.
+        $this->post(route("admin.mobile-money.release"))->assertForbidden();
+        $this->post(route("admin.notifications.channels.release"))->assertForbidden();
+    }
+
+    public function test_the_owner_manages_services_and_packages_and_sees_store_indicators(): void
+    {
+        $owner = User::factory()->owner()->create(["store_id" => $this->second->id]);
+        $this->actingAs($owner);
+
+        $this->get(route("services.index"))->assertOk();
+        $this->get(route("services.create"))->assertOk();
+        $this->get(route("packages.index"))->assertOk();
+        $this->get(route("packages.create"))->assertOk();
+        $this->get(route("management.index"))->assertOk();
+        $this->get("/dashboard")->assertOk()
+            ->assertSee(__("app.store_kpis_title"))
+            ->assertSee("Loja da Matola")
+            ->assertSee(route("services.index"))
+            ->assertSee(route("packages.index"))
+            ->assertSee(route("admin.mobile-money.edit"));
+
+        $cashier = User::factory()->create(["role" => "cashier", "store_id" => $this->second->id]);
+        $this->actingAs($cashier)->get(route("services.create"))->assertForbidden();
+        $this->actingAs($cashier)->get(route("admin.mobile-money.edit"))->assertForbidden();
+    }
+
+    public function test_store_readiness_shows_what_is_missing(): void
+    {
+        $owner = User::factory()->owner()->create(["store_id" => $this->second->id]);
+        $this->actingAs($owner);
+
+        // M-Pesa live without credentials, conversations in test mode.
+        $this->put(route("admin.mobile-money.update", "mpesa"), ["mode" => "live", "service_provider_code" => "200000"])->assertRedirect();
+
+        $readiness = StoreReadiness::for($this->second->id);
+        $this->assertSame("problem", $readiness["state"]);
+        $this->assertTrue($readiness["payments"]["own"]);
+        $this->assertContains("readiness_mm_incomplete", array_column($readiness["payments"]["issues"], 0));
+        $this->assertContains("readiness_wa_log", array_column($readiness["whatsapp"]["issues"], 0));
+
+        $this->get("/dashboard")->assertOk()
+            ->assertSee(__("app.readiness_title"))
+            ->assertSee(__("app.readiness_problem"))
+            ->assertSee(__("app.readiness_mm_incomplete", ["provider" => __("app.mpesa")]));
+
+        // Credentials complete: payments are ready (the store's other stores are not affected).
+        $this->put(route("admin.mobile-money.update", "mpesa"), ["mode" => "live", "api_key" => "k", "public_key" => "p", "service_provider_code" => "200000"])->assertRedirect();
+        $this->assertSame("ok", StoreReadiness::for($this->second->id)["payments"]["state"]);
+        $this->assertFalse(StoreReadiness::for($this->main->id)["payments"]["own"]);
+
+        // The admin sees every store's state in Admin → Stores.
+        $this->actingAs($this->admin)->get(route("admin.stores.index"))->assertOk()->assertSee(__("app.readiness_short"));
+    }
+
+    public function test_dashboard_indicators_are_cached_per_store_and_day(): void
+    {
+        $owner = User::factory()->owner()->create(["store_id" => $this->second->id]);
+        $key = "dashboard-kpis:{$this->second->id}:" . today()->toDateString();
+
+        $this->assertFalse(Cache::has($key));
+        $this->actingAs($owner)->get("/dashboard")->assertOk()->assertSee(__("app.store_kpis_title"));
+        $this->assertTrue(Cache::has($key));
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $this->get("/dashboard")->assertOk()->assertSee(__("app.store_kpis_title"));
+        $this->assertLessThan(40, count(DB::getQueryLog()));
+        DB::disableQueryLog();
+
+        // The cashier sees neither the indicators nor the store status.
+        $cashier = User::factory()->create(["role" => "cashier", "store_id" => $this->second->id]);
+        $this->actingAs($cashier)->get("/dashboard")->assertOk()
+            ->assertDontSee(__("app.store_kpis_title"))
+            ->assertDontSee(__("app.readiness_title"));
     }
 
     // ---------- Payments ----------

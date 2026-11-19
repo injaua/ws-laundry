@@ -12,7 +12,7 @@
     <a href="{{ route("messages.index") }}" class="nav-link ms-3 {{ request()->routeIs("messages.index") || request()->routeIs("messages.conversations.*") ? "active" : "" }} nav-sub">
         <i class="bi bi-people"></i> {{ __('app.internal_chat') }}
     </a>
-    @if(auth()->user()->isCashier())
+    @if(auth()->user()->can("answer-customers"))
     <a href="{{ route("messages.clients.index") }}" class="nav-link ms-3 {{ request()->routeIs("messages.clients.*") ? "active" : "" }} nav-sub">
         <span><i class="bi bi-whatsapp"></i> {{ __('app.client_whatsapp') }}</span>
         @if($navBadges['whatsapp_unread'] > 0)<span class="badge rounded-pill ms-1 nav-badge nav-badge-wa">{{ $navBadges['whatsapp_unread'] }}</span>@endif

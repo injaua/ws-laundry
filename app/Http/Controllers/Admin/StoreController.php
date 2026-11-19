@@ -7,6 +7,7 @@ use App\Models\Store;
 use App\Services\StoreOverview;
 use App\Services\StoreProvisioner;
 use App\Support\CurrentStore;
+use App\Support\StoreReadiness;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -24,7 +25,10 @@ class StoreController extends Controller
             "owners",
         ])->orderBy("name")->get();
 
-        return view("admin.stores.index", ["stores" => $stores, "currentStoreId" => CurrentStore::id()]);
+        // Payments / WhatsApp readiness of each active store (the configuration it really uses).
+        $readiness = $stores->where("is_active", true)->mapWithKeys(fn (Store $s) => [$s->id => StoreReadiness::for($s->id)]);
+
+        return view("admin.stores.index", ["stores" => $stores, "currentStoreId" => CurrentStore::id(), "readiness" => $readiness]);
     }
 
     public function create()

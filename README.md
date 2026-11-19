@@ -189,7 +189,11 @@ The suite has 604 tests (Laravel 13.43). CI (`.github/workflows/ci.yml`) runs it
 | Controllers | `app/Http/Controllers` | HTTP flow only |
 | Actions | `app/Actions` | One business operation each (e.g. `CreateOrder`, `CloseCashSession`, `IssueCreditNote`) |
 | Services | `app/Services` | Reusable domain logic (pricing, production planning, logistics, invoicing, WhatsApp, mobile money, security) |
+| Abilities | `app/Support/Permissions.php` | Every ability (`manage-catalog`, `configure-store`…) and the roles that have it, registered as Gates: routes use `can:…`, views `@can` |
 | Policies | `app/Policies` | Per-record authorisation |
+| Routes | `routes/web.php`, `routes/web/*.php` | Public routes in `web.php`; signed-in routes split by area (sales, management, finance, operations, HR, messages, account, admin) |
+| Settings | `app/Models/SiteSetting.php`, `app/Support/SettingsCache.php`, `app/Support/StoreSettings.php` | Company / store settings, read once per request; WhatsApp and payments configured per store |
+| Store readiness | `app/Support/StoreReadiness.php` | Whether a store can take payments and talk to customers (dashboard, Admin → Stores) |
 | Store scoping | `app/Support/CurrentStore.php`, `app/Models/Traits/BelongsToStore.php` | The store in use and the per-store filter on every business model |
 | Money | `app/Support/Money.php` | Exact decimal arithmetic for every amount (sums, differences, VAT, discounts, comparisons) |
 | Numbering | `app/Support/NumberSequence.php` | Per-store counters for every numbered series, incremented inside the saving transaction |

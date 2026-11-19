@@ -75,16 +75,19 @@ final class StoreSettings
         SiteSetting::setAt($level, $key, $value);
     }
 
-    /** The store starts configuring the group itself, from a copy of the company values. */
-    public static function takeOver(string $group, int $storeId): void
+    /**
+     * The store starts configuring the group itself, from a copy of the company values
+     * (or from scratch, $copyCompany = false: the store owner never gets the company's credentials).
+     */
+    public static function takeOver(string $group, int $storeId, bool $copyCompany = true): void
     {
         if (self::owns($group, $storeId)) {
             return;
         }
 
-        DB::transaction(function () use ($group, $storeId) {
+        DB::transaction(function () use ($group, $storeId, $copyCompany) {
             $own = SiteSetting::valuesAt($storeId, self::keys($group));
-            foreach (self::values($group, null) as $key => $value) {
+            foreach ($copyCompany ? self::values($group, null) : [] as $key => $value) {
                 if (!array_key_exists($key, $own)) {
                     SiteSetting::setAt($storeId, $key, $value);
                 }

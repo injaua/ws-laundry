@@ -5,10 +5,12 @@
 @section("content")
 <form action="{{ route("admin.business-settings.update") }}" method="POST">
     @csrf
+    @if(auth()->user()->isAdmin())
     <div class="alert alert-light border small">
         <i class="bi bi-building me-1"></i> {{ __('app.company_identity_moved') }}
         <a href="{{ route('admin.system-settings.general') }}">{{ __('app.system_settings') }} → {{ __('app.system_settings_general') }}</a>
     </div>
+    @endif
     <div class="row">
         <div class="col-lg-6">
             <div class="card mb-4">

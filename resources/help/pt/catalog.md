@@ -1,5 +1,8 @@
-<!-- roles:admin -->
+<!-- roles:admin,owner -->
 ## Serviços e pacotes
+
+O catálogo é **de cada loja**: o administrador e o proprietário criam e editam os serviços e pacotes da loja em uso.
+
 
 - **Serviços**: nome, base de preço (**por kg** ou **por peça**), preço, prazo mínimo em dias, fotografia e **receita de consumo**.
 - **Pacotes**: conjunto de serviços com preço fechado e receita própria.

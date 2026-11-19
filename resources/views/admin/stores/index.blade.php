@@ -27,6 +27,7 @@
                         <th class="text-center">{{ __('app.store_owners') }}</th>
                         <th class="text-center">{{ __('app.store_staff') }}</th>
                         <th>{{ __('app.status') }}</th>
+                        <th>{{ __('app.readiness_short') }}</th>
                         <th class="text-end">{{ __('app.actions') }}</th>
                     </tr>
                 </thead>
@@ -47,6 +48,13 @@
                             <td>
                                 <span class="badge bg-{{ $store->is_active ? "success" : "secondary" }}">{{ $store->is_active ? __('app.active') : __('app.inactive') }}</span>
                             </td>
+                            <td>
+                                @php($ready = $readiness[$store->id] ?? null)
+                                @if($ready)
+                                    @php($issues = collect([...$ready['payments']['issues'], ...$ready['whatsapp']['issues']])->map(fn ($i) => __('app.' . $i[0], $i[1]))->join(' · '))
+                                    <span class="badge bg-{{ ['ok' => 'success', 'warning' => 'warning text-dark', 'problem' => 'danger'][$ready['state']] }}" title="{{ $issues }}">{{ __('app.readiness_' . $ready['state']) }}</span>
+                                @endif
+                            </td>
                             <td class="text-end text-nowrap">
                                 @if($store->is_active && $store->id !== $currentStoreId)
                                     <form action="{{ route("admin.stores.switch", $store) }}" method="POST" class="d-inline">
@@ -59,7 +67,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="text-center text-muted py-4">{{ __('app.no_data') }}</td></tr>
+                        <tr><td colspan="9" class="text-center text-muted py-4">{{ __('app.no_data') }}</td></tr>
                     @endforelse
                 </tbody>
             </table>

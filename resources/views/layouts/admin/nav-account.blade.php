@@ -3,7 +3,7 @@
 <a href="{{ route("profile.edit") }}" class="nav-link">
     <i class="bi bi-person"></i> {{ __('app.profile') }}
 </a>
-@if(auth()->user()->hasRole(["admin", "owner"]))
+@if(auth()->user()->can("manage-store"))
 <a href="{{ route("activity-logs.index") }}" class="nav-link {{ request()->routeIs("activity-logs.*") ? "active" : "" }}">
     <i class="bi bi-clock-history"></i> {{ __('app.activity_log') }}
 </a>

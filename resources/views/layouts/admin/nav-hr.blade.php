@@ -1,11 +1,11 @@
 {{-- Sidebar · Human resources. --}}
 <div class="nav-section mt-3">{{ __('app.hr_section') }}</div>
-@if(auth()->user()->isAdmin() || auth()->user()->isOwner())
+@if(auth()->user()->can("manage-hr"))
 <a href="{{ route("employees.index") }}" class="nav-link {{ request()->routeIs("employees.*") ? "active" : "" }}">
     <i class="bi bi-person-badge"></i> {{ __('app.employees') }}
 </a>
 @endif
-@if(auth()->user()->seesFinance())
+@if(auth()->user()->can("manage-finance"))
 @php($salariesActive = request()->routeIs("salaries.*"))
 <a class="nav-link d-flex justify-content-between align-items-center {{ $salariesActive ? "" : "collapsed" }}" data-bs-toggle="collapse" href="#collapseSalaries" role="button" aria-expanded="{{ $salariesActive ? "true" : "false" }}" aria-controls="collapseSalaries">
     <span><i class="bi bi-cash-coin"></i> {{ __('app.salaries') }}</span>
@@ -20,7 +20,7 @@
     </a>
 </div>
 @endif
-@if(auth()->user()->isManager())
+@if(auth()->user()->can("manage-hr"))
 @php($vacationsActive = request()->routeIs("vacations.*"))
 <a class="nav-link d-flex justify-content-between align-items-center {{ $vacationsActive ? "" : "collapsed" }}" data-bs-toggle="collapse" href="#collapseVacations" role="button" aria-expanded="{{ $vacationsActive ? "true" : "false" }}" aria-controls="collapseVacations">
     <span><i class="bi bi-umbrella"></i> {{ __('app.vacations') }}</span>
@@ -57,7 +57,7 @@
     </a>
 </div>
 @endif
-@if(auth()->user()->isCashier())
+@if(auth()->user()->can("hr-self-service"))
 <a href="{{ route("hr.payslips") }}" class="nav-link {{ request()->routeIs("hr.payslips") ? "active" : "" }}">
     <i class="bi bi-cash-coin"></i> {{ __('app.my_payslips') }}
 </a>

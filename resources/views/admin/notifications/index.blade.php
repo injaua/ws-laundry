@@ -5,16 +5,14 @@
 @section("content")
 {{-- Channels --}}
 @php($channelLabel = fn ($c) => match ($c) { "cloud" => __('app.wa_channel_cloud'), "web" => __('app.wa_channel_web'), "log" => __('app.wa_mode_log'), default => __('app.wa_channel_off') })
-{{-- The company number, or the store's own: only the admin chooses. --}}
-@if(auth()->user()->isAdmin())
-    @include("admin.partials.settings-level", ["bar" => $levelBar, "release" => "admin.notifications.channels.release"])
-@endif
+{{-- The company number or a store's own (admin); the owner configures their store's own number. --}}
+@include("admin.partials.settings-level", ["bar" => $levelBar, "release" => "admin.notifications.channels.release"])
 <div class="card mb-3">
     <div class="card-header"><i class="bi bi-whatsapp me-1 text-wa"></i> {{ __('app.wa_connection') }}
         <span class="badge bg-light text-dark border ms-1">{{ $levelBar['level'] === null ? __('app.settings_level_company') : __('app.settings_level_store', ['name' => $levelBar['store']?->name]) }}</span>
     </div>
     <div class="card-body small">
-        @if(auth()->user()->isAdmin())
+        @if(auth()->user()->hasRole(["admin", "owner"]))
         <form action="{{ route("admin.notifications.channels") }}" method="POST" class="mb-3">
             @csrf
             <input type="hidden" name="level" value="{{ $levelParam }}">
@@ -87,7 +85,7 @@
             <p class="mb-2"><span class="badge bg-warning text-dark">{{ __('app.wa_mode_log') }}</span> {{ __('app.wa_log_mode') }}</p>
         @endif
 
-        @if($conversationChannel === "web" && auth()->user()->isAdmin())
+        @if($conversationChannel === "web" && auth()->user()->hasRole(["admin", "owner"]))
             <div class="border rounded p-3 mb-3" id="waQr" data-status="{{ route("admin.notifications.web-status", ["level" => $levelParam]) }}">
                 <div class="fw-semibold mb-1"><i class="bi bi-qr-code"></i> {{ __('app.wa_channel_web') }}</div>
                 @unless($webTokenOk)
