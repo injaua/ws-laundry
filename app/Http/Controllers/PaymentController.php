@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Payments\SettleOrderStatus;
+use App\Http\Requests\PaymentRequest;
 use App\Models\AccountingPeriod;
 use App\Models\CashSession;
 use App\Models\JournalEntry;
@@ -12,25 +13,16 @@ use App\Models\SiteSetting;
 use App\Models\User;
 use App\Services\Payments\Cheques;
 use App\Services\WhatsApp\AutomaticNotifications;
-use Illuminate\Http\Request;
+use App\Support\Documents\DocumentResponse;
+use App\Support\Money;
 
 class PaymentController extends Controller
 {
-    public function store(Request $request)
+    public function store(PaymentRequest $request)
     {
-        $validated = $request->validate([
-            "order_id" => "required|exists:orders,id",
-            "paid_at" => "required|date",
-            "amount" => "required|numeric|min:1",
-            "method" => "required|in:" . implode(",", Payment::METHODS),
-            "note" => "nullable|string|max:255",
-        ] + Payment::referenceRules());
-        $validated = Payment::validateReference($validated);
+        $validated = $request->paymentData();
+        $order = $request->order();
 
-        AccountingPeriod::assertOpen($validated["paid_at"], "paid_at");
-
-        $order = Order::with("customer")->findOrFail($validated["order_id"]);
-        Cheques::assertAccepted($order->customer, $validated["method"]);
         // A completed order is closed for payments, except credit orders: those are
         // exactly the ones that settle after delivery.
         if ($order->status === "completed" && !$order->is_credit) {
@@ -39,11 +31,11 @@ class PaymentController extends Controller
         }
 
         $remaining = $order->remainingBalance(); // after credit notes and refunds
-        if ($remaining <= 0) {
+        if (!Money::isPositive($remaining)) {
             return redirect()->route("orders.show", $order)
                 ->with("error", __('app.order_fully_paid'));
         }
-        if ((float) $validated["amount"] > $remaining) {
+        if (Money::compare($validated["amount"], $remaining) > 0) {
             return back()->withInput()
                 ->withErrors(["amount" => __('app.payment_exceeds_remaining', [
                     "amount" => money($remaining),
@@ -89,6 +81,14 @@ class PaymentController extends Controller
         return $redirect;
     }
 
+    /** A4 receipt (HTML, or PDF with ?format=pdf); the thermal ticket is receipt(). */
+    public function document(Payment $payment)
+    {
+        $payment->load(["order.customer", "order.payments", "cheque"]);
+
+        return DocumentResponse::make("documents.payment", compact("payment"), __("app.receipt") . " REC-" . str_pad($payment->id, 6, "0", STR_PAD_LEFT));
+    }
+
     public function receipt(Payment $payment)
     {
         $payment->load(["order.customer", "order.payments"]);
@@ -96,7 +96,7 @@ class PaymentController extends Controller
         return view("payments.receipt", compact("payment"));
     }
 
-    public function update(Request $request, Payment $payment)
+    public function update(PaymentRequest $request, Payment $payment)
     {
         if ($payment->isInClosedCashSession()) {
             return redirect()->route("orders.show", $payment->order_id)
@@ -110,30 +110,13 @@ class PaymentController extends Controller
 
         Cheques::assertEditable($payment);
 
-        $validated = $request->validate([
-            "paid_at" => "required|date",
-            "amount" => "required|numeric|min:1",
-            "method" => "required|in:" . implode(",", Payment::METHODS),
-            "note" => "nullable|string|max:255",
-        ] + Payment::referenceRules());
-        if ($validated["method"] === "cheque" && !$payment->isCheque()) {
-            Cheques::assertAccepted($payment->order?->customer, "cheque");
-        }
-        // Payments of a grouped receipt keep sharing their reference.
-        if ($payment->group_ref && in_array($validated["method"], Payment::UNIQUE_REF_METHODS, true)
-            && Payment::normalizeRef($validated["transaction_ref"] ?? null) === $payment->transaction_ref) {
-            $validated["transaction_ref"] = $payment->transaction_ref;
-        } else {
-            $validated = Payment::validateReference($validated, $payment->id);
-        }
-
-        AccountingPeriod::assertOpen($payment->paid_at, "paid_at");
-        AccountingPeriod::assertOpen($validated["paid_at"], "paid_at");
+        $validated = $request->paymentData();
 
         $order = $payment->order;
-        $paidOthers = (float) $order->payments()->whereKeyNot($payment->id)->sum("amount");
-        $max = round($order->netTotal() - ($paidOthers - $order->refundedAmount()), 2);
-        if ((float) $validated["amount"] > $max || $paidOthers + (float) $validated["amount"] < $order->refundedAmount() - 0.004) {
+        $paidOthers = Money::sum($order->payments()->whereKeyNot($payment->id)->pluck("amount"));
+        $refunded = $order->refundedAmount();
+        $max = Money::sub($order->netTotal(), Money::sub($paidOthers, $refunded));
+        if (Money::compare($validated["amount"], $max) > 0 || Money::compare(Money::add($paidOthers, $validated["amount"]), $refunded) < 0) {
             return back()->withInput()
                 ->withErrors(["amount" => __('app.payment_exceeds_remaining', [
                     "amount" => money($max),
@@ -170,7 +153,7 @@ class PaymentController extends Controller
         }
 
         // Money already handed back must stay covered by what was received.
-        if ($payment->order->refundedAmount() > $payment->order->paidAmount() - (float) $payment->amount + 0.004) {
+        if (Money::compare($payment->order->refundedAmount(), Money::sub($payment->order->paidAmount(), $payment->amount)) > 0) {
             return redirect()->route("orders.show", $payment->order_id)
                 ->with("error", __("app.payment_refunded_locked"));
         }

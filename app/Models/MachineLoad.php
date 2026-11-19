@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
+use App\Support\NumberSequence;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -86,9 +87,11 @@ class MachineLoad extends Model
     public static function nextCode(): string
     {
         $prefix = "CG-" . now()->format("ymd") . "-";
-        $last = static::where("code", "like", $prefix . "%")->orderByDesc("code")->value("code");
-        $seq = $last ? (int) substr($last, strlen($prefix)) + 1 : 1;
+        $next = NumberSequence::next($prefix, fn () => NumberSequence::highestSuffix(
+            static::where("code", "like", $prefix . "%")->pluck("code"),
+            $prefix,
+        ));
 
-        return $prefix . str_pad((string) $seq, 3, "0", STR_PAD_LEFT);
+        return NumberSequence::format($prefix, $next, 3);
     }
 }

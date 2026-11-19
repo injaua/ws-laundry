@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
 use App\Services\Payments\Cheques;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -81,7 +82,7 @@ class Payment extends Model
     /** Cash handed back to the customer. */
     public function change(): ?float
     {
-        return $this->method === "cash" && $this->tendered !== null ? max(0, (float) $this->tendered - (float) $this->amount) : null;
+        return $this->method === "cash" && $this->tendered !== null ? Money::max(0, Money::sub($this->tendered, $this->amount)) : null;
     }
 
     public static function isMobile(?string $method): bool
@@ -140,7 +141,7 @@ class Payment extends Model
         // Change is only for cash, and the customer must hand over at least the amount.
         if ($method !== "cash" || !isset($data["tendered"]) || $data["tendered"] === "") {
             $data["tendered"] = null;
-        } elseif ((float) $data["tendered"] < (float) ($data["amount"] ?? 0)) {
+        } elseif (Money::compare((float) $data["tendered"], (float) ($data["amount"] ?? 0)) < 0) {
             throw ValidationException::withMessages(["tendered" => __("app.tendered_too_low")]);
         }
 
@@ -242,7 +243,7 @@ class Payment extends Model
 
         $debit = self::accountFor($this->method)?->id;
         $services = Account::findByCode("7.2")?->id;
-        $amount = (float) $this->amount;
+        $amount = Money::round($this->amount);
         $description = __("app.payment") . " " . $order->order_number;
         $date = $this->paid_at->toDateString();
 

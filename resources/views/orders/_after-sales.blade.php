@@ -51,6 +51,7 @@
                         <span class="fw-semibold">{{ money((float) $n->amount) }}</span>
                         @if($n->isVoided())<span class="badge bg-secondary">{{ __('app.cn_voided_stamp') }}</span>@endif
                         <a href="{{ route("credit-notes.show", $n) }}" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-1" title="{{ __('app.print') }}" aria-label="{{ __('app.print') }} {{ $n->number }}"><i class="bi bi-printer"></i></a>
+                        <a href="{{ route("credit-notes.document", $n) }}" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-1" title="{{ __('app.a4_document') }}" aria-label="{{ __('app.a4_document') }} {{ $n->number }}"><i class="bi bi-file-earmark-pdf"></i></a>
                         @can("void", $n)
                         <button class="btn btn-sm btn-outline-danger py-0 px-1" data-bs-toggle="collapse" data-bs-target="#voidCn{{ $n->id }}" title="{{ __('app.cn_void') }}" aria-label="{{ __('app.cn_void') }} {{ $n->number }}"><i class="bi bi-x-circle"></i></button>
                         @endcan

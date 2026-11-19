@@ -221,7 +221,7 @@ class MultiStoreTest extends TestCase
         $customer = $this->customerIn($this->second, "Cliente B", "+258842222222");
         $order = CurrentStore::run($this->second, fn () => Order::create([
             "order_number" => "ORD999", "customer_id" => $customer->id, "received_at" => now(),
-            "delivery_date" => now()->addDay(), "status" => "pending", "total_price" => 100,
+            "delivery_date" => now()->addDay(), "status" => "received", "total_price" => 100,
         ]));
 
         $this->get(route("orders.check-status", ["order_number" => "ORD999", "phone_last4" => "2222"]))

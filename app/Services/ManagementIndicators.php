@@ -158,8 +158,8 @@ class ManagementIndicators
             $inMonth = fn ($date) => $date && Carbon::parse($date)->format("Y-m") === $key;
 
             $monthOrders = $orders->filter(fn ($o) => $inMonth($o->received_at));
-            $revenue = (float) $monthOrders->sum("subtotal") - (float) $creditNotes->filter(fn ($c) => $inMonth($c->issued_at))->sum("net_amount");
-            $spent = (float) $expenses->filter(fn ($e) => $inMonth($e->expense_date))->sum("amount");
+            $revenue = Money::sub(Money::sum($monthOrders->pluck("subtotal")), Money::sum($creditNotes->filter(fn ($c) => $inMonth($c->issued_at))->pluck("net_amount")));
+            $spent = Money::round($expenses->filter(fn ($e) => $inMonth($e->expense_date))->sum("amount"));
             $monthReady = $ready->filter(fn ($o) => $inMonth($o->ready_at) && ($o->original_delivery_date ?? $o->delivery_date));
             $onTime = $monthReady->filter(fn ($o) => $o->ready_at->toDateString() <= ($o->original_delivery_date ?? $o->delivery_date)->toDateString())->count();
 
@@ -187,19 +187,21 @@ class ManagementIndicators
         // ---- Sales ----
         $orders = Order::with("items")->whereDate("received_at", ">=", $fromDate)->whereDate("received_at", "<=", $toDate)->get();
         $billed = $orders->whereNull("rework_of_order_id");
-        $creditNotes = (float) CreditNote::valid()->where("reverses_revenue", true)
-            ->whereDate("issued_at", ">=", $fromDate)->whereDate("issued_at", "<=", $toDate)->sum("net_amount");
-        $revenue = (float) $billed->sum("subtotal") - $creditNotes;
+        $creditNotes = Money::round(CreditNote::valid()->where("reverses_revenue", true)
+            ->whereDate("issued_at", ">=", $fromDate)->whereDate("issued_at", "<=", $toDate)->sum("net_amount"));
+        $revenue = Money::sub(Money::sum($billed->pluck("subtotal")), $creditNotes);
 
-        $collections = (float) Payment::whereDate("paid_at", ">=", $fromDate)->whereDate("paid_at", "<=", $toDate)->sum("amount")
-            - (float) CreditNote::valid()->refunds()->whereDate("issued_at", ">=", $fromDate)->whereDate("issued_at", "<=", $toDate)->sum("amount");
+        $collections = Money::sub(
+            Payment::whereDate("paid_at", ">=", $fromDate)->whereDate("paid_at", "<=", $toDate)->sum("amount"),
+            CreditNote::valid()->refunds()->whereDate("issued_at", ">=", $fromDate)->whereDate("issued_at", "<=", $toDate)->sum("amount"),
+        );
 
         $expenseRows = Expense::whereDate("expense_date", ">=", $fromDate)->whereDate("expense_date", "<=", $toDate)->get(["category", "amount"]);
-        $expenses = (float) $expenseRows->sum("amount");
+        $expenses = Money::sum($expenseRows->pluck("amount"));
         $salaryKeys = ExpenseCategory::where("is_salary", true)->pluck("key")->all();
-        $payroll = (float) $expenseRows->whereIn("category", $salaryKeys)->sum("amount");
+        $payroll = Money::sum($expenseRows->whereIn("category", $salaryKeys)->pluck("amount"));
 
-        $result = $revenue - $expenses;
+        $result = Money::sub($revenue, $expenses);
         $customerIds = $billed->pluck("customer_id")->unique();
 
         [$pFrom, $pTo] = self::previousPeriod($from, $to);
@@ -209,16 +211,18 @@ class ManagementIndicators
         $returning = $previousCustomers->intersect($customerIds)->count();
 
         // Promotions / customer prices: what the list price would have charged.
-        $gross = 0.0;
-        $discount = 0.0;
+        $grossLines = [];
+        $discountLines = [];
         foreach ($billed as $order) {
             foreach ($order->items as $item) {
                 $qty = $item->type === "by_weight" ? (float) $item->weight : (float) $item->amount;
-                $list = $item->list_price !== null ? (float) $item->list_price : (float) $item->unit_price;
-                $gross += $list * $qty;
-                $discount += max(0, ($list - (float) $item->unit_price) * $qty);
+                $list = $item->list_price ?? $item->unit_price;
+                $grossLines[] = Money::mul($list, $qty);
+                $discountLines[] = Money::max(0, Money::mul(Money::sub($list, $item->unit_price), $qty));
             }
         }
+        $gross = Money::sum($grossLines);
+        $discount = Money::sum($discountLines);
 
         // ---- Receivables (now) ----
         $ar = app(AccountsReceivable::class);
@@ -291,11 +295,11 @@ class ManagementIndicators
                 $byType[$item->type] = ($byType[$item->type] ?? 0) + (float) $item->subtotal;
             }
         }
-        $byType["express_fee"] = (float) $orders->sum("express_fee");
-        $byType["delivery_fee"] = (float) $orders->sum("delivery_fee");
+        $byType["express_fee"] = Money::round($orders->sum("express_fee"));
+        $byType["delivery_fee"] = Money::round($orders->sum("delivery_fee"));
 
         $topCustomers = $orders->groupBy("customer_id")
-            ->map(fn ($group) => ["customer_id" => $group->first()->customer_id, "orders" => $group->count(), "revenue" => (float) $group->sum("subtotal")])
+            ->map(fn ($group) => ["customer_id" => $group->first()->customer_id, "orders" => $group->count(), "revenue" => Money::round($group->sum("subtotal"))])
             ->sortByDesc("revenue")->take(5)->values();
         $names = Customer::whereIn("id", $topCustomers->pluck("customer_id"))->pluck("name", "id");
         $topCustomers = $topCustomers->map(fn ($row) => $row + [
@@ -305,7 +309,7 @@ class ManagementIndicators
 
         $categoryNames = ExpenseCategory::pluck("name", "key");
         $byCategory = $expenses->groupBy("category")
-            ->map(fn ($group, $key) => ["name" => $categoryNames[$key] ?? $key, "amount" => (float) $group->sum("amount")])
+            ->map(fn ($group, $key) => ["name" => $categoryNames[$key] ?? $key, "amount" => Money::round($group->sum("amount"))])
             ->sortByDesc("amount")->values();
 
         return [

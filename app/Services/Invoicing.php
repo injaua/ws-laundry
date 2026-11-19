@@ -8,7 +8,6 @@ use App\Models\Order;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -19,8 +18,6 @@ use Illuminate\Validation\ValidationException;
  */
 class Invoicing
 {
-    private const NUMBER_ATTEMPTS = 5;
-
     /** Completed, unpaid credit orders not yet on an invoice, up to the period end. */
     public function eligibleOrders(Customer $customer, Carbon $periodEnd): Collection
     {
@@ -96,28 +93,20 @@ class Invoicing
         $issueDate ??= today();
         $dueDate = $issueDate->copy()->addDays((int) ($invoice->customer->credit_terms_days ?: 30));
 
-        for ($attempt = 1; ; $attempt++) {
-            try {
-                DB::transaction(function () use ($invoice, $issueDate, $dueDate) {
-                    $invoice->recalculate();
-                    $invoice->update([
-                        "number" => Invoice::nextNumber($issueDate->year),
-                        "status" => "issued",
-                        "issue_date" => $issueDate->toDateString(),
-                        "due_date" => $dueDate->toDateString(),
-                        "issued_at" => now(),
-                    ]);
+        DB::transaction(function () use ($invoice, $issueDate, $dueDate) {
+            $invoice->recalculate();
+            $invoice->update([
+                "number" => Invoice::nextNumber($issueDate->year),
+                "status" => "issued",
+                "issue_date" => $issueDate->toDateString(),
+                "due_date" => $dueDate->toDateString(),
+                "issued_at" => now(),
+            ]);
 
-                    Order::where("invoice_id", $invoice->id)->update(["due_date" => $dueDate->toDateString()]);
-                });
+            Order::where("invoice_id", $invoice->id)->update(["due_date" => $dueDate->toDateString()]);
+        });
 
-                return $invoice->refresh();
-            } catch (UniqueConstraintViolationException $e) {
-                if ($attempt >= self::NUMBER_ATTEMPTS) {
-                    throw $e;
-                }
-            }
-        }
+        return $invoice->refresh();
     }
 
     /**

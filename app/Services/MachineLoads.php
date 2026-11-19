@@ -9,7 +9,6 @@ use App\Models\MachineLoad;
 use App\Models\MaintenanceJob;
 use App\Models\Order;
 use App\Models\User;
-use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -65,36 +64,27 @@ class MachineLoads
             ])]);
         }
 
-        for ($attempt = 1; ; $attempt++) {
-            try {
-                $load = DB::transaction(function () use ($machine, $stage, $orders, $user, $data, $total) {
-                    $load = MachineLoad::create([
-                        "code" => MachineLoad::nextCode(),
-                        "equipment_id" => $machine->id,
-                        "stage" => $stage,
-                        "program" => $data["program"] ?? null,
-                        "weight_kg" => $total,
-                        "employee_id" => $data["employee_id"] ?? null,
-                        "user_id" => $user->id,
-                        "status" => "in_progress",
-                        "started_at" => now(),
-                        "overload_note" => $data["overload_note"] ?? null,
-                        "notes" => $data["notes"] ?? null,
-                    ]);
+        $load = DB::transaction(function () use ($machine, $stage, $orders, $user, $data, $total) {
+            $load = MachineLoad::create([
+                "code" => MachineLoad::nextCode(),
+                "equipment_id" => $machine->id,
+                "stage" => $stage,
+                "program" => $data["program"] ?? null,
+                "weight_kg" => $total,
+                "employee_id" => $data["employee_id"] ?? null,
+                "user_id" => $user->id,
+                "status" => "in_progress",
+                "started_at" => now(),
+                "overload_note" => $data["overload_note"] ?? null,
+                "notes" => $data["notes"] ?? null,
+            ]);
 
-                    foreach ($orders as $orderId => $kg) {
-                        $load->orders()->attach($orderId, ["weight_kg" => round((float) $kg, 2)]);
-                    }
-
-                    return $load;
-                });
-                break;
-            } catch (UniqueConstraintViolationException $e) {
-                if ($attempt >= 5) {
-                    throw $e;
-                }
+            foreach ($orders as $orderId => $kg) {
+                $load->orders()->attach($orderId, ["weight_kg" => round((float) $kg, 2)]);
             }
-        }
+
+            return $load;
+        });
 
         // Orders behind the load's stage reach it now (stock consumption, history, operator).
         foreach ($models as $order) {

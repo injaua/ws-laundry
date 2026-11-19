@@ -5,9 +5,12 @@
 @section("content")
 <div class="page-title">
     <span>{{ __('app.total_count', ['count' => $entries->total()]) }}</span>
-    <a href="{{ route("accounting.journal-entries.create") }}" class="btn btn-primary">
-        <i class="bi bi-plus-lg"></i> {{ __('app.new_journal_entry') }}
-    </a>
+    <div class="d-flex gap-2">
+        <x-export-buttons />
+        <a href="{{ route("accounting.journal-entries.create") }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> {{ __('app.new_journal_entry') }}
+        </a>
+    </div>
 </div>
 
 <div class="card">

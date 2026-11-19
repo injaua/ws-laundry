@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
+use App\Support\Money;
+use App\Support\NumberSequence;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -87,23 +89,23 @@ class Invoice extends Model
     /** Still owed on the invoice's orders (after payments and credit notes). */
     public function balance(): float
     {
-        return round((float) $this->orders->sum(fn (Order $order) => max(0, $order->remainingBalance())), 2);
+        return Money::sum($this->orders->map(fn (Order $order) => Money::max(0, $order->remainingBalance())));
     }
 
     /** Paid against the invoice's orders (net of refunds). */
     public function paidAmount(): float
     {
-        return round((float) $this->orders->sum(fn (Order $order) => $order->netPaid()), 2);
+        return Money::sum($this->orders->map(fn (Order $order) => $order->netPaid()));
     }
 
     public function isPaid(): bool
     {
-        return $this->isIssued() && $this->balance() <= 0;
+        return $this->isIssued() && !Money::isPositive($this->balance());
     }
 
     public function isOverdue(): bool
     {
-        return $this->isIssued() && $this->due_date && $this->due_date->isPast() && $this->balance() > 0;
+        return $this->isIssued() && $this->due_date && $this->due_date->isPast() && Money::isPositive($this->balance());
     }
 
     public function daysOverdue(): int
@@ -143,19 +145,22 @@ class Invoice extends Model
     public function recalculate(): void
     {
         $this->load("orders");
-        $total = 0.0;
-        $vat = 0.0;
+        $totals = [];
+        $vats = [];
 
         foreach ($this->orders as $order) {
             $gross = $order->netTotal();
-            $total += $gross;
-            $vat += $order->splitGrossAmount($gross)[1];
+            $totals[] = $gross;
+            $vats[] = $order->splitGrossAmount($gross)[1];
         }
 
+        $total = Money::sum($totals);
+        $vat = Money::sum($vats);
+
         $this->update([
-            "total" => round($total, 2),
-            "vat_amount" => round($vat, 2),
-            "subtotal" => round($total - $vat, 2),
+            "total" => $total,
+            "vat_amount" => $vat,
+            "subtotal" => Money::sub($total, $vat),
         ]);
     }
 
@@ -163,12 +168,11 @@ class Invoice extends Model
     public static function nextNumber(int $year): string
     {
         $prefix = "FT-{$year}/";
+        $next = NumberSequence::next($prefix, fn () => NumberSequence::highestSuffix(
+            static::where("number", "like", $prefix . "%")->pluck("number"),
+            $prefix,
+        ));
 
-        $last = static::where("number", "like", $prefix . "%")
-            ->pluck("number")
-            ->map(fn ($number) => (int) substr($number, strlen($prefix)))
-            ->max() ?? 0;
-
-        return $prefix . str_pad((string) ($last + 1), 4, "0", STR_PAD_LEFT);
+        return NumberSequence::format($prefix, $next, 4);
     }
 }

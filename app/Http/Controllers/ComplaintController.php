@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Services\Production;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -86,13 +87,14 @@ class ComplaintController extends Controller
             $data += $this->guessAttribution($order, $data["stage"] ?? null, $data["category"]);
         }
 
-        $complaint = Complaint::create(array_merge($data, [
+        // Number and record in one transaction: a failed save gives the number back.
+        $complaint = DB::transaction(fn () => Complaint::create(array_merge($data, [
             "number" => Complaint::nextNumber(),
             "customer_id" => $order?->customer_id ?? $data["customer_id"],
             "status" => "open",
             "due_at" => today()->addDays(Complaint::DEADLINE_DAYS),
             "opened_by" => $request->user()->id,
-        ]));
+        ])));
 
         // A piece reported missing or damaged carries the problem on its tracking record.
         if ($complaint->piece && in_array($complaint->category, ["lost_item", "damage", "stain"], true) && blank($complaint->piece->issue)) {

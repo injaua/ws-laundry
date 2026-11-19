@@ -8,6 +8,7 @@ use Carbon\CarbonInterface;
 use DateTimeInterface;
 use DateTimeZone;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
@@ -151,6 +152,41 @@ class SystemSettings
     public static function logoUrl(): string
     {
         return self::fileUrl("brand_logo") ?? asset("images/logo.png");
+    }
+
+    /**
+     * The logo as a data: URI, for PDFs (dompdf never fetches URLs). Null when there is no
+     * PNG / JPEG / GIF logo to embed.
+     */
+    public static function logoDataUri(): ?string
+    {
+        $path = self::get("brand_logo");
+        $file = $path !== "" && Storage::disk("public")->exists($path)
+            ? Storage::disk("public")->path($path)
+            : public_path("images/logo.png");
+
+        if (!is_file($file)) {
+            return null;
+        }
+        $mime = mime_content_type($file) ?: "";
+        if (!in_array($mime, ["image/png", "image/jpeg", "image/gif"], true)) {
+            return null;
+        }
+
+        // Shown ~45 px high: a 360 px wide PNG is plenty and keeps each PDF small.
+        return Cache::rememberForever("pdf-logo:" . md5($file . filemtime($file)), function () use ($file, $mime) {
+            $image = function_exists("imagecreatefromstring") ? @imagecreatefromstring((string) file_get_contents($file)) : false;
+            if (!$image || imagesx($image) <= 360) {
+                return "data:{$mime};base64," . base64_encode((string) file_get_contents($file));
+            }
+            $small = imagescale($image, 360, -1, IMG_BICUBIC);
+            imagealphablending($small, false);
+            imagesavealpha($small, true);
+            ob_start();
+            imagepng($small, null, 9);
+
+            return "data:image/png;base64," . base64_encode((string) ob_get_clean());
+        });
     }
 
     /** Logo for dark backgrounds (falls back to the regular logo once one is uploaded). */

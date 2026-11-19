@@ -16,7 +16,6 @@ use App\Services\ProductionPlanner;
 use App\Services\WhatsApp\AutomaticNotifications;
 use App\Support\Money;
 use Carbon\CarbonInterface;
-use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -33,8 +32,6 @@ class CreateOrder
         private Pricing $pricing,
     ) {}
 
-    private const NUMBER_ATTEMPTS = 5;
-
     /**
      * @param  array  $data  validated order fields
      * @param  array  $items  raw item rows (service_id|package_id, weight, amount)
@@ -47,16 +44,16 @@ class CreateOrder
         $rows = $this->priceItems($items, $customer, now()->parse($data["received_at"]));
 
         // Express (urgent) surcharge is service revenue: it is part of the subtotal, before VAT.
-        $itemsSubtotal = array_sum(array_column($rows, "subtotal"));
+        $itemsSubtotal = Money::sum(array_column($rows, "subtotal"));
         $isExpress = (bool) ($data["is_express"] ?? false) && Pricing::expressSettings()["enabled"];
         $expressFee = $isExpress ? $this->pricing->expressFee($itemsSubtotal) : 0.0;
         // Clothes collected at home: the pickup trip is billed on this order.
         $pickup = $this->pickupFor($data, $customer);
         $pickupFee = $pickup ? $this->pickupFee($pickup, $itemsSubtotal) : 0.0;
-        $subtotal = Money::round($itemsSubtotal + $expressFee + $pickupFee);
+        $subtotal = Money::add($itemsSubtotal, $expressFee, $pickupFee);
         $vatRate = (float) SiteSetting::get("vat_rate", 16);
         $vatAmount = Money::percent($subtotal, $vatRate);
-        $total = Money::round($subtotal + $vatAmount);
+        $total = Money::add($subtotal, $vatAmount);
 
         $deliveryDate = $data["delivery_date"]
             ?? ($isExpress
@@ -89,23 +86,14 @@ class CreateOrder
             "intake_notes" => $data["intake_notes"] ?? null,
         ];
 
-        // Two cashiers saving at the same moment can compute the same next number;
-        // the unique index rejects the second insert, so retry with a fresh number.
-        for ($attempt = 1; ; $attempt++) {
-            try {
-                $order = DB::transaction(function () use ($attributes, $rows, $user, $pickup, $pickupFee) {
-                    $order = $this->persist($attributes, $rows, $user);
-                    $pickup?->update(["order_id" => $order->id, "fee" => $pickupFee]);
+        // The order number comes from the store's counter inside this transaction:
+        // two cashiers saving at the same moment get consecutive numbers.
+        $order = DB::transaction(function () use ($attributes, $rows, $user, $pickup, $pickupFee) {
+            $order = $this->persist($attributes, $rows, $user);
+            $pickup?->update(["order_id" => $order->id, "fee" => $pickupFee]);
 
-                    return $order;
-                });
-                break;
-            } catch (UniqueConstraintViolationException $e) {
-                if ($attempt >= self::NUMBER_ATTEMPTS) {
-                    throw $e;
-                }
-            }
-        }
+            return $order;
+        });
 
         $this->notifications->orderReceived($order);
 
@@ -133,7 +121,7 @@ class CreateOrder
     {
         $zone = $pickup->zone;
 
-        return $zone && $zone->free_from !== null && $itemsSubtotal >= (float) $zone->free_from ? 0.0 : (float) $pickup->fee;
+        return $zone && $zone->free_from !== null && Money::compare($itemsSubtotal, $zone->free_from) >= 0 ? 0.0 : Money::round($pickup->fee);
     }
 
     /** Unit prices: the lowest of the customer's price and the catalog price less the running promotion. */
@@ -157,7 +145,7 @@ class CreateOrder
                     "weight" => $service->type === "by_weight" ? $quantity : null,
                     "amount" => $service->type === "by_piece" ? (int) $quantity : 1,
                     ...$quote,
-                    "subtotal" => Money::round($quote["unit_price"] * $quantity),
+                    "subtotal" => Money::mul($quote["unit_price"], $quantity),
                 ];
 
                 continue;
@@ -174,7 +162,7 @@ class CreateOrder
                 "weight" => round((float) $package->weight_kg * $quantity, 2),
                 "amount" => $quantity,
                 ...$quote,
-                "subtotal" => Money::round($quote["unit_price"] * $quantity),
+                "subtotal" => Money::mul($quote["unit_price"], $quantity),
             ];
         }
 
@@ -228,12 +216,12 @@ class CreateOrder
             ->toDateString();
 
         $violations = [];
-        $limit = (float) $customer->credit_limit;
-        $outstanding = $customer->creditOutstandingBalance();
+        $limit = Money::round($customer->credit_limit);
+        $exposure = Money::add($customer->creditOutstandingBalance(), $total);
 
-        if ($limit > 0 && $outstanding + $total > $limit) {
+        if (Money::isPositive($limit) && Money::compare($exposure, $limit) > 0) {
             $violations[] = __("app.credit_limit_exceeded", [
-                "exposure" => money($outstanding + $total),
+                "exposure" => money($exposure),
                 "limit" => money($limit),
             ]);
         }
@@ -242,7 +230,7 @@ class CreateOrder
         if ($overdue->isNotEmpty()) {
             $violations[] = __("app.customer_has_overdue", [
                 "count" => $overdue->count(),
-                "amount" => money($overdue->sum(fn ($o) => $o->remainingBalance())),
+                "amount" => money(Money::sum($overdue->map(fn ($o) => $o->remainingBalance()))),
             ]);
         }
 

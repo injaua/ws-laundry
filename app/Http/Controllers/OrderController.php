@@ -16,6 +16,7 @@ use App\Models\Service;
 use App\Models\SiteSetting;
 use App\Services\Pricing;
 use App\Services\ProductionPlanner;
+use App\Support\Documents\DocumentResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -171,6 +172,14 @@ class OrderController extends Controller
         $order->load(["customer", "items.service", "items.package", "items.promotion", "payments"]);
 
         return view("orders.invoice", compact("order"));
+    }
+
+    /** A4 invoice of the order (HTML, or PDF with ?format=pdf). */
+    public function document(Order $order)
+    {
+        $order->load(["customer", "items.service", "items.package", "items.promotion", "payments"]);
+
+        return DocumentResponse::make("documents.order", compact("order"), __("app.invoice") . " " . $order->order_number);
     }
 
     public function label(Order $order)

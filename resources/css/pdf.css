@@ -1,0 +1,191 @@
+/*
+ * A4 documents rendered as PDF by dompdf (App\Support\Documents\DocumentResponse).
+ * Same look as document.css, limited to what dompdf supports: no flexbox, grid or
+ * custom properties; layouts use tables / display: table. DejaVu Sans ships with dompdf
+ * and covers every character the app prints (accents, −, →, currency symbols).
+ */
+@page {
+    margin: 14mm 14mm 16mm;
+}
+body {
+    margin: 0;
+    font-family: 'DejaVu Sans', sans-serif;
+    font-size: 9.5px;
+    color: #1f2933;
+}
+.head {
+    width: 100%;
+    border-bottom: 2px solid #1a237e;
+    margin-bottom: 14px;
+}
+.head td {
+    border: 0;
+    padding: 0 0 10px;
+    vertical-align: top;
+}
+.head h1 {
+    font-size: 15px;
+    margin: 0 0 3px;
+    color: #1a237e;
+}
+.head .meta {
+    text-align: right;
+}
+.head .doc-type {
+    font-size: 16px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    color: #1a237e;
+}
+.doc-logo {
+    max-height: 44px;
+    max-width: 170px;
+    margin-bottom: 4px;
+}
+.muted {
+    color: #6b7280;
+}
+.parties {
+    display: table;
+    width: 100%;
+    border-spacing: 10px 0;
+    margin: 0 -10px 14px;
+}
+.parties > div {
+    display: table-cell;
+    width: 50%;
+    border: 1px solid #e5e7eb;
+    padding: 8px 10px;
+    vertical-align: top;
+}
+.label {
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6b7280;
+    margin-bottom: 3px;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+}
+th {
+    background: #f3f4f6;
+    text-align: left;
+    font-size: 8.5px;
+    padding: 5px 6px;
+    border-bottom: 1px solid #d1d5db;
+}
+td {
+    padding: 4px 6px;
+    border-bottom: 1px solid #eef0f3;
+    vertical-align: top;
+}
+thead {
+    display: table-header-group;
+}
+tr {
+    page-break-inside: avoid;
+}
+.r {
+    text-align: right;
+    white-space: nowrap;
+}
+.totals {
+    width: 260px;
+    margin-left: auto;
+}
+.totals td {
+    border: 0;
+    padding: 2px 6px;
+}
+.totals .grand td {
+    font-size: 11.5px;
+    font-weight: bold;
+    border-top: 2px solid #1a237e;
+    padding-top: 5px;
+}
+.note {
+    border: 1px dashed #d1d5db;
+    padding: 6px 10px;
+    margin-top: 10px;
+}
+.stamp {
+    display: inline-block;
+    border: 2px solid #1f2933;
+    padding: 2px 8px;
+    margin-top: 4px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+.text-loss,
+.stamp.text-loss {
+    color: #c62828;
+    border-color: #c62828;
+}
+.text-gain,
+.stamp.text-gain {
+    color: #2e7d32;
+    border-color: #2e7d32;
+}
+.text-big-bold {
+    font-size: 14px;
+    font-weight: bold;
+}
+.foot {
+    margin-top: 20px;
+    font-size: 8px;
+    color: #6b7280;
+    text-align: center;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 6px;
+}
+.signatures {
+    width: 100%;
+    margin-top: 40px;
+}
+.signatures td {
+    border: 0;
+    width: 50%;
+    padding: 0 20px;
+    text-align: center;
+}
+.signatures .line {
+    border-top: 1px solid #1f2933;
+    padding-top: 4px;
+}
+
+/* Report tables (reports/table.blade.php) */
+.report tr.section td {
+    background: #eef1f8;
+    font-weight: bold;
+    color: #1a237e;
+}
+.report tr.subtotal td {
+    font-weight: bold;
+    border-top: 1px solid #d1d5db;
+}
+.report tr.total td {
+    font-weight: bold;
+    font-size: 10.5px;
+    border-top: 2px solid #1a237e;
+}
+.report td.indent {
+    padding-left: 16px;
+}
+.summary {
+    width: 320px;
+    margin-left: auto;
+}
+.summary td {
+    border: 0;
+    padding: 2px 6px;
+}
+.d-none,
+.no-pdf {
+    display: none;
+}
+.mt-16px {
+    margin-top: 16px;
+}

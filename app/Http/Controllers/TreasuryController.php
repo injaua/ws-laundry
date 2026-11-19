@@ -8,6 +8,7 @@ use App\Models\Cheque;
 use App\Models\JournalLine;
 use App\Models\Payment;
 use App\Services\Payments\Cheques;
+use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -87,7 +88,7 @@ class TreasuryController extends Controller
     public function createDeposit(): View
     {
         $cash = Account::findByCode("1.1");
-        $cashBalance = $cash ? (float) JournalLine::where("account_id", $cash->id)->selectRaw("coalesce(sum(debit),0) - coalesce(sum(credit),0) as b")->value("b") : null;
+        $cashBalance = $cash ? Money::round(JournalLine::where("account_id", $cash->id)->selectRaw("coalesce(sum(debit),0) - coalesce(sum(credit),0) as b")->value("b")) : null;
 
         return view("treasury.deposits.create", [
             "cheques" => $this->cheques->depositable(),

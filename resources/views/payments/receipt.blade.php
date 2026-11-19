@@ -1,7 +1,7 @@
 @php
     $w = (string) request("w", "80");
     if (!in_array($w, ["58", "80"], true)) { $w = "80"; }
-    $paidUpToThis = $payment->order->payments->where("id", "<=", $payment->id)->sum("amount");
+    $paidUpToThis = \App\Support\Money::sum($payment->order->payments->where("id", "<=", $payment->id)->pluck("amount"));
 @endphp
 <!DOCTYPE html>
 <html lang="{{ app()->getLocale() }}" dir="{{ is_rtl() ? 'rtl' : 'ltr' }}">
@@ -67,7 +67,7 @@
 
         <div class="row"><span>{{ __('app.total') }}:</span><span class="val">{{ money($payment->order->total_price) }}</span></div>
         <div class="row"><span>{{ __('app.paid_amount') }}:</span><span class="val">{{ money($paidUpToThis) }}</span></div>
-        @php $remaining = $payment->order->total_price - $paidUpToThis; @endphp
+        @php $remaining = \App\Support\Money::sub($payment->order->total_price, $paidUpToThis); @endphp
         <div class="row"><span>{{ __('app.remaining_amount') }}:</span><span class="val">@if($remaining > 0){{ money($remaining) }}@else {{ __('app.paid') }} @endif</span></div>
         @if($payment->order->is_credit && $remaining > 0)
             <div class="row"><span>{{ __('app.due_date') }}:</span><span class="val">{{ $payment->order->due_date?->format(date_fmt()) }}</span></div>

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Order;
+use App\Support\Money;
 use Illuminate\Support\Collection;
 
 class AccountsReceivable
@@ -38,16 +39,16 @@ class AccountsReceivable
         }
 
         foreach ($orders as $order) {
-            $byBucket[$this->bucketOf($order)] += $order->remainingBalance();
+            $byBucket[$this->bucketOf($order)] = Money::add($byBucket[$this->bucketOf($order)], $order->remainingBalance());
         }
 
         $overdue = $orders->filter(fn (Order $order) => $order->isOverdue());
 
         return [
             "count" => $orders->count(),
-            "total" => (float) $orders->sum(fn (Order $order) => $order->remainingBalance()),
+            "total" => Money::round($orders->sum(fn (Order $order) => $order->remainingBalance())),
             "overdue_count" => $overdue->count(),
-            "overdue" => (float) $overdue->sum(fn (Order $order) => $order->remainingBalance()),
+            "overdue" => Money::round($overdue->sum(fn (Order $order) => $order->remainingBalance())),
             "due_next_week" => (float) $orders
                 ->filter(fn (Order $order) => $order->due_date
                     && $order->due_date->between(now()->startOfDay(), now()->addDays(7)->endOfDay())

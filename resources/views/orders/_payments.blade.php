@@ -111,6 +111,9 @@
                         <a href="{{ route("payments.receipt", $pm) }}" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-1" title="{{ __('app.print_receipt') }}">
                             <i class="bi bi-printer"></i>
                         </a>
+                        <a href="{{ route("payments.document", $pm) }}" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-1" title="{{ __('app.a4_document') }}">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                        </a>
                     </span>
                     @if($order->status !== "completed" && auth()->user()->isManager())
                     <div class="btn-group btn-group-sm">

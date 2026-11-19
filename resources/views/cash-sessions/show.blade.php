@@ -13,6 +13,7 @@
         @endcan
         @unless($session->isOpen())
             <button type="button" class="btn btn-outline-primary" data-print><i class="bi bi-printer"></i> {{ __('app.print') }}</button>
+            <a href="{{ route("cash-sessions.document", $session) }}" target="_blank" class="btn btn-outline-primary"><i class="bi bi-file-earmark-pdf"></i> {{ __('app.cash_session_report') }}</a>
         @endunless
     </div>
 </div>

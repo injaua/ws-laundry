@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Models\User;
 use App\Services\Payments\Cheques;
 use App\Services\WhatsApp\AutomaticNotifications;
+use App\Support\Money;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -39,14 +40,14 @@ class RecordGroupedPayment
         }
 
         $orders = $this->openOrders($customer, $invoice);
-        $outstanding = round((float) $orders->sum(fn (Order $order) => $order->remainingBalance()), 2);
-        $amount = round((float) $data["amount"], 2);
+        $outstanding = Money::sum($orders->map(fn (Order $order) => $order->remainingBalance()));
+        $amount = Money::round((float) $data["amount"]);
 
-        if ($outstanding <= 0) {
+        if (!Money::isPositive($outstanding)) {
             throw ValidationException::withMessages(["amount" => __("app.nothing_outstanding")]);
         }
 
-        if ($amount > $outstanding) {
+        if (Money::compare($amount, $outstanding) > 0) {
             throw ValidationException::withMessages(["amount" => __("app.payment_exceeds_remaining", [
                 "amount" => money($outstanding),
             ])]);
@@ -66,12 +67,12 @@ class RecordGroupedPayment
             $payments = collect();
 
             foreach ($orders as $order) {
-                if ($left <= 0) {
+                if (!Money::isPositive($left)) {
                     break;
                 }
 
-                $share = min($left, $order->remainingBalance());
-                if ($share <= 0) {
+                $share = Money::min($left, $order->remainingBalance());
+                if (!Money::isPositive($share)) {
                     continue;
                 }
 
@@ -89,7 +90,7 @@ class RecordGroupedPayment
                     "invoice_id" => $order->invoice_id,
                 ]));
 
-                $left = round($left - $share, 2);
+                $left = Money::sub($left, $share);
             }
 
             // One cheque settling several orders: a single cheque shared by the payments.

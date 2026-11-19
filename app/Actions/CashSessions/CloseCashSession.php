@@ -40,8 +40,8 @@ class CloseCashSession
 
             foreach (Payment::METHODS as $method) {
                 $count = Money::round($counted[$method] ?? 0);
-                $difference = Money::round($count - $expected[$method]);
-                $hasDifference = $hasDifference || $difference != 0.0;
+                $difference = Money::sub($count, $expected[$method]);
+                $hasDifference = $hasDifference || !Money::isZero($difference);
 
                 $rows[] = [
                     "method" => $method,
@@ -68,7 +68,7 @@ class CloseCashSession
             ]);
 
             $cashDifference = collect($rows)->firstWhere("method", "cash")["difference"];
-            $warning = $cashDifference != 0.0 ? $this->postCashDifference($session, $cashDifference) : null;
+            $warning = !Money::isZero($cashDifference) ? $this->postCashDifference($session, $cashDifference) : null;
 
             return ["session" => $session->fresh(["counts"]), "warning" => $warning];
         });
@@ -86,16 +86,17 @@ class CloseCashSession
         }
 
         $cash = Account::findByCode("1.1")?->id;
-        [$debit, $credit] = $difference < 0
+        $shortage = Money::isNegative($difference);
+        [$debit, $credit] = $shortage
             ? [Account::findByCode("6.8.9.9")?->id, $cash]
             : [$cash, Account::findByCode("7.6.9.9")?->id];
 
         $entry = JournalEntry::postPair(
             $debit,
             $credit,
-            abs($difference),
+            Money::abs($difference),
             $session->closed_at->toDateString(),
-            __($difference < 0 ? "app.cash_shortage" : "app.cash_surplus") . " " . $session->label(),
+            __($shortage ? "app.cash_shortage" : "app.cash_surplus") . " " . $session->label(),
             "cash_session",
             $session->id,
         );

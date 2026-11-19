@@ -11,6 +11,7 @@ use App\Services\MobileMoney\MobileMoneySettings;
 use App\Services\MobileMoney\MobilePayments;
 use App\Services\WhatsApp\AutomaticNotifications;
 use App\Services\WhatsApp\Messenger;
+use App\Support\Money;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -44,8 +45,8 @@ class MobilePaymentController extends Controller
             "transactions" => $query->latest("id")->paginate(25)->withQueryString(),
             "from" => $from,
             "to" => $to,
-            "received" => (float) $summary->where("type", "c2b")->where("status", "success")->sum("amount"),
-            "refunded" => (float) $summary->where("type", "b2c")->where("status", "success")->sum("amount"),
+            "received" => Money::round($summary->where("type", "c2b")->where("status", "success")->sum("amount")),
+            "refunded" => Money::round($summary->where("type", "b2c")->where("status", "success")->sum("amount")),
             "failed" => $summary->whereIn("status", ["failed", "expired"])->count(),
             "open" => $summary->whereIn("status", MobileTransaction::OPEN_STATUSES)->count(),
             "modes" => collect(MobileTransaction::PROVIDERS)->mapWithKeys(fn ($p) => [$p => MobileMoneySettings::mode($p)]),

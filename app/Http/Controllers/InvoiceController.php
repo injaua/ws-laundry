@@ -8,6 +8,7 @@ use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Services\Invoicing;
+use App\Support\Documents\DocumentResponse;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -97,7 +98,7 @@ class InvoiceController extends Controller
 
         $invoice->load(["customer", "orders.items.service", "orders.items.package", "orders.payments", "orders.creditNotes"]);
 
-        return view("invoices.print", compact("invoice"));
+        return DocumentResponse::make("invoices.print", compact("invoice"), __("app.invoice") . " " . $invoice->label());
     }
 
     public function issue(Invoice $invoice)

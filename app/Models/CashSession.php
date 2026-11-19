@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -118,12 +119,12 @@ class CashSession extends Model
 
         $expected = [];
         foreach (Payment::METHODS as $method) {
-            $expected[$method] = (float) ($byMethod[$method] ?? 0) - (float) ($refunds[$method] ?? 0);
+            $expected[$method] = Money::sub($byMethod[$method] ?? 0, $refunds[$method] ?? 0);
         }
 
-        $expected["cash"] += (float) $this->opening_float + $this->netMovements();
+        $expected["cash"] = Money::add($expected["cash"], $this->opening_float, $this->netMovements());
 
-        return array_map(fn ($v) => round($v, 2), $expected);
+        return $expected;
     }
 
     public function expectedCash(): float
@@ -134,10 +135,10 @@ class CashSession extends Model
     /** Deposits minus withdrawals. */
     public function netMovements(): float
     {
-        $deposits = (float) $this->movements()->where("type", CashMovement::TYPE_DEPOSIT)->sum("amount");
-        $withdrawals = (float) $this->movements()->where("type", CashMovement::TYPE_WITHDRAWAL)->sum("amount");
+        $deposits = Money::sum($this->movements()->where("type", CashMovement::TYPE_DEPOSIT)->pluck("amount"));
+        $withdrawals = Money::sum($this->movements()->where("type", CashMovement::TYPE_WITHDRAWAL)->pluck("amount"));
 
-        return $deposits - $withdrawals;
+        return Money::sub($deposits, $withdrawals);
     }
 
     /** Closing counts in the same order as Payment::METHODS, as everywhere else in the app. */
@@ -148,12 +149,12 @@ class CashSession extends Model
 
     public function totalDifference(): float
     {
-        return round((float) $this->counts->sum("difference"), 2);
+        return Money::sum($this->counts->pluck("difference"));
     }
 
     public function hasDifferences(): bool
     {
-        return $this->counts->contains(fn ($c) => (float) $c->difference != 0.0);
+        return $this->counts->contains(fn ($c) => !Money::isZero($c->difference));
     }
 
     public function label(): string

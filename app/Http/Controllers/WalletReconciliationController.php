@@ -6,6 +6,7 @@ use App\Models\Payment;
 use App\Models\WalletStatement;
 use App\Models\WalletStatementLine;
 use App\Services\MobileMoney\WalletReconciliation;
+use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -26,7 +27,7 @@ class WalletReconciliationController extends Controller
             "statements" => WalletStatement::with("user:id,name")->latest("id")->paginate(20),
             "pending" => collect(WalletReconciliation::PROVIDERS)->mapWithKeys(fn ($m) => [$m => [
                 "count" => Payment::where("method", $m)->whereNull("reconciled_at")->count(),
-                "amount" => (float) Payment::where("method", $m)->whereNull("reconciled_at")->sum("amount"),
+                "amount" => Money::round(Payment::where("method", $m)->whereNull("reconciled_at")->sum("amount")),
             ]]),
         ]);
     }

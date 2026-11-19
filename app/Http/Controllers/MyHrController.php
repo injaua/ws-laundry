@@ -4,10 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Models\Attendance;
 use App\Models\Employee;
+use App\Models\EmployeeSalary;
 use Illuminate\Http\Request;
 
 class MyHrController extends Controller
 {
+    /** One of the user's own payslips (HTML, or PDF with ?format=pdf). */
+    public function payslip(Request $request, EmployeeSalary $salary)
+    {
+        $employee = $this->employeeFor($request);
+        abort_unless($employee && $salary->employee_id === $employee->id, 404);
+
+        return EmployeeSalaryController::payslipResponse($salary);
+    }
+
     public function payslips(Request $request)
     {
         $employee = $this->employeeFor($request);

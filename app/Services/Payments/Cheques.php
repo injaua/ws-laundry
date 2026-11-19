@@ -10,6 +10,7 @@ use App\Models\Customer;
 use App\Models\JournalEntry;
 use App\Models\Payment;
 use App\Models\User;
+use App\Support\Money;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -67,7 +68,7 @@ class Cheques
             "bank" => Cheque::normalizeBank($data["cheque_bank"] ?? null),
             "drawer" => $data["cheque_drawer"] ?? null,
             "cheque_date" => $data["cheque_date"] ?? $data["paid_at"],
-            "amount" => round((float) $payments->sum("amount"), 2),
+            "amount" => Money::round($payments->sum("amount")),
             "status" => "in_hand",
             "user_id" => $user->id,
         ]);
@@ -161,8 +162,8 @@ class Cheques
                 }
             }
 
-            $cash = round((float) ($data["cash_amount"] ?? 0), 2);
-            $chequesTotal = round((float) $cheques->sum("amount"), 2);
+            $cash = Money::round(($data["cash_amount"] ?? 0));
+            $chequesTotal = Money::round($cheques->sum("amount"));
             if ($cash + $chequesTotal <= 0) {
                 throw ValidationException::withMessages(["cash_amount" => __("app.deposit_empty")]);
             }

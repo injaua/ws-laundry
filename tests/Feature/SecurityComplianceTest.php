@@ -12,6 +12,7 @@ use App\Services\Security\TwoFactor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class SecurityComplianceTest extends TestCase
@@ -255,11 +256,13 @@ class SecurityComplianceTest extends TestCase
     private function invoiceDefaults(): array
     {
         $defaults = [];
-        foreach (DB::select("PRAGMA table_info(invoices)") as $col) {
-            if ($col->notnull && $col->dflt_value === null && !$col->pk && !in_array($col->name, ["customer_id", "number", "created_at", "updated_at"], true)) {
-                $defaults[$col->name] = match (true) {
-                    str_contains($col->type, "date") => now()->toDateString(),
-                    str_contains(strtolower($col->type), "int"), str_contains(strtolower($col->type), "numeric"), str_contains(strtolower($col->type), "real") => 0,
+        foreach (Schema::getColumns("invoices") as $col) {
+            if (!$col["nullable"] && $col["default"] === null && !$col["auto_increment"]
+                && !in_array($col["name"], ["id", "customer_id", "number", "created_at", "updated_at"], true)) {
+                $type = strtolower($col["type_name"]);
+                $defaults[$col["name"]] = match (true) {
+                    str_contains($type, "date") || str_contains($type, "time") => now()->toDateString(),
+                    (bool) preg_match("/int|numeric|decimal|real|double|float/", $type) => 0,
                     default => "x",
                 };
             }

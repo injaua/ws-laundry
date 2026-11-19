@@ -9,6 +9,8 @@ use App\Models\CreditNote;
 use App\Models\JournalEntry;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Support\Documents\DocumentResponse;
+use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -45,9 +47,9 @@ class CreditNoteController extends Controller
             "to" => $to,
             "search" => $search,
             "totals" => [
-                "refund" => (float) (clone $valid)->where("settlement", "refund")->sum("amount"),
-                "deduct" => (float) (clone $valid)->where("settlement", "deduct")->sum("amount"),
-                "vat" => (float) (clone $valid)->sum("vat_amount"),
+                "refund" => Money::round((clone $valid)->where("settlement", "refund")->sum("amount")),
+                "deduct" => Money::round((clone $valid)->where("settlement", "deduct")->sum("amount")),
+                "vat" => Money::round((clone $valid)->sum("vat_amount")),
             ],
         ]);
     }
@@ -92,6 +94,18 @@ class CreditNoteController extends Controller
     }
 
     /** Printable document (thermal ticket, like the invoice). */
+    /** A4 credit note (HTML, or PDF with ?format=pdf). */
+    public function document(CreditNote $creditNote)
+    {
+        Gate::authorize("view", $creditNote);
+
+        return DocumentResponse::make(
+            "documents.credit-note",
+            ["note" => $creditNote->load("order.customer", "user", "voider")],
+            __("app.credit_note") . " " . $creditNote->number,
+        );
+    }
+
     public function show(CreditNote $creditNote): View
     {
         Gate::authorize("view", $creditNote);

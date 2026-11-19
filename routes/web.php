@@ -180,6 +180,12 @@ Route::middleware(["auth", "verified"])->group(function () {
         Route::get("/cash-sessions", [CashSessionController::class, "index"])->name("cash-sessions.index");
         Route::get("/cash-sessions/{cashSession}", [CashSessionController::class, "show"])->name("cash-sessions.show");
         Route::get("/payments/{payment}/receipt", [PaymentController::class, "receipt"])->name("payments.receipt");
+
+        // A4 documents: page, or PDF with ?format=pdf
+        Route::get("/orders/{order}/document", [OrderController::class, "document"])->name("orders.document");
+        Route::get("/payments/{payment}/document", [PaymentController::class, "document"])->name("payments.document");
+        Route::get("/credit-notes/{creditNote}/document", [CreditNoteController::class, "document"])->name("credit-notes.document");
+        Route::get("/cash-sessions/{cashSession}/document", [CashSessionController::class, "document"])->name("cash-sessions.document");
     });
 
     // Reports and management indicators - admin, owner & accountant
@@ -418,6 +424,7 @@ Route::middleware(["auth", "verified"])->group(function () {
     Route::middleware("role:admin,owner,accountant")->prefix("resources")->name("resources.")->group(function () {
         Route::resource("suppliers", SupplierController::class)->only(["index", "show"]);
         Route::resource("purchases", PurchaseOrderController::class)->only(["index", "show"]);
+        Route::get("/purchases/{purchase}/document", [PurchaseOrderController::class, "document"])->name("purchases.document");
     });
 
     // HR / employee management - admin & owner
@@ -427,6 +434,7 @@ Route::middleware(["auth", "verified"])->group(function () {
         Route::patch("/salaries/{salary}/unpay", [EmployeeSalaryController::class, "unpay"])->name("salaries.unpay");
         Route::get("/salaries/absence-suggestion", [EmployeeSalaryController::class, "absenceSuggestion"])->name("salaries.absence-suggestion");
         Route::get("/salaries/summary", [EmployeeSalaryController::class, "summary"])->name("salaries.summary");
+        Route::get("/salaries/{salary}/payslip", [EmployeeSalaryController::class, "payslip"])->name("salaries.payslip");
         Route::resource("salaries", EmployeeSalaryController::class)->except(["show"]);
     });
 
@@ -455,6 +463,7 @@ Route::middleware(["auth", "verified"])->group(function () {
     // HR self-service - cashier views own payslips & attendance
     Route::middleware("role:cashier")->group(function () {
         Route::get("/my-payslips", [MyHrController::class, "payslips"])->name("hr.payslips");
+        Route::get("/my-payslips/{salary}", [MyHrController::class, "payslip"])->name("hr.payslip");
         Route::get("/my-attendance", [MyHrController::class, "attendance"])->name("hr.attendance");
     });
 

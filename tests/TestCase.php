@@ -6,9 +6,27 @@ use App\Models\CashSession;
 use App\Models\User;
 use App\Support\CurrentStore;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use RuntimeException;
 
 abstract class TestCase extends BaseTestCase
 {
+    /**
+     * RefreshDatabase empties the database: refuse to run on anything but a test database
+     * (phpunit.xml points DB_DATABASE at washly-lavandaria-testing).
+     */
+    public function createApplication()
+    {
+        $app = parent::createApplication();
+
+        $connection = $app["config"]->get("database.default");
+        $database = (string) $app["config"]->get("database.connections.{$connection}.database");
+        if (!preg_match('/[-_]testing$/', $database)) {
+            throw new RuntimeException("Tests must run on a test database (name ending in -testing), not on \"{$database}\".");
+        }
+
+        return $app;
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

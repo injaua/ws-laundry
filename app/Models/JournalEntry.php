@@ -55,13 +55,13 @@ class JournalEntry extends Model
         $lines = array_values(array_filter(
             $lines,
             fn ($line) => !empty($line["account_id"])
-                && ((float) $line["debit"] > 0 || (float) $line["credit"] > 0)
+                && (Money::isPositive($line["debit"]) || Money::isPositive($line["credit"]))
         ));
 
         $debit = Money::sum(array_column($lines, "debit"));
         $credit = Money::sum(array_column($lines, "credit"));
 
-        if (count($lines) < 2 || $debit <= 0 || !Money::equals($debit, $credit)) {
+        if (count($lines) < 2 || !Money::isPositive($debit) || !Money::equals($debit, $credit)) {
             return null;
         }
 

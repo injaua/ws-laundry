@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -147,7 +148,7 @@ class Cheque extends Model
     /** Amount = what its (valid) payments add up to. */
     public function refreshAmount(): void
     {
-        $this->update(["amount" => round((float) $this->allPayments()->sum("amount"), 2)]);
+        $this->update(["amount" => Money::round($this->allPayments()->sum("amount"))]);
     }
 
     public function label(): string

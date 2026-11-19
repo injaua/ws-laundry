@@ -8,6 +8,7 @@ use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Support\Money;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -32,7 +33,7 @@ class ReportController extends Controller
         // Refunds count as negative receipts of the order they belong to.
         $refundsByOrderId = CreditNote::valid()->refunds()->whereIn('order_id', $orderIds)
             ->selectRaw('order_id, sum(amount) as total')->groupBy('order_id')->pluck('total', 'order_id');
-        $totalRevenue = $payments->sum('amount') - (float) $refundsByOrderId->sum();
+        $totalRevenue = Money::sub(Money::sum($payments->pluck('amount')), Money::sum($refundsByOrderId));
 
         $avgOrder = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
 
@@ -45,11 +46,11 @@ class ReportController extends Controller
             $chartLabels[] = $period->format("d M");
             $dateKey = $period->format('Y-m-d');
             $dayOrders = $orders->filter(fn ($o) => $o->received_at->format('Y-m-d') === $dateKey);
-            $total = 0;
+            $dayTotals = [];
             foreach ($dayOrders as $order) {
-                $total += ($paymentsByOrderId->get($order->id) ?? collect())->sum('amount') - (float) ($refundsByOrderId[$order->id] ?? 0);
+                $dayTotals[] = Money::sub(Money::sum(($paymentsByOrderId->get($order->id) ?? collect())->pluck('amount')), $refundsByOrderId[$order->id] ?? 0);
             }
-            $chartData[] = (float) $total;
+            $chartData[] = Money::sum($dayTotals);
             $period->addDay();
         }
 
@@ -102,10 +103,10 @@ class ReportController extends Controller
             $chartLabels[] = $period->format("d M");
 
             $dayOrders = $orders->filter(fn ($o) => $o->received_at->format("Y-m-d") === $dateKey);
-            $chartRevenue[] = (float) $dayOrders->sum(fn ($o) => (float) ($o->subtotal ?? $o->total_price));
+            $chartRevenue[] = Money::round($dayOrders->sum(fn ($o) => (float) ($o->subtotal ?? $o->total_price)));
 
             $dayExpense = $expenses->filter(fn ($e) => $e->expense_date->format("Y-m-d") === $dateKey);
-            $chartExpense[] = (float) $dayExpense->sum("amount");
+            $chartExpense[] = Money::round($dayExpense->sum("amount"));
 
             $period->addDay();
         }
@@ -125,7 +126,7 @@ class ReportController extends Controller
         $payments = Payment::whereBetween("paid_at", [$from, $to])->get();
         $refunds = CreditNote::valid()->refunds()->whereDate("issued_at", ">=", $from->toDateString())->whereDate("issued_at", "<=", $to->toDateString())
             ->selectRaw("refund_method, sum(amount) as total")->groupBy("refund_method")->pluck("total", "refund_method");
-        $totalReceived = (float) $payments->sum("amount") - (float) $refunds->sum();
+        $totalReceived = Money::sub(Money::sum($payments->pluck("amount")), Money::sum($refunds));
         $totalCount = $payments->count();
 
         $rows = [];
@@ -136,7 +137,7 @@ class ReportController extends Controller
             if ($group->isEmpty() && !isset($refunds[$method])) {
                 continue;
             }
-            $amount = (float) $group->sum("amount") - (float) ($refunds[$method] ?? 0);
+            $amount = Money::sub(Money::sum($group->pluck("amount")), $refunds[$method] ?? 0);
             $rows[] = [
                 "method" => $method,
                 "count" => $group->count(),

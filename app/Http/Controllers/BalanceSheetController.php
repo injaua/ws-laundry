@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Support\CurrentStore;
+use App\Support\Documents\ReportDownload;
+use App\Support\Documents\ReportTable;
+use App\Support\Money;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,38 +36,70 @@ class BalanceSheetController extends Controller
         $byType = $rows->groupBy("type")->map(function ($group) {
             return $group
                 ->map(function ($row) {
-                    $difference = (float) $row->total_debit - (float) $row->total_credit;
+                    $difference = Money::sub($row->total_debit, $row->total_credit);
                     $naturalTypes = ["asset", "expense"];
                     $balance = in_array($row->type, $naturalTypes) ? $difference : -$difference;
 
                     return (object) [
                         "code" => $row->code,
                         "name" => $row->name,
-                        "balance" => round($balance, 2),
+                        "balance" => $balance,
                     ];
                 })
-                ->filter(fn ($row) => abs($row->balance) > 0.004)
+                ->filter(fn ($row) => !Money::isZero($row->balance))
                 ->values();
         });
 
-        $income = (float) $byType->get("revenue", collect())->sum("balance");
-        $expenses = (float) $byType->get("expense", collect())->sum("balance");
-        $netResult = round($income - $expenses, 2);
+        $income = Money::round($byType->get("revenue", collect())->sum("balance"));
+        $expenses = Money::round($byType->get("expense", collect())->sum("balance"));
+        $netResult = Money::sub($income, $expenses);
 
         $assets = $byType->get("asset", collect());
         $liabilities = $byType->get("liability", collect());
         $capital = $byType->get("equity", collect());
 
         $totals = [
-            "assets" => round((float) $assets->sum("balance"), 2),
-            "liabilities" => round((float) $liabilities->sum("balance"), 2),
-            "capital" => round((float) $capital->sum("balance") + $netResult, 2),
+            "assets" => Money::round($assets->sum("balance")),
+            "liabilities" => Money::round($liabilities->sum("balance")),
+            "capital" => Money::add(Money::sum($capital->pluck("balance")), $netResult),
         ];
-        $totals["liabilities_equity"] = round($totals["liabilities"] + $totals["capital"], 2);
-        $balanced = abs($totals["assets"] - $totals["liabilities_equity"]) < 0.005;
+        $totals["liabilities_equity"] = Money::add($totals["liabilities"], $totals["capital"]);
+        $totals["difference"] = Money::sub($totals["assets"], $totals["liabilities_equity"]);
+        $balanced = Money::isZero($totals["difference"]);
+
+        if ($format = ReportDownload::requested($request)) {
+            return ReportDownload::make($this->table($assets, $liabilities, $capital, $netResult, $totals, $to), $format);
+        }
 
         return view("accounting.balance-sheet", compact(
             "assets", "liabilities", "capital", "netResult", "totals", "balanced", "to"
         ));
+    }
+
+    private function table($assets, $liabilities, $capital, float $netResult, array $totals, Carbon $to): ReportTable
+    {
+        $table = new ReportTable(
+            __("app.balance_sheet"),
+            __("app.to_date") . " " . $to->format(date_fmt()),
+            [[__("app.code"), "text"], [__("app.account"), "text"], [__("app.balance"), "money"]],
+            __("app.balance_sheet") . " " . $to->format("Y-m-d"),
+        );
+
+        $section = function (string $title, $rows, string $totalLabel, float $total, ?float $result = null) use ($table) {
+            $table->section($title);
+            foreach ($rows as $row) {
+                $table->row([$row->code, $row->name, $row->balance], "indent");
+            }
+            if ($result !== null) {
+                $table->row(["", __("app.net_result_for_period"), $result], "indent");
+            }
+            $table->row(["", $totalLabel, $total], "subtotal");
+        };
+
+        $section(__("app.assets"), $assets, __("app.total_assets"), $totals["assets"]);
+        $section(__("app.liabilities"), $liabilities, __("app.total_liabilities"), $totals["liabilities"]);
+        $section(__("app.equity"), $capital, __("app.total_equity"), $totals["capital"], $netResult);
+
+        return $table->row(["", __("app.total_liabilities_and_equity"), $totals["liabilities_equity"]], "total");
     }
 }

@@ -12,6 +12,7 @@
             </div>
             <div class="col-auto">
                 <button class="btn btn-primary"><i class="bi bi-search"></i> {{ __('app.show') }}</button>
+                <x-export-buttons class="ms-1" />
             </div>
         </form>
     </div>
@@ -20,7 +21,7 @@
 @if(!$balanced)
 <div class="alert alert-warning">
     <i class="bi bi-exclamation-triangle"></i>
-    {{ __('app.balance_sheet_unbalanced', ["amount" => num($totals["assets"] - $totals["liabilities_equity"])]) }}
+    {{ __('app.balance_sheet_unbalanced', ["amount" => num($totals["difference"])]) }}
 </div>
 @endif
 

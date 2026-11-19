@@ -41,8 +41,8 @@ class MobilePayments
             throw ValidationException::withMessages(["amount" => __("app.payment_locked_error")]);
         }
 
-        $remaining = round($order->remainingBalance(), 2);
-        if ($remaining <= 0) {
+        $remaining = $order->remainingBalance();
+        if (!Money::isPositive($remaining)) {
             throw ValidationException::withMessages(["amount" => __("app.order_fully_paid")]);
         }
 
@@ -52,7 +52,7 @@ class MobilePayments
             throw ValidationException::withMessages(["amount" => __("app.mm_whole_amount")]);
         }
         $amount = $amount === null ? floor($remaining) : Money::round($amount);
-        if ($amount < 1 || $amount > $remaining + 0.001) {
+        if (Money::compare($amount, 1) < 0 || Money::compare($amount, $remaining) > 0) {
             throw ValidationException::withMessages(["amount" => __("app.payment_exceeds_remaining", ["amount" => money($remaining)])]);
         }
 
@@ -230,8 +230,8 @@ class MobilePayments
 
             $order = $tx->order;
             // Paid meanwhile by other means: record what is still owed and flag the rest.
-            $amount = min((float) $tx->amount, max(0, round($order->remainingBalance(), 2)));
-            if ($amount <= 0) {
+            $amount = Money::min($tx->amount, Money::max(0, $order->remainingBalance()));
+            if (!Money::isPositive($amount)) {
                 $tx->update(["response_message" => __("app.mm_overpaid", ["amount" => money((float) $tx->amount)])]);
 
                 return null;
@@ -252,8 +252,8 @@ class MobilePayments
                 "handed_over_at" => $tx->courier_job_id ? now() : null,
             ]);
 
-            if ($amount < (float) $tx->amount) {
-                $tx->update(["response_message" => __("app.mm_overpaid", ["amount" => money((float) $tx->amount - $amount)])]);
+            if (Money::compare($amount, $tx->amount) < 0) {
+                $tx->update(["response_message" => __("app.mm_overpaid", ["amount" => money(Money::sub($tx->amount, $amount))])]);
             }
 
             $tx->update(["payment_id" => $payment->id]);

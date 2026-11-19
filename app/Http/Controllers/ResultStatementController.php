@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Support\CurrentStore;
+use App\Support\Documents\ReportDownload;
+use App\Support\Documents\ReportTable;
+use App\Support\Money;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,7 +38,7 @@ class ResultStatementController extends Controller
             )
             ->get()
             ->map(function ($row) {
-                $difference = (float) $row->total_debit - (float) $row->total_credit;
+                $difference = Money::sub($row->total_debit, $row->total_credit);
                 $balance = $row->type === "expense" ? $difference : -$difference;
 
                 return (object) [
@@ -53,12 +56,37 @@ class ResultStatementController extends Controller
         $expenses = $this->sections($rows->where("type", "expense"));
 
         $totals = [
-            "income" => round((float) $income->sum("subtotal"), 2),
-            "expenses" => round((float) $expenses->sum("subtotal"), 2),
+            "income" => Money::round($income->sum("subtotal")),
+            "expenses" => Money::round($expenses->sum("subtotal")),
         ];
-        $totals["net_result"] = round($totals["income"] - $totals["expenses"], 2);
+        $totals["net_result"] = Money::sub($totals["income"], $totals["expenses"]);
+
+        if ($format = ReportDownload::requested($request)) {
+            return ReportDownload::make($this->table($income, $expenses, $totals, $from, $to), $format);
+        }
 
         return view("accounting.income-statement", compact("income", "expenses", "totals", "from", "to"));
+    }
+
+    private function table($income, $expenses, array $totals, Carbon $from, Carbon $to): ReportTable
+    {
+        $table = new ReportTable(__("app.income_statement"), $from->format(date_fmt()) . " – " . $to->format(date_fmt()), [
+            [__("app.account_code"), "text"], [__("app.account_name"), "text"], [__("app.amount"), "money"],
+        ], __("app.income_statement") . " " . $from->format("Y-m-d") . " " . $to->format("Y-m-d"));
+
+        foreach ([[__("app.income_and_gains"), $income, __("app.total_income"), $totals["income"]],
+            [__("app.expenses_and_losses"), $expenses, __("app.total_expenses_and_losses"), $totals["expenses"]]] as [$title, $sections, $totalLabel, $total]) {
+            $table->section($title);
+            foreach ($sections as $group) {
+                $table->row([$group->code, $group->label, $group->subtotal], "subtotal");
+                foreach ($group->rows as $row) {
+                    $table->row([$row->code, $row->name, $row->balance], "indent");
+                }
+            }
+            $table->row(["", $totalLabel, $total], "subtotal");
+        }
+
+        return $table->row(["", __("app.net_result"), $totals["net_result"]], "total");
     }
 
     /**
@@ -76,7 +104,7 @@ class ResultStatementController extends Controller
                     "code" => $group,
                     "label" => $label === $key ? $group : $label,
                     "rows" => $groupRows->values(),
-                    "subtotal" => round((float) $groupRows->sum("balance"), 2),
+                    "subtotal" => Money::round($groupRows->sum("balance")),
                 ];
             })
             ->values();

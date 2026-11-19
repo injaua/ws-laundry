@@ -5,9 +5,12 @@
 @section("content")
 <div class="page-title">
     <span>{{ __('app.total_count', ['count' => $salaries->count()]) }}</span>
-    <a href="{{ route("salaries.index") }}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-list"></i> {{ __('app.payslips') }}
-    </a>
+    <div class="d-flex gap-2">
+        <x-export-buttons class="btn-group-sm" />
+        <a href="{{ route("salaries.index") }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-list"></i> {{ __('app.payslips') }}
+        </a>
+    </div>
 </div>
 
 <div class="card mb-3">

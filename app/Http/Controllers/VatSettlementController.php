@@ -6,6 +6,9 @@ use App\Models\Account;
 use App\Models\AccountingPeriod;
 use App\Models\JournalEntry;
 use App\Support\CurrentStore;
+use App\Support\Documents\ReportDownload;
+use App\Support\Documents\ReportTable;
+use App\Support\Money;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +23,7 @@ class VatSettlementController extends Controller
 
         $outputVat = $this->balance("4.4.3.3", $end, creditNatural: true);
         $inputVat = $this->balance("4.4.3.1", $end, creditNatural: false);
-        $netVat = round($outputVat - $inputVat, 2);
+        $netVat = Money::sub($outputVat, $inputVat);
 
         $movements = DB::table("journal_lines")
             ->join("journal_entries", "journal_entries.id", "=", "journal_lines.journal_entry_id")
@@ -32,6 +35,24 @@ class VatSettlementController extends Controller
             ->orderByDesc("journal_entries.id")
             ->select("accounts.code", "accounts.name", "journal_entries.entry_number", "journal_entries.description", "journal_entries.entry_date", "journal_lines.debit", "journal_lines.credit")
             ->get();
+
+        if ($format = ReportDownload::requested($request)) {
+            $table = new ReportTable(__("app.vat_settlement"), sprintf("%02d/%04d", $month, $year), [
+                [__("app.date"), "date"], [__("app.entry_number"), "text"], [__("app.description"), "text"],
+                [__("app.account"), "text"], [__("app.debit"), "money"], [__("app.credit"), "money"],
+            ], __("app.vat_settlement") . " " . sprintf("%04d-%02d", $year, $month));
+            $table->summary(__("app.output_vat_pending"), $outputVat)
+                ->summary(__("app.input_vat_pending"), $inputVat)
+                ->summary($netVat >= 0 ? __("app.vat_to_pay") : __("app.vat_to_recover"), abs($netVat));
+            foreach ($movements as $m) {
+                $table->row([
+                    Carbon::parse($m->entry_date)->format(date_fmt()), $m->entry_number, $m->description,
+                    $m->code . " " . $m->name, (float) $m->debit ?: null, (float) $m->credit ?: null,
+                ]);
+            }
+
+            return ReportDownload::make($table, $format);
+        }
 
         return view("accounting.vat-settlement", compact("month", "year", "outputVat", "inputVat", "netVat", "movements"));
     }
@@ -49,12 +70,12 @@ class VatSettlementController extends Controller
         $outputVat = $this->balance("4.4.3.3", $end, creditNatural: true);
         $inputVat = $this->balance("4.4.3.1", $end, creditNatural: false);
 
-        if (abs($outputVat) < 0.005 && abs($inputVat) < 0.005) {
+        if (Money::isZero($outputVat) && Money::isZero($inputVat)) {
             return redirect()->route("accounting.vat-settlement", ["month" => $month, "year" => $year])
                 ->with("error", __("app.vat_settlement_nothing"));
         }
 
-        $difference = round($outputVat - $inputVat, 2);
+        $difference = Money::sub($outputVat, $inputVat);
         $accounts = [
             "4.4.3.3" => Account::findByCode("4.4.3.3"),
             "4.4.3.1" => Account::findByCode("4.4.3.1"),
@@ -113,7 +134,7 @@ class VatSettlementController extends Controller
             ->select(DB::raw("COALESCE(SUM(journal_lines.debit),0) as d"), DB::raw("COALESCE(SUM(journal_lines.credit),0) as c"))
             ->first();
 
-        $difference = (float) $sums->c - (float) $sums->d;
+        $difference = Money::sub($sums->c, $sums->d);
 
         return round($creditNatural ? $difference : -$difference, 2);
     }

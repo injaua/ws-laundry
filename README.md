@@ -6,6 +6,7 @@
     <a href="https://github.com/injaua/ws-laundry/actions/workflows/ci.yml"><img src="https://github.com/injaua/ws-laundry/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
     <img src="https://img.shields.io/badge/Laravel-13-FF2D20?logo=laravel" alt="Laravel 13">
     <img src="https://img.shields.io/badge/PHP-8.3%2B-777BB4?logo=php" alt="PHP 8.3+">
+    <img src="https://img.shields.io/badge/MySQL-8-4479A1?logo=mysql&logoColor=white" alt="MySQL 8">
     <img src="https://img.shields.io/badge/Bootstrap-5-7952B3?logo=bootstrap" alt="Bootstrap 5">
     <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License">
   </p>
@@ -45,6 +46,7 @@
 | 👷 **HR** | Employees, attendance, absence justification, leave, vacations and vacation plan, payroll, staff self-service (payslips, attendance) |
 | 📚 **Accounting (PGC-NIRF)** | Chart of accounts, automatic and manual journal entries, trial balance, balance sheet, income statement, IVA settlement, period close / reopen |
 | 💰 **Finance & reports** | Expenses by category, treasury (cheques, bank deposits), wallet statement reconciliation, profit & loss, payment methods, management KPIs with targets, Excel / CSV exports |
+| 📄 **Documents & exports** | A4 documents with PDF download: order invoices, receipts, grouped receipts, credit notes, consolidated invoices, statements of account, payslips, purchase orders and till reports. Trial balance, balance sheet, income statement, IVA settlement, journal and payroll summary in Excel or PDF |
 | 💬 **Communication** | WhatsApp inbox inside the platform (official Cloud API or a normal number linked by QR code), automatic notifications with templates, internal staff chat |
 | 🏬 **Multiple stores** | One company, several locations: each store has its own data and settings, store switcher for the admin, company overview with per-store figures and totals |
 | ⚙️ **Administration** | Users, services, packages, promotions, business settings, company identity, languages and in-app translations, currencies, public website content |
@@ -59,7 +61,7 @@ The admin runs one company with several locations (**Admin → Stores**):
 - **Who works where.** Owners, accountants, cashiers and couriers belong to one store. Admins work in every store and pick the store in use from the top bar (`CurrentStore`). Each store has its owner, who creates the store's users.
 - **New stores** are created by the admin only and receive a copy of the chart of accounts, expense categories, message templates and delivery zones (optionally the service / package catalogue) of a model store (`StoreProvisioner`). They start with no customers, orders or stock.
 - **Settings.** Company identity (name, NUIT, logo), business settings, notifications and templates are per store, falling back to the company value. Localization, languages, currencies, the WhatsApp channel, mobile-money credentials, security and the public website are company-wide (admin only).
-- **Numbering.** Orders, invoices, credit notes, complaints, machine loads and piece codes are numbered per store (unique per store).
+- **Numbering.** Orders, invoices, credit notes, complaints, machine loads and piece codes are numbered per store (unique per store), from per-store counters (`NumberSequence`).
 - **Reports.** Every report shows the store in use. **Stores → Company overview** compares the stores for a period (orders, sales, received, refunds, expenses, cash result, receivables, late orders, customers, users) with the company total.
 - **Outside requests.** Public pages run in the main store, or in the store of the signed payment link; the order status lookup searches every store by number + phone. Incoming WhatsApp messages go to the store that last talked to that number. Scheduled commands run store by store (`CurrentStore::each`) and queued jobs in the store of their record.
 
@@ -87,9 +89,10 @@ For developers, [`docs/Documentacao_Tecnica_WS_Laundry.docx`](docs/Documentacao_
 
 ## 🚀 Requirements
 
-- **PHP** 8.3 or 8.4 with `bcmath`, `ctype`, `fileinfo`, `gd`, `mbstring`, `openssl`, `pdo`, `xml`, `zip`
+- **PHP** 8.3 or 8.4 with `bcmath`, `ctype`, `fileinfo`, `gd`, `mbstring`, `openssl`, `pdo_mysql`, `xml`, `zip`
 - **Composer** 2.x and **Node.js** 20+ (front-end build and the WhatsApp QR service)
-- **Database**: SQLite (development) or MySQL 8 (production)
+- **Database**: MySQL 8 / MariaDB, InnoDB only (tables are always created as InnoDB, whatever the server default). SQLite is not supported
+- **mysqldump** (comes with the MySQL client) for the backups
 - A web server pointing at `public/` (HTTPS in production), the scheduler every minute and a queue worker
 
 > PHP 8.5 is not supported yet: the locked `phpoffice/phpspreadsheet` (used for Excel exports) requires PHP < 8.5.
@@ -101,8 +104,9 @@ git clone https://github.com/injaua/ws-laundry.git
 cd ws-laundry
 composer install
 npm ci && npm run build
-cp .env.example .env
+cp .env.example .env    # then set DB_DATABASE, DB_USERNAME, DB_PASSWORD
 php artisan key:generate
+mysql -u root -p -e "CREATE DATABASE \`washly-lavandaria\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 php artisan migrate --seed
 php artisan storage:link
 php artisan serve
@@ -129,7 +133,9 @@ Most settings are made in the app (Admin → System settings, Business settings,
 | Variable | Purpose |
 |----------|---------|
 | `APP_LOCALE` / `APP_FALLBACK_LOCALE` | Default language (`pt`) and fallback (`en`) |
-| `DB_CONNECTION`, `DB_*` | `sqlite` or `mysql` |
+| `DB_CONNECTION`, `DB_*` | `mysql` (or `mariadb`), database `washly-lavandaria` |
+| `DB_ENGINE` | Storage engine for new tables, `InnoDB` by default (transactions, foreign keys and row locks depend on it) |
+| `MYSQLDUMP_PATH` | `mysqldump` binary for backups, full path when it is not on the PATH (e.g. `C:/wamp64/bin/mysql/mysql8.4.7/bin/mysqldump.exe`) |
 | `WHATSAPP_DRIVER` | Conversations: `log` (test), `cloud` (official API) or `web` (normal number linked by QR code) |
 | `WHATSAPP_NOTIFICATIONS_DRIVER` | Automatic notifications: `cloud` or `log` (empty = same as conversations; off with `web`) |
 | `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN` | Meta Cloud API credentials and webhook verification |
@@ -149,10 +155,16 @@ Run the scheduler every minute (`* * * * * php artisan schedule:run`):
 | `whatsapp:web-service` | Every minute | Start the QR service when it is the chosen channel and not running |
 | `invoices:generate-monthly` | 1st of the month 07:00 | Draft consolidated invoices for monthly-billed customers (each store) |
 | `mobile-money:refresh` | Every minute | Check pending M-Pesa / e-Mola requests |
-| `backup:run` | Daily 01:30 | Database backup to `storage/app/private/backups` (old copies pruned) |
+| `backup:run` | Daily 01:30 | `mysqldump` of the database to `storage/app/private/backups/*.sql.gz` (consistent snapshot, old copies pruned) |
 | `audit:verify` | Mondays 02:00 | Check that no audit-trail entry was changed or removed |
 
 Maintenance: `accounting:sync-payments` and `accounting:sync-expenses` repost journal entries.
+
+Restoring a backup (download it from Admin → Security, or take it from `storage/app/private/backups`):
+
+```bash
+gunzip < backup-YYYYMMDD-HHMMSS.sql.gz | mysql -u root -p washly-lavandaria
+```
 
 ---
 
@@ -160,12 +172,14 @@ Maintenance: `accounting:sync-payments` and `accounting:sync-expenses` repost jo
 
 ```bash
 composer dev            # server, queue, logs and Vite together
-php artisan test        # full test suite
+php artisan test        # full test suite (MySQL database washly-lavandaria-testing)
 vendor/bin/pint         # code style (rules in pint.json)
 npm run build           # production front-end build
 ```
 
-CI (`.github/workflows/ci.yml`) runs the test suite on PHP 8.3 and 8.4 for every push and pull request, and checks code style on the files changed by a pull request.
+The tests run on MySQL like production, in their own database `washly-lavandaria-testing` (create it once, empty, like the main one). It is emptied and rebuilt on every run, and the suite refuses to start on a database whose name does not end in `-testing`.
+
+The suite has 604 tests (Laravel 13.43). CI (`.github/workflows/ci.yml`) runs it on PHP 8.3 and 8.4 against a MySQL 8.4 service for every push and pull request, and checks code style on the files changed by a pull request.
 
 ## 🏗️ Architecture
 
@@ -177,12 +191,18 @@ CI (`.github/workflows/ci.yml`) runs the test suite on PHP 8.3 and 8.4 for every
 | Services | `app/Services` | Reusable domain logic (pricing, production planning, logistics, invoicing, WhatsApp, mobile money, security) |
 | Policies | `app/Policies` | Per-record authorisation |
 | Store scoping | `app/Support/CurrentStore.php`, `app/Models/Traits/BelongsToStore.php` | The store in use and the per-store filter on every business model |
+| Money | `app/Support/Money.php` | Exact decimal arithmetic for every amount (sums, differences, VAT, discounts, comparisons) |
+| Numbering | `app/Support/NumberSequence.php` | Per-store counters for every numbered series, incremented inside the saving transaction |
 | Views | `resources/views` | Blade, per module, with partials |
 | Front-end | `resources/js`, `resources/css` | Per-page scripts and styles built by Vite |
-| Exports | `app/Exports` | Excel workbooks |
+| Exports | `app/Exports`, `app/Support/Documents` | Excel workbooks, PDFs (dompdf) of the A4 documents, report tables delivered as Excel or PDF |
 | WhatsApp QR service | `whatsapp-web/` | Node companion service (Baileys) for the QR-code connection |
 
-Amounts are whole meticais stored in `decimal(12,2)` columns; every calculation rounds to the metical, so PHP floats hold them exactly.
+Amounts are stored in `decimal(12,2)` columns (cents included). In PHP they are never added, subtracted or compared with the plain operators: `Money` works on exact decimals (brick/math) and rounds every result to the cent, half away from zero, so float noise can never produce a wrong cent, an "unbalanced" journal entry or a phantom balance.
+
+Documents and reports export from the page itself: an A4 document (`layouts.document`) returns its PDF with `?format=pdf` (`DocumentResponse`, the same Blade view rendered by dompdf with `resources/css/pdf.css`), and a report page builds a `ReportTable` once and returns it as Excel or PDF with `?format=xlsx` / `?format=pdf` (`ReportDownload`), keeping the page's filters and permissions.
+
+Numbered series (`ORD…`, `FT-…`, `NC…`, `REC…`, `CG-…`) come from the `number_sequences` table: `NumberSequence::next()` increments the store's counter for the series with one atomic `UPDATE` inside the transaction that saves the record. Concurrent saves wait on that row lock instead of colliding, and a rolled-back save gives its number back, so fiscal series have no gaps. A new series starts after the highest number already in use.
 
 ---
 

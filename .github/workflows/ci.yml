@@ -18,6 +18,28 @@ jobs:
       matrix:
         php: ["8.3", "8.4"]
 
+    # Same engine as production: MySQL 8.4 (InnoDB). The tests empty and rebuild
+    # washly-lavandaria-testing on every run.
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: washly-lavandaria-testing
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USERNAME: root
+      DB_PASSWORD: root
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,7 +48,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: bcmath, ctype, fileinfo, gd, mbstring, pdo_sqlite, sqlite3, xml, zip
+          extensions: bcmath, ctype, fileinfo, gd, mbstring, pdo_mysql, xml, zip
           coverage: none
 
       - uses: actions/cache@v4

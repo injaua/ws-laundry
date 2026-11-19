@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\Order;
+use App\Support\Money;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -43,7 +44,7 @@ class OrderExport implements FromQuery, WithHeadings, WithMapping
             $order->received_at->format(date_fmt()),
             ucfirst($order->status),
             (float) $order->total_price,
-            (float) $order->payments->sum("amount") - (float) $order->creditNotes->whereNull("voided_at")->where("settlement", "refund")->sum("amount"),
+            Money::sub(Money::sum($order->payments->pluck("amount")), Money::sum($order->creditNotes->whereNull("voided_at")->where("settlement", "refund")->pluck("amount"))),
         ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -56,7 +57,7 @@ class OrderItem extends Model
             return 0.0;
         }
 
-        return max(0.0, round(((float) $this->list_price - (float) $this->unit_price) * $this->billedQuantity()));
+        return Money::max(0, Money::mul(Money::sub($this->list_price, $this->unit_price), $this->billedQuantity()));
     }
 
     /**

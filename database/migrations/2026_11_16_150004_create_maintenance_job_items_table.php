@@ -15,7 +15,8 @@ return new class extends Migration
             $table->decimal("quantity", 8, 2);
             $table->foreignId("inventory_movement_id")->nullable();
             $table->timestamps();
-            $table->unique(["maintenance_job_id", "inventory_item_id"]);
+            // Explicit name: the generated one is over the 64-character MySQL limit.
+            $table->unique(["maintenance_job_id", "inventory_item_id"], "maintenance_job_items_job_item_unique");
         });
     }
 

@@ -8,6 +8,7 @@ use App\Models\WhatsAppMessage;
 use App\Services\WhatsApp\AutomaticNotifications;
 use App\Services\WhatsApp\Messenger;
 use App\Services\WhatsApp\WhatsAppException;
+use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -72,7 +73,7 @@ class UnclaimedController extends Controller
             "counts" => $counts,
             "lastReminder" => $lastReminder,
             "abandonDays" => self::abandonDays(),
-            "waitingValue" => (float) $waiting->sum("total_price"),
+            "waitingValue" => Money::round($waiting->sum("total_price")),
             "canManage" => $request->user()->can("edit", new Order),
             "reminderReady" => app(AutomaticNotifications::class)->template("unclaimed") !== null,
         ]);

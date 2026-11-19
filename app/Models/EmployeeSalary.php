@@ -42,8 +42,11 @@ class EmployeeSalary extends Model
         });
 
         static::saving(function (EmployeeSalary $salary) {
-            $salary->net_salary = Money::round((float) $salary->base_salary + (float) $salary->bonus
-                - (float) $salary->deduction - (float) $salary->absence_deduction);
+            $salary->net_salary = Money::sub(
+                Money::add($salary->base_salary, $salary->bonus),
+                $salary->deduction,
+                $salary->absence_deduction,
+            );
         });
     }
 
@@ -65,9 +68,9 @@ class EmployeeSalary extends Model
             ->count();
 
         $workingDays = max(1, Vacation::workingDays($start, $end));
-        $dailyRate = Money::round((float) $employee->base_salary / $workingDays);
+        $dailyRate = Money::div($employee->base_salary, $workingDays);
 
-        return ["days" => $days, "daily_rate" => $dailyRate, "amount" => Money::round($days * $dailyRate)];
+        return ["days" => $days, "daily_rate" => $dailyRate, "amount" => Money::mul($dailyRate, $days)];
     }
 
     public function employee(): BelongsTo

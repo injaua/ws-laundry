@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
+use App\Support\Money;
+use App\Support\NumberSequence;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -101,10 +103,12 @@ class CreditNote extends Model
     public static function nextNumber(?\DateTimeInterface $date = null): string
     {
         $prefix = "NC" . ($date ? $date->format("Y") : now()->format("Y")) . "/";
-        $last = static::where("number", "like", $prefix . "%")->pluck("number")
-            ->map(fn ($n) => (int) substr($n, strlen($prefix)))->max() ?? 0;
+        $next = NumberSequence::next($prefix, fn () => NumberSequence::highestSuffix(
+            static::where("number", "like", $prefix . "%")->pluck("number"),
+            $prefix,
+        ));
 
-        return $prefix . str_pad((string) ($last + 1), 4, "0", STR_PAD_LEFT);
+        return NumberSequence::format($prefix, $next, 4);
     }
 
     /**
@@ -133,21 +137,21 @@ class CreditNote extends Model
         }
 
         if (!$revenueBooked) {
-            return JournalEntry::postPair(Account::findByCode("4.1.1")?->id, $credit, (float) $this->amount, $date, $description, "credit_note", $this->id);
+            return JournalEntry::postPair(Account::findByCode("4.1.1")?->id, $credit, Money::round($this->amount), $date, $description, "credit_note", $this->id);
         }
 
         $services = Account::findByCode("7.2")?->id;
-        $vatAccount = (float) $this->vat_amount > 0 ? Account::findByCode("4.4.3.3")?->id : null;
+        $vatAccount = Money::isPositive($this->vat_amount) ? Account::findByCode("4.4.3.3")?->id : null;
 
         if ($vatAccount) {
             return JournalEntry::postLines([
-                ["account_id" => $services, "debit" => (float) $this->net_amount, "credit" => 0],
-                ["account_id" => $vatAccount, "debit" => (float) $this->vat_amount, "credit" => 0],
-                ["account_id" => $credit, "debit" => 0, "credit" => (float) $this->amount],
+                ["account_id" => $services, "debit" => Money::round($this->net_amount), "credit" => 0],
+                ["account_id" => $vatAccount, "debit" => Money::round($this->vat_amount), "credit" => 0],
+                ["account_id" => $credit, "debit" => 0, "credit" => Money::round($this->amount)],
             ], $date, $description, "credit_note", $this->id);
         }
 
-        return JournalEntry::postPair($services, $credit, (float) $this->amount, $date, $description, "credit_note", $this->id);
+        return JournalEntry::postPair($services, $credit, Money::round($this->amount), $date, $description, "credit_note", $this->id);
     }
 
     /** Whether posting is expected (used to warn when the chart of accounts is incomplete). */

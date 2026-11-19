@@ -39,6 +39,7 @@
                         <span class="badge bg-{{ $salary->isPaid() ? "success" : "secondary" }}">
                             {{ $salary->isPaid() ? __('app.paid') : __('app.pending') }}
                         </span>
+                        <a href="{{ route("hr.payslip", $salary) }}" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-1 ms-1" title="{{ __('app.payslip') }}"><i class="bi bi-file-earmark-pdf"></i></a>
                     </td>
                 </tr>
                 @empty

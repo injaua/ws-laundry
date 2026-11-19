@@ -16,6 +16,7 @@
             </div>
             <div class="col-auto">
                 <button class="btn btn-primary"><i class="bi bi-search"></i> {{ __('app.show') }}</button>
+                <x-export-buttons class="ms-1" />
             </div>
         </form>
     </div>

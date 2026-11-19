@@ -11,6 +11,7 @@
         <span class="badge badge-status bg-{{ $purchase->status_color }}">{{ $purchase->status_label }}</span>
     </span>
     <div>
+        <a href="{{ route("resources.purchases.document", $purchase) }}" target="_blank" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-pdf"></i> {{ __('app.purchase_order') }}</a>
         @if(auth()->user()->isManager())
         @if($purchase->status === "draft")
             <form action="{{ route("resources.purchases.order", $purchase) }}" method="POST" class="d-inline">

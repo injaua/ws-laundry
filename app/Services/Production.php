@@ -11,7 +11,6 @@ use App\Models\OrderRework;
 use App\Models\SiteSetting;
 use App\Models\User;
 use App\Services\WhatsApp\AutomaticNotifications;
-use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -162,57 +161,49 @@ class Production
             throw ValidationException::withMessages(["order" => __("app.rework_order_exists", ["order" => $existing->order_number])]);
         }
 
-        for ($attempt = 1; ; $attempt++) {
-            try {
-                return DB::transaction(function () use ($original, $complaint, $user) {
-                    $order = Order::create([
-                        "order_number" => Order::nextOrderNumber(),
-                        "customer_id" => $original->customer_id,
-                        "received_at" => today()->toDateString(),
-                        "delivery_date" => today()->addDays(1)->toDateString(),
-                        "status" => "received",
-                        "subtotal" => 0,
-                        "vat_rate" => $original->vat_rate,
-                        "vat_amount" => 0,
-                        "total_price" => 0,
-                        "care_flags" => $original->care_flags,
-                        "notes" => __("app.rework_order_note", ["order" => $original->order_number, "complaint" => $complaint->number]),
-                        "rework_of_order_id" => $original->id,
-                    ]);
+        return DB::transaction(function () use ($original, $complaint, $user) {
+            $order = Order::create([
+                "order_number" => Order::nextOrderNumber(),
+                "customer_id" => $original->customer_id,
+                "received_at" => today()->toDateString(),
+                "delivery_date" => today()->addDays(1)->toDateString(),
+                "status" => "received",
+                "subtotal" => 0,
+                "vat_rate" => $original->vat_rate,
+                "vat_amount" => 0,
+                "total_price" => 0,
+                "care_flags" => $original->care_flags,
+                "notes" => __("app.rework_order_note", ["order" => $original->order_number, "complaint" => $complaint->number]),
+                "rework_of_order_id" => $original->id,
+            ]);
 
-                    foreach ($original->items as $item) {
-                        OrderItem::create([
-                            "order_id" => $order->id,
-                            "service_id" => $item->service_id,
-                            "package_id" => $item->package_id,
-                            "type" => $item->type,
-                            "weight" => $item->weight,
-                            "amount" => $item->amount,
-                            "unit_price" => 0,
-                            "list_price" => $item->unit_price,
-                            "subtotal" => 0,
-                        ]);
-                    }
-
-                    OrderRework::create([
-                        "order_id" => $original->id,
-                        "from_status" => $original->status,
-                        "reason" => $complaint->description ?: __("app.complaint_category_" . $complaint->category),
-                        "source" => "complaint",
-                        "complaint_id" => $complaint->id,
-                        "user_id" => $user->id,
-                        "created_at" => now(),
-                    ]);
-                    $original->increment("rework_count");
-
-                    return $order;
-                });
-            } catch (UniqueConstraintViolationException $e) {
-                if ($attempt >= 5) {
-                    throw $e;
-                }
+            foreach ($original->items as $item) {
+                OrderItem::create([
+                    "order_id" => $order->id,
+                    "service_id" => $item->service_id,
+                    "package_id" => $item->package_id,
+                    "type" => $item->type,
+                    "weight" => $item->weight,
+                    "amount" => $item->amount,
+                    "unit_price" => 0,
+                    "list_price" => $item->unit_price,
+                    "subtotal" => 0,
+                ]);
             }
-        }
+
+            OrderRework::create([
+                "order_id" => $original->id,
+                "from_status" => $original->status,
+                "reason" => $complaint->description ?: __("app.complaint_category_" . $complaint->category),
+                "source" => "complaint",
+                "complaint_id" => $complaint->id,
+                "user_id" => $user->id,
+                "created_at" => now(),
+            ]);
+            $original->increment("rework_count");
+
+            return $order;
+        });
     }
 
     /** @return string[] warnings */

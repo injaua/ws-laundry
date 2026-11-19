@@ -78,6 +78,7 @@
 <div class="mt-3">
     <a href="{{ route("orders.index") }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> {{ __('app.back') }}</a>
     <a href="{{ route("orders.invoice", $order) }}" class="btn btn-outline-primary" target="_blank"><i class="bi bi-printer"></i> {{ __('app.print_invoice') }}</a>
+    <a href="{{ route("orders.document", $order) }}" class="btn btn-outline-primary" target="_blank"><i class="bi bi-file-earmark-pdf"></i> {{ __('app.a4_document') }}</a>
     @can("update", $order)
     <a href="{{ route("orders.label", $order) }}" class="btn btn-outline-info" target="_blank"><i class="bi bi-tag"></i> {{ __('app.print_label') }}</a>
     @endcan

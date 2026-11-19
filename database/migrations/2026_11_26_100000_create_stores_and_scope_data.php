@@ -107,21 +107,28 @@ return new class extends Migration
             $table->dropColumn("store_id");
         });
 
+        // MySQL backs the store_id foreign key with the (store_id, …) unique index:
+        // the foreign key goes first, then the index, then the column.
         Schema::table("site_settings", function (Blueprint $table) {
+            $table->dropForeign(["store_id"]);
             $table->dropUnique(["store_id", "key"]);
-            $table->dropConstrainedForeignId("store_id");
+            $table->dropColumn("store_id");
             $table->unique(["key"]);
         });
 
         foreach (self::PER_STORE_UNIQUE as $name => $columns) {
             Schema::table($name, function (Blueprint $table) use ($columns) {
+                $table->dropForeign(["store_id"]);
                 $table->dropUnique(["store_id", ...$columns]);
+                $table->dropColumn("store_id");
                 $table->unique($columns);
             });
         }
 
         foreach (self::TABLES as $name) {
-            Schema::table($name, fn (Blueprint $table) => $table->dropConstrainedForeignId("store_id"));
+            if (Schema::hasColumn($name, "store_id")) {
+                Schema::table($name, fn (Blueprint $table) => $table->dropConstrainedForeignId("store_id"));
+            }
         }
 
         Schema::table("users", fn (Blueprint $table) => $table->dropConstrainedForeignId("store_id"));

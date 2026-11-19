@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
+use App\Support\Money;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -80,10 +81,10 @@ class Promotion extends Model
     public function discountedPrice(float $base): float
     {
         $price = $this->discount_type === "percent"
-            ? round($base * (100 - (float) $this->value) / 100, 2)
-            : round($base - (float) $this->value, 2);
+            ? Money::discount($base, $this->value)
+            : Money::sub($base, $this->value);
 
-        return max(0.0, $price);
+        return Money::max(0, $price);
     }
 
     /** active, scheduled, expired or inactive — for the list. */

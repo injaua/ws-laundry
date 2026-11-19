@@ -72,7 +72,8 @@ class AccountingTest extends TestCase
 
         $entry = JournalEntry::firstWhere("source", "manual");
         $this->assertNotNull($entry);
-        $this->assertSame("LNC-000001", $entry->entry_number);
+        // Numbered from the id (auto-increments are not reset between tests on MySQL).
+        $this->assertSame(sprintf("LNC-%06d", $entry->id), $entry->entry_number);
         $this->assertSame(2, $entry->lines()->count());
         $this->assertSame(2000.0, (float) $entry->lines->sum("debit"));
         $this->assertSame(2000.0, (float) $entry->lines->sum("credit"));

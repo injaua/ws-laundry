@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\Package;
 use App\Models\Service;
 use App\Services\Security\CustomerPrivacy;
+use App\Support\Money;
 use Illuminate\Http\Request;
 
 class CustomerController extends Controller
@@ -45,7 +46,7 @@ class CustomerController extends Controller
             $receivables = [
                 "outstanding" => $customer->creditOutstandingBalance(),
                 "overdue_count" => $overdue->count(),
-                "overdue_amount" => (float) $overdue->sum(fn ($order) => $order->remainingBalance()),
+                "overdue_amount" => Money::round($overdue->sum(fn ($order) => $order->remainingBalance())),
             ];
         }
 

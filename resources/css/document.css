@@ -23,12 +23,12 @@ body {
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 .head {
-    display: flex;
-    justify-content: space-between;
-    gap: 24px;
     border-bottom: 2px solid #1a237e;
-    padding-bottom: 12px;
     margin-bottom: 16px;
+}
+.head td {
+    border: 0;
+    padding: 0 0 12px;
 }
 .head h1 {
     font-size: 18px;
@@ -144,9 +144,11 @@ td {
     cursor: pointer;
 }
 @media (max-width: 640px) {
-    .head,
     .parties {
         flex-direction: column;
+    }
+    .head td {
+        display: block;
     }
     .head .meta {
         text-align: left;
@@ -183,4 +185,46 @@ td {
 }
 .d-none {
     display: none;
+}
+
+/* Signature lines (payslips, purchase orders, till reports, refunds) */
+.signatures {
+    margin-top: 48px;
+}
+.signatures td {
+    border: 0;
+    width: 50%;
+    padding: 0 24px;
+    text-align: center;
+}
+.signatures .line {
+    border-top: 1px solid #1f2933;
+    padding-top: 4px;
+}
+
+/* Report tables (reports/table.blade.php) */
+.report tr.section td {
+    background: #eef1f8;
+    font-weight: bold;
+    color: #1a237e;
+}
+.report tr.subtotal td {
+    font-weight: bold;
+    border-top: 1px solid #d1d5db;
+}
+.report tr.total td {
+    font-weight: bold;
+    font-size: 13px;
+    border-top: 2px solid #1a237e;
+}
+.report td.indent {
+    padding-left: 20px;
+}
+.summary {
+    margin-left: auto;
+    width: 360px;
+}
+.summary td {
+    border: 0;
+    padding: 3px 8px;
 }

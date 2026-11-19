@@ -66,9 +66,11 @@ return new class extends Migration
     {
         [$archives, $lines, $foreignKey] = $from;
         [$newArchives, $newLines, $newForeignKey] = $to;
-
+        // MySQL backs the foreign key with the composite index: the key goes first
+        // and is rebuilt on the renamed column.
         Schema::table($lines, function (Blueprint $table) use ($lines, $foreignKey) {
-            $table->dropIndex("{$lines}_{$foreignKey}_account_code_index");
+            $table->dropForeign([$foreignKey]);
+            $table->dropIndex(self::archiveIndexName($lines, $foreignKey));
         });
 
         Schema::rename($archives, $newArchives);
@@ -78,9 +80,18 @@ return new class extends Migration
             $table->renameColumn($foreignKey, $newForeignKey);
         });
 
-        Schema::table($newLines, function (Blueprint $table) use ($newForeignKey) {
-            $table->index([$newForeignKey, "account_code"]);
+        Schema::table($newLines, function (Blueprint $table) use ($newArchives, $newLines, $newForeignKey) {
+            $table->index([$newForeignKey, "account_code"], self::archiveIndexName($newLines, $newForeignKey));
+            $table->foreign($newForeignKey)->references("id")->on($newArchives)->cascadeOnDelete();
         });
+    }
+
+    /** Laravel's generated name, or a shorter one when it passes MySQL's 64-character limit. */
+    private static function archiveIndexName(string $lines, string $foreignKey): string
+    {
+        $name = "{$lines}_{$foreignKey}_account_code_index";
+
+        return strlen($name) <= 64 ? $name : "{$lines}_archive_account_index";
     }
 
     private function renameCategoryKeys(array $map): void

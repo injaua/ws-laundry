@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
+use App\Support\Money;
 use App\Support\SystemSettings;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -119,14 +120,14 @@ class Customer extends Model
             : $this->prices()->where($column, $item->id)->first();
 
         if ($negotiated) {
-            return (float) $negotiated->price;
+            return Money::round($negotiated->price);
         }
 
         $discount = (float) $this->discount_percent;
 
         return $discount > 0
-            ? round((float) $item->price * (100 - $discount) / 100, 2)
-            : (float) $item->price;
+            ? Money::discount($item->price, $discount)
+            : Money::round($item->price);
     }
 
     /**
@@ -265,8 +266,8 @@ class Customer extends Model
      */
     public function creditOutstandingBalance(): float
     {
-        return (float) $this->orders()->outstandingCredit()->get()
-            ->sum(fn (Order $order) => $order->remainingBalance());
+        return Money::sum($this->orders()->outstandingCredit()->get()
+            ->map(fn (Order $order) => $order->remainingBalance()));
     }
 
     public function overdueCreditOrders()

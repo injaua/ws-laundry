@@ -40,7 +40,7 @@ class ThermalPrintTest extends TestCase
 
         $this->actingAs($cashier)->get("/payments/{$payment->id}/receipt")
             ->assertOk()
-            ->assertSee("REC-000001")
+            ->assertSee(sprintf("REC-%06d", $payment->id))
             ->assertSee("5,000 Mts", false)
             ->assertSee("Maria Teste");
     }

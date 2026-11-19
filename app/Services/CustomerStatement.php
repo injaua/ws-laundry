@@ -6,6 +6,7 @@ use App\Models\CreditNote;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Support\Money;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -23,7 +24,7 @@ class CustomerStatement
     {
         $movements = $this->movements($customer);
 
-        $opening = round((float) $movements->filter(fn ($m) => $m["date"]->lt($from))->sum("signed"), 2);
+        $opening = Money::round($movements->filter(fn ($m) => $m["date"]->lt($from))->sum("signed"));
         $balance = $opening;
 
         $lines = $movements
@@ -38,8 +39,8 @@ class CustomerStatement
         return [
             "opening" => $opening,
             "closing" => $balance,
-            "debits" => round((float) $lines->sum("debit"), 2),
-            "credits" => round((float) $lines->sum("credit"), 2),
+            "debits" => Money::round($lines->sum("debit")),
+            "credits" => Money::round($lines->sum("credit")),
             "lines" => $lines,
         ];
     }
@@ -87,9 +88,9 @@ class CustomerStatement
             "reference" => $reference,
             "invoice" => $invoice,
             "method" => $method,
-            "debit" => round($debit, 2),
-            "credit" => round($credit, 2),
-            "signed" => round($debit - $credit, 2),
+            "debit" => Money::round($debit),
+            "credit" => Money::round($credit),
+            "signed" => Money::sub($debit, $credit),
             "order_id" => $orderId,
         ];
     }

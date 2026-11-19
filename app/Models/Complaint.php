@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Traits\BelongsToStore;
+use App\Support\NumberSequence;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -98,9 +99,11 @@ class Complaint extends Model
     public static function nextNumber(): string
     {
         $prefix = "REC" . now()->format("Y") . "/";
-        $last = static::where("number", "like", $prefix . "%")->pluck("number")
-            ->map(fn ($n) => (int) substr($n, strlen($prefix)))->max() ?? 0;
+        $next = NumberSequence::next($prefix, fn () => NumberSequence::highestSuffix(
+            static::where("number", "like", $prefix . "%")->pluck("number"),
+            $prefix,
+        ));
 
-        return $prefix . str_pad((string) ($last + 1), 4, "0", STR_PAD_LEFT);
+        return NumberSequence::format($prefix, $next, 4);
     }
 }

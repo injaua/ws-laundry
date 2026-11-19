@@ -6,6 +6,7 @@ use App\Models\OrderItem;
 use App\Models\Package;
 use App\Models\Promotion;
 use App\Models\Service;
+use App\Support\Money;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -24,7 +25,7 @@ class PromotionController extends Controller
             ->groupBy("promotion_id")
             ->map(fn ($items) => [
                 "orders" => $items->pluck("order_id")->unique()->count(),
-                "discount" => (float) $items->sum(fn (OrderItem $item) => $item->discountAmount()),
+                "discount" => Money::round($items->sum(fn (OrderItem $item) => $item->discountAmount())),
             ]);
 
         return view("promotions.index", compact("promotions", "usage"));

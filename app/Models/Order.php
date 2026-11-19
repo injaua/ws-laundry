@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
 use App\Support\Money;
+use App\Support\NumberSequence;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -247,23 +248,23 @@ class Order extends Model
      */
     public function recalculateTotals(): void
     {
-        $itemsSubtotal = (float) $this->items()->sum("subtotal");
-        $deliveryFee = (float) $this->courierJobs()->billable()->sum("fee");
-        $subtotal = Money::round($itemsSubtotal + (float) $this->express_fee + $deliveryFee);
+        $itemsSubtotal = Money::sum($this->items()->pluck("subtotal"));
+        $deliveryFee = Money::sum($this->courierJobs()->billable()->pluck("fee"));
+        $subtotal = Money::add($itemsSubtotal, $this->express_fee, $deliveryFee);
         $vatAmount = Money::percent($subtotal, $this->vat_rate);
 
         $this->update([
-            "delivery_fee" => Money::round($deliveryFee),
+            "delivery_fee" => $deliveryFee,
             "subtotal" => $subtotal,
             "vat_amount" => $vatAmount,
-            "total_price" => Money::round($subtotal + $vatAmount),
+            "total_price" => Money::add($subtotal, $vatAmount),
         ]);
     }
 
     /** Value of the clothes/packages only (before fees and VAT): used for free-delivery thresholds. */
     public function itemsSubtotal(): float
     {
-        return (float) $this->items()->sum("subtotal");
+        return Money::sum($this->items()->pluck("subtotal"));
     }
 
     public function invoice()
@@ -299,24 +300,21 @@ class Order extends Model
     }
 
     /**
-     * Next order number for the given day (ORDyymmddNNN). Based on the highest
-     * existing sequence for that prefix — including soft-deleted orders — rather
-     * than a row count, so gaps or deletions never produce a duplicate. Callers
-     * must still retry on a unique-constraint violation to cover concurrent inserts.
+     * Next order number for the given day (ORDyymmddNNN), from the store's counter for
+     * that day (NumberSequence). Call it inside the transaction that creates the order:
+     * concurrent orders wait for each other instead of colliding. A new day's counter
+     * starts after the highest number already used, soft-deleted orders included.
      */
     public static function nextOrderNumber(?\DateTimeInterface $date = null): string
     {
         $prefix = "ORD" . ($date ? $date->format("ymd") : now()->format("ymd"));
 
-        $last = static::withTrashed()
-            ->where("order_number", "like", $prefix . "%")
-            ->pluck("order_number")
-            ->map(fn ($number) => substr($number, strlen($prefix)))
-            ->filter(fn ($suffix) => ctype_digit($suffix))
-            ->map(fn ($suffix) => (int) $suffix)
-            ->max() ?? 0;
+        $next = NumberSequence::next($prefix, fn () => NumberSequence::highestSuffix(
+            static::withTrashed()->where("order_number", "like", $prefix . "%")->pluck("order_number"),
+            $prefix,
+        ));
 
-        return $prefix . str_pad((string) ($last + 1), 3, "0", STR_PAD_LEFT);
+        return NumberSequence::format($prefix, $next, 3);
     }
 
     public function pieces()
@@ -345,38 +343,38 @@ class Order extends Model
     /**
      * Split a VAT-inclusive amount into [net, vat] using this order's snapshot rate.
      */
-    public function splitGrossAmount(float $amount): array
+    public function splitGrossAmount(float|string $amount): array
     {
         return Money::splitGross($amount, $this->vat_rate);
     }
 
     public function paidAmount(): float
     {
-        return (float) $this->payments()->sum("amount");
+        return Money::sum($this->payments()->pluck("amount"));
     }
 
     /** Valid credit notes (refunded or deducted). */
     public function creditedAmount(): float
     {
-        return (float) $this->creditNotes()->valid()->sum("amount");
+        return Money::sum($this->creditNotes()->valid()->pluck("amount"));
     }
 
     /** Money handed back to the customer through credit notes. */
     public function refundedAmount(): float
     {
-        return (float) $this->creditNotes()->valid()->refunds()->sum("amount");
+        return Money::sum($this->creditNotes()->valid()->refunds()->pluck("amount"));
     }
 
     /** Invoice total after credit notes. */
     public function netTotal(): float
     {
-        return round((float) $this->total_price - $this->creditedAmount(), 2);
+        return Money::sub($this->total_price, $this->creditedAmount());
     }
 
     /** What was received and kept: payments minus refunds. */
     public function netPaid(): float
     {
-        return round($this->paidAmount() - $this->refundedAmount(), 2);
+        return Money::sub($this->paidAmount(), $this->refundedAmount());
     }
 
     /** Still owed: total − credit notes − (payments − refunds). */
@@ -388,29 +386,29 @@ class Order extends Model
      */
     public function paymentSummary(): array
     {
-        $paid = (float) $this->payments->sum("amount");
+        $paid = Money::sum($this->payments->pluck("amount"));
         $validNotes = $this->creditNotes->whereNull("voided_at");
-        $credited = (float) $validNotes->sum("amount");
-        $refunded = (float) $validNotes->where("settlement", "refund")->sum("amount");
+        $credited = Money::sum($validNotes->pluck("amount"));
+        $refunded = Money::sum($validNotes->where("settlement", "refund")->pluck("amount"));
 
         return [
             "paid" => $paid,
             "credited" => $credited,
             "refunded" => $refunded,
-            "remaining" => round($this->total_price - $credited - ($paid - $refunded), 2),
+            "remaining" => Money::sub($this->total_price, $credited, Money::sub($paid, $refunded)),
         ];
     }
 
     public function remainingBalance(): float
     {
-        return round($this->netTotal() - $this->netPaid(), 2);
+        return Money::sub($this->netTotal(), $this->netPaid());
     }
 
     public function isOverdue(): bool
     {
         return $this->is_credit
             && $this->status === "completed"
-            && $this->remainingBalance() > 0
+            && Money::isPositive($this->remainingBalance())
             && $this->due_date
             && $this->due_date->isPast();
     }
@@ -449,7 +447,7 @@ class Order extends Model
         // Credit notes issued before delivery already lowered the invoice.
         $amount = $this->netTotal();
 
-        if (!$receivable || !$services || $amount <= 0) {
+        if (!$receivable || !$services || !Money::isPositive($amount)) {
             return null;
         }
 

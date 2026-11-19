@@ -35,7 +35,7 @@ class TrialBalanceService
             )
             ->get()
             ->map(function ($row) {
-                $difference = (float) $row->total_debit - (float) $row->total_credit;
+                $difference = Money::sub($row->total_debit, $row->total_credit);
                 $row->balance_debit = $difference > 0 ? $difference : 0;
                 $row->balance_credit = $difference < 0 ? -$difference : 0;
 
@@ -46,10 +46,10 @@ class TrialBalanceService
     public function totals(Collection $rows): array
     {
         return [
-            "debit" => (float) $rows->sum("total_debit"),
-            "credit" => (float) $rows->sum("total_credit"),
-            "balance_debit" => (float) $rows->sum("balance_debit"),
-            "balance_credit" => (float) $rows->sum("balance_credit"),
+            "debit" => Money::round($rows->sum("total_debit")),
+            "credit" => Money::round($rows->sum("total_credit")),
+            "balance_debit" => Money::round($rows->sum("balance_debit")),
+            "balance_credit" => Money::round($rows->sum("balance_credit")),
         ];
     }
 

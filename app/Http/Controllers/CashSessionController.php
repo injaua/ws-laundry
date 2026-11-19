@@ -9,6 +9,8 @@ use App\Models\CashMovement;
 use App\Models\CashSession;
 use App\Models\Payment;
 use App\Models\User;
+use App\Support\Documents\DocumentResponse;
+use App\Support\Money;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -80,6 +82,21 @@ class CashSessionController extends Controller
 
     public function show(Request $request, CashSession $cashSession)
     {
+        return view("cash-sessions.show", $this->sessionData($request, $cashSession));
+    }
+
+    /** Till report as an A4 document (HTML, or PDF with ?format=pdf). */
+    public function document(Request $request, CashSession $cashSession)
+    {
+        return DocumentResponse::make(
+            "documents.cash-session",
+            $this->sessionData($request, $cashSession),
+            __("app.cash_session_report") . " " . $cashSession->label(),
+        );
+    }
+
+    private function sessionData(Request $request, CashSession $cashSession): array
+    {
         Gate::authorize("view", $cashSession);
 
         $cashSession->load(["user", "closer", "counts", "movements.user", "payments.order"]);
@@ -87,15 +104,15 @@ class CashSessionController extends Controller
         $expected = $canSeeExpected && $cashSession->isOpen() ? $cashSession->expectedByMethod() : null;
         $paymentTotals = $cashSession->payments->groupBy("method")->map(fn ($p) => [
             "count" => $p->count(),
-            "total" => (float) $p->sum("amount"),
+            "total" => Money::round($p->sum("amount")),
         ]);
 
-        return view("cash-sessions.show", [
+        return [
             "session" => $cashSession,
             "canSeeExpected" => $canSeeExpected,
             "expected" => $expected,
             "paymentTotals" => $paymentTotals,
-        ]);
+        ];
     }
 
     public function storeMovement(Request $request, CashSession $cashSession, RecordCashMovement $record)

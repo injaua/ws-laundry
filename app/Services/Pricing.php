@@ -29,11 +29,11 @@ class Pricing
      */
     public function quote(Customer $customer, Service|Package $item, CarbonInterface $date): array
     {
-        $list = (float) $item->price;
+        $list = Money::round($item->price);
         $customerPrice = $customer->priceFor($item);
         [$promoPrice, $promotion] = $this->bestPromotion($item, $list, $date);
 
-        if ($promotion && $promoPrice < $customerPrice) {
+        if ($promotion && Money::compare($promoPrice, $customerPrice) < 0) {
             return ["unit_price" => $promoPrice, "list_price" => $list, "promotion_id" => $promotion->id];
         }
 
@@ -53,7 +53,7 @@ class Pricing
             }
 
             $price = $promotion->discountedPrice($base);
-            if ($price < $best[0]) {
+            if (Money::compare($price, $best[0]) < 0) {
                 $best = [$price, $promotion];
             }
         }

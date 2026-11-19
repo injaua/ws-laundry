@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Models\Store;
 use App\Models\User;
 use App\Support\CurrentStore;
+use App\Support\Money;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
@@ -46,13 +47,13 @@ class StoreOverview
         $end = $to->copy()->endOfDay();
         $days = [$start->toDateString(), $end->toDateString()];
 
-        $received = (float) Payment::whereBetween("paid_at", [$start, $end])->sum("amount");
-        $refunds = (float) CreditNote::valid()->refunds()->whereBetween("issued_at", [$start, $end])->sum("amount");
-        $expenses = (float) Expense::whereBetween("expense_date", $days)->sum("amount");
+        $received = Money::round(Payment::whereBetween("paid_at", [$start, $end])->sum("amount"));
+        $refunds = Money::round(CreditNote::valid()->refunds()->whereBetween("issued_at", [$start, $end])->sum("amount"));
+        $expenses = Money::round(Expense::whereBetween("expense_date", $days)->sum("amount"));
 
         return [
             "orders" => Order::whereBetween("received_at", $days)->count(),
-            "sales" => (float) Order::whereBetween("received_at", $days)->sum("total_price"),
+            "sales" => Money::round(Order::whereBetween("received_at", $days)->sum("total_price")),
             "received" => $received,
             "refunds" => $refunds,
             "expenses" => $expenses,

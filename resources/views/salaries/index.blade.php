@@ -82,6 +82,7 @@
                             </span>
                         </td>
                         <td class="text-center">
+                            <a href="{{ route("salaries.payslip", $salary) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="{{ __('app.payslip') }}"><i class="bi bi-file-earmark-pdf"></i></a>
                             @cannot("update", $salary)
                                 <span class="btn btn-sm btn-outline-secondary disabled" title="{{ __('app.record_of_another_user') }}"><i class="bi bi-lock"></i></span>
                             @elseif($salary->isPaid())
