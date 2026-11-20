@@ -367,7 +367,7 @@ return [
 
     // Mensagens de confirmação
     'order_created_success' => 'Pedido :number criado com sucesso.',
-    'order_create_failed' => 'Falha ao criar o pedido: :reason',
+    'order_create_failed' => 'Não foi possível criar o pedido. Tente novamente; se o problema continuar, contacte o administrador.',
     'order_locked_error' => 'O pedido já está concluído; o estado já não pode ser alterado.',
     'order_status_updated' => 'Estado do pedido atualizado com sucesso.',
     'status_cannot_go_back' => 'O estado da roupa só pode avançar no fluxo (recebido → concluído); não é permitido regressar a estados anteriores.',
@@ -2027,6 +2027,7 @@ return [
     'mm_refund_sent' => 'Reembolso enviado ao operador.',
     'mm_link_template_missing' => 'O modelo WhatsApp "Pedido de pagamento" não existe ou está inactivo.',
     'mm_link_sent' => 'Link de pagamento enviado por WhatsApp.',
+    'mm_link_failed' => 'Não foi possível enviar o link de pagamento. Tente novamente; se o problema continuar, contacte o administrador.',
     'mm_status_pending' => 'Pendente',
     'mm_status_processing' => 'À espera do PIN',
     'mm_status_success' => 'Pago',

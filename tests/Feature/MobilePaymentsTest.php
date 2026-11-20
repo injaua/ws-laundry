@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Customer;
 use App\Models\JournalEntry;
+use App\Models\MessageTemplate;
 use App\Models\MobileTransaction;
 use App\Models\Order;
 use App\Models\Payment;
@@ -13,6 +14,8 @@ use App\Models\WalletStatement;
 use App\Models\WalletStatementLine;
 use App\Services\MobileMoney\MobileMoneySettings;
 use App\Services\MobileMoney\MobilePayments;
+use App\Services\WhatsApp\Messenger;
+use App\Services\WhatsApp\WhatsAppException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -42,6 +45,31 @@ class MobilePaymentsTest extends TestCase
     private function simulate(string $provider = "mpesa"): void
     {
         SiteSetting::set("mm_{$provider}_mode", "simulation");
+    }
+
+    /** Sends the payment link with a messenger that fails with $error. */
+    private function sendLinkFailingWith(\Throwable $error)
+    {
+        $this->simulate();
+        MessageTemplate::create(["name" => "Pedido de pagamento", "body" => "Pague {amount}: {pay_link}", "is_active" => true]);
+        $this->mock(Messenger::class)->shouldReceive("sendTemplate")->andThrow($error);
+        $order = $this->order(1500);
+
+        return $this->actingAs(User::factory()->create(["role" => "admin"]))
+            ->from("/orders/{$order->id}")->post(route("mobile-payments.send-link", $order));
+    }
+
+    public function test_send_link_shows_whatsapp_errors_meant_for_the_user(): void
+    {
+        $this->sendLinkFailingWith(new WhatsAppException(__("app.customer_without_phone")))
+            ->assertSessionHas("error", __("app.customer_without_phone"));
+    }
+
+    public function test_send_link_hides_technical_errors(): void
+    {
+        $this->sendLinkFailingWith(new \RuntimeException("SQLSTATE[HY000]: General error (SQL: insert into `whatsapp_messages` …)"))
+            ->assertSessionHas("error", __("app.mm_link_failed"));
+        $this->assertStringNotContainsString("SQLSTATE", session("error"));
     }
 
     // ---------- Phase 1: manual reference ----------

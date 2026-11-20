@@ -367,7 +367,7 @@ return [
 
     // Flash messages
     'order_created_success' => 'Order :number created successfully.',
-    'order_create_failed' => 'Failed to create the order: :reason',
+    'order_create_failed' => 'The order could not be created. Please try again; if the problem persists, contact the administrator.',
     'order_locked_error' => 'The order is already completed; its status can no longer be changed.',
     'order_status_updated' => 'Order status updated successfully.',
     'status_cannot_go_back' => 'The clothing status can only move forward in the flow (received → completed); going back to a previous state is not allowed.',
@@ -2027,6 +2027,7 @@ return [
     'mm_refund_sent' => 'Refund sent to the operator.',
     'mm_link_template_missing' => 'The "Payment request" WhatsApp template is missing or inactive.',
     'mm_link_sent' => 'Payment link sent by WhatsApp.',
+    'mm_link_failed' => 'The payment link could not be sent. Please try again; if the problem persists, contact the administrator.',
     'mm_status_pending' => 'Pending',
     'mm_status_processing' => 'Waiting for PIN',
     'mm_status_success' => 'Paid',

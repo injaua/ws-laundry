@@ -11,6 +11,7 @@ use App\Services\MobileMoney\MobileMoneySettings;
 use App\Services\MobileMoney\MobilePayments;
 use App\Services\WhatsApp\AutomaticNotifications;
 use App\Services\WhatsApp\Messenger;
+use App\Services\WhatsApp\WhatsAppException;
 use App\Support\Money;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -135,8 +136,14 @@ class MobilePaymentController extends Controller
                 "amount" => money($order->remainingBalance()),
                 "pay_link" => $order->payLink(),
             ]), $request->user(), $order, "pay_link:{$order->id}:" . now()->timestamp);
-        } catch (Throwable $e) {
+        } catch (WhatsAppException $e) {
+            // Meant for the user: no phone, template not approved, service down…
             return back()->with("error", $e->getMessage());
+        } catch (Throwable $e) {
+            // Anything else is technical (database…): logged in full, never shown.
+            report($e);
+
+            return back()->with("error", __("app.mm_link_failed"));
         }
 
         return back()->with("success", __("app.mm_link_sent"));

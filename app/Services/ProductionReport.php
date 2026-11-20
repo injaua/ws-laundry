@@ -65,10 +65,20 @@ class ProductionReport
         ];
     }
 
+    /**
+     * Stage changes of the current store's orders. order_stage_logs has no store_id (it
+     * belongs to an order), so it is filtered through the store-scoped orders, deleted
+     * ones included as before.
+     */
+    private static function storeStageLogs(): \Illuminate\Database\Eloquent\Builder
+    {
+        return OrderStageLog::query()->whereIn("order_id", Order::withTrashed()->select("id"));
+    }
+
     /** Average hours an order spends in each stage (time until the next stage change). */
     private function stageTimes(CarbonInterface $from, CarbonInterface $to): array
     {
-        $orderIds = OrderStageLog::whereBetween("created_at", [$from, $to])->distinct()->pluck("order_id");
+        $orderIds = self::storeStageLogs()->whereBetween("created_at", [$from, $to])->distinct()->pluck("order_id");
         $hours = [];
 
         OrderStageLog::whereIn("order_id", $orderIds)->orderBy("order_id")->orderBy("created_at")->orderBy("id")
@@ -182,7 +192,7 @@ class ProductionReport
     {
         $loads = MachineLoad::where("status", "done")->whereBetween("finished_at", [$from, $to])->whereNotNull("employee_id")
             ->get(["employee_id", "weight_kg", "stage"]);
-        $logs = OrderStageLog::with("order.items")->whereBetween("created_at", [$from, $to])->whereNotNull("employee_id")
+        $logs = self::storeStageLogs()->with("order.items")->whereBetween("created_at", [$from, $to])->whereNotNull("employee_id")
             ->where(fn ($q) => $q->whereNull("note")->orWhere("note", "!=", "rework"))
             ->get(["id", "order_id", "employee_id", "from_status", "to_status"]);
         $presence = Attendance::whereDate("attendance_date", ">=", $from->toDateString())->whereDate("attendance_date", "<=", $to->toDateString())

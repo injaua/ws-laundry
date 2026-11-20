@@ -47,7 +47,12 @@ class PieceTracker
         $description = trim((string) $description) ?: ($item?->item_name ?? __("app.piece"));
 
         return DB::transaction(function () use ($order, $item, $count, $description, $user) {
-            $seq = (int) OrderPiece::where("order_id", $order->id)->lockForUpdate()->max("seq");
+            // Two people adding pieces to the same order wait for each other on the order row.
+            // Locking the order (not "MAX(seq) … FOR UPDATE" on order_pieces) matters: for an
+            // order without pieces that query locks the gap at the end of the index, which
+            // every new order of every store shares, so concurrent orders deadlocked.
+            Order::withoutGlobalScopes()->whereKey($order->id)->lockForUpdate()->value("id");
+            $seq = (int) OrderPiece::where("order_id", $order->id)->max("seq");
             $status = $order->status === "completed" ? "completed" : "received";
             $pieces = collect();
 

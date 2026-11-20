@@ -92,10 +92,11 @@ class OrderController extends Controller
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Exception $e) {
+            // Business rules fail as ValidationException (above). Anything else is technical
+            // (database, deadlock…): logged in full, never shown — it may contain SQL and data.
             report($e);
 
-            return back()->with("error", __('app.order_create_failed', ['reason' => $e->getMessage()]))
-                ->withInput();
+            return back()->with("error", __('app.order_create_failed'))->withInput();
         }
 
         // Intake photos: the state of the clothes on arrival.

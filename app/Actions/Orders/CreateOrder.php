@@ -87,13 +87,14 @@ class CreateOrder
         ];
 
         // The order number comes from the store's counter inside this transaction:
-        // two cashiers saving at the same moment get consecutive numbers.
+        // two cashiers saving at the same moment get consecutive numbers. A deadlock or lock
+        // timeout rolls the whole transaction back, so it is safely retried (up to 3 times).
         $order = DB::transaction(function () use ($attributes, $rows, $user, $pickup, $pickupFee) {
             $order = $this->persist($attributes, $rows, $user);
             $pickup?->update(["order_id" => $order->id, "fee" => $pickupFee]);
 
             return $order;
-        });
+        }, 3);
 
         $this->notifications->orderReceived($order);
 

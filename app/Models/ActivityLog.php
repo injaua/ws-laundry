@@ -6,6 +6,7 @@ use App\Support\CurrentStore;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
@@ -101,6 +102,13 @@ class ActivityLog extends Model
         $request = app()->runningInConsole() && !app()->runningUnitTests() ? null : request();
 
         return DB::transaction(function () use ($actor, $action, $subjectType, $subject, $description, $old, $new, $hidden, $request) {
+            // One writer at a time: the chain head is locked BEFORE the insert, so ids follow
+            // the chain order and the previous hash is the committed one. (Reading the previous
+            // row instead is not safe: a concurrent, not yet committed entry is invisible to
+            // that read, and two entries would chain to the same predecessor.) The lock is held
+            // until the outermost transaction ends; if it rolls back, the head rolls back too.
+            $previous = self::lockChainHead();
+
             $log = self::create([
                 "actor_type" => $actor ? get_class($actor) : null,
                 "actor_id" => $actor?->id,
@@ -115,11 +123,11 @@ class ActivityLog extends Model
                 "store_id" => self::storeOf($actor, $subject),
             ]);
 
-            // Hash after the insert: the write lock is held, so the previous row is final.
+            // Hash after the insert: it covers the id and the stored values.
             $row = DB::table("activity_logs")->where("id", $log->id)->first();
-            $previous = DB::table("activity_logs")->where("id", "<", $log->id)->orderByDesc("id")->value("hash");
             $hash = self::hashRow($row, $previous);
             DB::table("activity_logs")->where("id", $log->id)->update(["hash" => $hash]);
+            self::moveChainHead($log->id, $hash);
             $log->setRawAttributes(array_merge($log->getAttributes(), ["hash" => $hash]), true);
 
             return $log;
@@ -153,6 +161,50 @@ class ActivityLog extends Model
     public static function security(string $action, ?Model $subject, string $description, ?User $actor = null, ?array $details = null): self
     {
         return self::log($actor ?? auth()->user(), $action, $subject, $description, null, $details);
+    }
+
+    /** Single row (id 1): hash and id of the last entry of the chain. */
+    public const CHAIN_TABLE = "activity_log_chain";
+
+    /** Locks the chain head until the transaction ends and returns the last hash. */
+    private static function lockChainHead(): ?string
+    {
+        try {
+            $head = DB::table(self::CHAIN_TABLE)->where("id", 1)->lockForUpdate()->first();
+        } catch (QueryException $e) {
+            if (!self::isMissingTable($e)) {
+                throw $e;
+            }
+
+            // Earlier migrations write entries before the chain head exists (no concurrency there).
+            return DB::table("activity_logs")->orderByDesc("id")->value("hash");
+        }
+        if ($head) {
+            return $head->last_hash;
+        }
+
+        // No head yet (table just created and emptied): start it from the last entry.
+        $last = DB::table("activity_logs")->orderByDesc("id")->first(["id", "hash"]);
+        DB::table(self::CHAIN_TABLE)->insertOrIgnore(["id" => 1, "last_id" => $last?->id, "last_hash" => $last?->hash]);
+
+        return DB::table(self::CHAIN_TABLE)->where("id", 1)->lockForUpdate()->value("last_hash");
+    }
+
+    /** Moves the chain head to the entry just written (no-op before the head table exists). */
+    private static function moveChainHead(?int $id, ?string $hash): void
+    {
+        try {
+            DB::table(self::CHAIN_TABLE)->where("id", 1)->update(["last_id" => $id, "last_hash" => $hash]);
+        } catch (QueryException $e) {
+            if (!self::isMissingTable($e)) {
+                throw $e;
+            }
+        }
+    }
+
+    private static function isMissingTable(QueryException $e): bool
+    {
+        return $e->getCode() === "42S02" || str_contains($e->getMessage(), "no such table");
     }
 
     public static function hashRow(object $row, ?string $previous): string
@@ -203,13 +255,19 @@ class ActivityLog extends Model
     /** Seals all entries (used once, when the chain is introduced). */
     public static function rehashAll(): void
     {
-        $previous = null;
-        DB::table("activity_logs")->orderBy("id")->chunk(500, function ($rows) use (&$previous) {
-            foreach ($rows as $row) {
-                $hash = self::hashRow($row, $previous);
-                DB::table("activity_logs")->where("id", $row->id)->update(["hash" => $hash]);
-                $previous = $hash;
-            }
+        DB::transaction(function () {
+            self::lockChainHead(); // no new entry while the chain is rebuilt
+            $previous = null;
+            $lastId = null;
+            DB::table("activity_logs")->orderBy("id")->chunk(500, function ($rows) use (&$previous, &$lastId) {
+                foreach ($rows as $row) {
+                    $hash = self::hashRow($row, $previous);
+                    DB::table("activity_logs")->where("id", $row->id)->update(["hash" => $hash]);
+                    $previous = $hash;
+                    $lastId = $row->id;
+                }
+            });
+            self::moveChainHead($lastId, $previous);
         });
     }
 }
