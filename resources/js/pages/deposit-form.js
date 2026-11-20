@@ -1,5 +1,6 @@
 // Bank deposit: total of the cash and the cheques ticked.
 import { fmtMoney } from '../lib/money';
+import { on } from '../lib/page';
 
 const fmt = (n) => fmtMoney(n);
 const total = () => {
@@ -7,10 +8,10 @@ const total = () => {
     document.querySelectorAll('.js-dep-cheque:checked').forEach((c) => (sum += parseFloat(c.dataset.amount)));
     document.querySelector('.js-dep-total').textContent = fmt(sum);
 };
-document.addEventListener('input', (e) => {
+on(document, 'input', (e) => {
     if (e.target.matches('.js-dep-cash, .js-dep-cheque')) total();
 });
-document.addEventListener('change', (e) => {
+on(document, 'change', (e) => {
     if (e.target.matches('.js-dep-cheque')) total();
 });
 total();

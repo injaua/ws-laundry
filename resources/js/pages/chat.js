@@ -1,5 +1,6 @@
 // Internal chat (messages/index): direct / meeting choice, new messages every 4 s.
 import { esc } from '../lib/dom';
+import { every } from '../lib/page';
 
 // Direct = single choice; meeting = multi choice
 const checks = document.querySelectorAll('.participant-check');
@@ -27,7 +28,7 @@ if (body) {
     let lastId = Number(body.dataset.lastId || 0);
     const nearBottom = () => body.scrollHeight - body.scrollTop - body.clientHeight < 120;
 
-    setInterval(async function () {
+    every(async function () {
         if (document.hidden) return;
         try {
             const res = await fetch(body.dataset.pollUrl + '?since=' + lastId, {

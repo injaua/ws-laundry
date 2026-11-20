@@ -1,6 +1,7 @@
 // Scan station (tracking/index): one stage, a barcode reader (keyboard or camera), instant feedback.
 // Server data: <x-page-data name="tracking">.
 import { csrfToken, esc, pageData, storage } from '../lib/dom';
+import { onLeave } from '../lib/page';
 
 const { texts: T, urls } = pageData('tracking');
 const scanUrl = urls.scan,
@@ -214,6 +215,11 @@ if ('BarcodeDetector' in window && navigator.mediaDevices?.getUserMedia) {
     let stream = null,
         last = '',
         lastAt = 0;
+    // Leaving the station turns the camera off (the reading loop stops with it).
+    onLeave(() => {
+        stream?.getTracks().forEach((t) => t.stop());
+        stream = null;
+    });
     btn.addEventListener('click', async () => {
         if (stream) {
             stream.getTracks().forEach((t) => t.stop());

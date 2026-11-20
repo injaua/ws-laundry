@@ -477,3 +477,39 @@ body.sidebar-open .sidebar-backdrop {
         margin-right: 0;
     }
 }
+
+/* ---- Navigation without reload (resources/js/lib/navigation.js): progress bar at the top */
+.nav-progress {
+    position: fixed;
+    inset: 0 auto auto 0;
+    z-index: 2000;
+    width: 0;
+    height: 3px;
+    background: var(--bs-primary, #3f51b5);
+    box-shadow: 0 0 6px rgba(63, 81, 181, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        width 0.25s ease,
+        opacity 0.3s ease;
+}
+.nav-progress.is-loading {
+    width: 85%;
+    opacity: 1;
+    transition:
+        width 8s cubic-bezier(0.1, 0.7, 0.2, 1),
+        opacity 0.1s ease;
+}
+.nav-progress.is-done {
+    width: 100%;
+    opacity: 0;
+}
+[dir='rtl'] .nav-progress {
+    inset: 0 0 auto auto;
+}
+@media (prefers-reduced-motion: reduce) {
+    .nav-progress,
+    .nav-progress.is-loading {
+        transition: opacity 0.1s ease;
+    }
+}

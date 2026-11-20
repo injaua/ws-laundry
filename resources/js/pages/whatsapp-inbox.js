@@ -1,5 +1,6 @@
 // Customer WhatsApp thread (messages/whatsapp): new messages and delivery ticks every 5 s.
 import { esc } from '../lib/dom';
+import { every, reloadPage } from '../lib/page';
 
 (function () {
     const box = document.getElementById('waThread');
@@ -37,7 +38,7 @@ import { esc } from '../lib/dom';
         return el;
     }
 
-    setInterval(async function () {
+    every(async function () {
         if (document.hidden) return;
         try {
             const res = await fetch(box.dataset.poll + '?since=' + last, { headers: { Accept: 'application/json' } });
@@ -55,7 +56,7 @@ import { esc } from '../lib/dom';
             });
             if (data.messages.length && atBottom) box.scrollTop = box.scrollHeight;
             // The customer just wrote back: the 24h window reopened, show the reply box.
-            if (data.canReply && !document.querySelector('form[action$="/reply"]')) location.reload();
+            if (data.canReply && !document.querySelector('form[action$="/reply"]')) reloadPage();
         } catch (e) {
             /* offline: try again on the next tick */
         }

@@ -1,5 +1,6 @@
 // Purchase order lines: add / remove lines, line subtotals.
 import { fmtMoney, roundMoney } from '../lib/money';
+import { on } from '../lib/page';
 
 var poLineIndex = Number(document.getElementById('po-lines-body').dataset.nextIndex || 0);
 
@@ -44,7 +45,7 @@ document.getElementById('po-lines').addEventListener('input', function (e) {
 });
 document.querySelectorAll('#po-lines-body tr').forEach(recalcPoSubtotal);
 
-document.addEventListener('click', function (e) {
+on(document, 'click', function (e) {
     if (e.target.closest('[data-po-add]')) addPoLine();
     const remove = e.target.closest('[data-po-remove]');
     if (remove) removePoLine(remove);

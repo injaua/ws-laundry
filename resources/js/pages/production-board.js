@@ -1,5 +1,6 @@
 // Production board: remembered operator, reschedule / rework modals, auto refresh.
 import { storage } from '../lib/dom';
+import { every, reloadPage } from '../lib/page';
 
 const employee = document.getElementById('board-employee');
 const saved = storage.get('prod-employee');
@@ -25,6 +26,6 @@ document.querySelectorAll('[data-bs-target="#rescheduleModal"], [data-bs-target=
 );
 
 // Keep the board current; skip while a modal or menu is open.
-setInterval(() => {
-    if (!document.querySelector('.modal.show, .dropdown-menu.show') && document.visibilityState === 'visible') location.reload();
+every(() => {
+    if (!document.querySelector('.modal.show, .dropdown-menu.show') && document.visibilityState === 'visible') reloadPage();
 }, 90000);

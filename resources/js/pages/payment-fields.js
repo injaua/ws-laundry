@@ -1,6 +1,7 @@
 // Payment forms (payments/_mobile-ref): reference / bank fields per method, change to give back.
 import { pageData } from '../lib/dom';
 import { fmtMoney } from '../lib/money';
+import { on } from '../lib/page';
 
 const { mobile: MOBILE, texts: T } = pageData('payment-fields');
 const fmt = (n) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(n);
@@ -41,7 +42,7 @@ const sync = (form) => {
 const handler = (e) => {
     if (e.target.matches('select[name="method"], [name="amount"], .js-tendered') && e.target.form) sync(e.target.form);
 };
-document.addEventListener('change', handler);
-document.addEventListener('input', handler);
+on(document, 'change', handler);
+on(document, 'input', handler);
 const init = () => document.querySelectorAll('.js-pay-extra').forEach((box) => box.closest('form') && sync(box.closest('form')));
 document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();

@@ -1,5 +1,6 @@
 // WhatsApp Web pairing (admin/notifications): QR code and connection state, refreshed every 3 s.
 import { pageData } from '../lib/dom';
+import { every } from '../lib/page';
 
 (function () {
     const box = document.getElementById('waQr');
@@ -31,7 +32,7 @@ import { pageData } from '../lib/dom';
         }
     }
     refresh();
-    setInterval(() => {
+    every(() => {
         if (!document.hidden) refresh();
     }, 3000);
 })();

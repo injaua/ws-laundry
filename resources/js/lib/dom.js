@@ -17,6 +17,9 @@ export function pageData(name) {
     return cache.get(name);
 }
 
+/** Forget the data read so far: the navigator calls it when another page is shown. */
+export const resetPageData = () => cache.clear();
+
 /** Global settings of the layout (money format, texts, limits). */
 export const appConfig = () => pageData('app');
 

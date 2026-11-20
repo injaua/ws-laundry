@@ -1,5 +1,6 @@
 import Chart from 'chart.js/auto';
 import { fmtMoney } from './money';
+import { onLeave } from './page';
 
 /** A Chart.js chart that follows the light / dark theme. */
 export function chart(canvas, config) {
@@ -10,7 +11,10 @@ export function chart(canvas, config) {
     Chart.defaults.color = isDark ? '#adb5bd' : '#6c757d';
     Chart.defaults.borderColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
 
-    return new Chart(el, config);
+    const instance = new Chart(el, config);
+    onLeave(() => instance.destroy()); // its canvas goes with the page
+
+    return instance;
 }
 
 export const isDarkTheme = () => document.documentElement.getAttribute('data-bs-theme') === 'dark';

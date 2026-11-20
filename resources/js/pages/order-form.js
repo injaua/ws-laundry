@@ -3,6 +3,7 @@
 import { getJson, pageData } from '../lib/dom';
 import { fmtMoney, roundMoney } from '../lib/money';
 import { addDays, createPricing, orderTotals } from '../orders/pricing';
+import { later } from '../lib/page';
 
 const data = pageData('order-form');
 const { services = [], packages = [], express = {}, pickup = null, vatRate = 0, planning = false, urls = {}, texts = {} } = data;
@@ -237,7 +238,7 @@ function planDelivery(days) {
         if (type === 'by_piece') pieces += parseInt(row.querySelector('.measure-piece .amount-input').value, 10) || 0;
     });
     clearTimeout(planTimer);
-    planTimer = setTimeout(() => {
+    planTimer = later(() => {
         const params = new URLSearchParams({ received_at: receivedInput.value, kg, pieces, lead_days: days });
         getJson(`${urls.promise}?${params}`)
             .then((p) => {

@@ -1,17 +1,19 @@
 import { getJson } from './dom';
+import { later, reloadPage } from './page';
 
-/** Reload the page once the status endpoint says the operation is no longer open. */
+/** Show the page again once the status endpoint says the operation is no longer open. */
 export function reloadWhenClosed(url, { every = 3000, retry = 5000, max = 120 } = {}) {
     let tries = 0;
+    // later(): the polling stops when the user opens another page.
     const poll = () =>
         getJson(url)
             .then((s) => {
                 if (!s.open) {
-                    location.reload();
+                    reloadPage();
                     return;
                 }
-                if (++tries < max) setTimeout(poll, every);
+                if (++tries < max) later(poll, every);
             })
-            .catch(() => setTimeout(poll, retry));
-    setTimeout(poll, every);
+            .catch(() => later(poll, retry));
+    later(poll, every);
 }

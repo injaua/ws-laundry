@@ -22,6 +22,7 @@
  */
 import { reloadWhenClosed } from './lib/poll';
 import { appConfig, ready, storage } from './lib/dom';
+import { visit } from './lib/page';
 
 // ---- Confirmation: capture phase, so it runs before any other submit handler.
 document.addEventListener(
@@ -61,7 +62,11 @@ document.addEventListener('submit', (e) => {
 
 document.addEventListener('change', (e) => {
     const el = e.target;
-    if (el.matches('[data-auto-submit]') && el.form) el.form.submit();
+    // requestSubmit: like pressing the button (a GET filter then opens without a reload)
+    if (el.matches('[data-auto-submit]') && el.form) {
+        if (el.form.requestSubmit) el.form.requestSubmit();
+        else el.form.submit();
+    }
 
     if (el.matches('[data-check-all]')) {
         document.querySelectorAll(el.dataset.checkAll).forEach((box) => {
@@ -89,7 +94,7 @@ document.addEventListener('input', (e) => {
 document.addEventListener('click', (e) => {
     // Clickable table rows; links and buttons inside the row keep their own action.
     const row = e.target.closest('tr[data-href]');
-    if (row && !e.target.closest('a, button, input, select, label, form')) location.href = row.dataset.href;
+    if (row && !e.target.closest('a, button, input, select, label, form')) visit(row.dataset.href);
 
     if (e.target.closest('[data-print]')) {
         e.preventDefault();
@@ -174,7 +179,8 @@ document.addEventListener(
     true,
 );
 
-ready(() => {
+// ---- Every page: on the first load and after each navigation without reload (page:load).
+function startPage() {
     // images that failed before this script ran
     document.querySelectorAll('img[data-hide-broken]').forEach((img) => {
         if (img.complete && img.naturalWidth === 0) hideBroken(img);
@@ -183,9 +189,16 @@ ready(() => {
     document
         .querySelectorAll('[data-poll-reload]')
         .forEach((el) => reloadWhenClosed(el.dataset.pollReload, { max: Number(el.dataset.pollMax || 120) }));
-});
+}
 
-window.addEventListener('load', () => {
+function afterLoad() {
     if (document.querySelector('[data-auto-print]')) setTimeout(() => window.print(), 250);
     document.querySelectorAll('[data-open-on-load]').forEach((el) => window.open(el.dataset.openOnLoad, '_blank'));
+}
+
+ready(startPage);
+window.addEventListener('load', afterLoad);
+document.addEventListener('page:load', () => {
+    startPage();
+    afterLoad();
 });

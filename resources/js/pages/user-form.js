@@ -2,6 +2,7 @@
 // they are met, and tells the user what is wrong instead of failing silently.
 // The server validates again (UserRequest); its messages are rendered in the same places.
 import { pageData } from '../lib/dom';
+import { on } from '../lib/page';
 
 const form = document.getElementById('userForm');
 
@@ -133,7 +134,7 @@ if (form) {
     });
 
     // Back from the server with errors: start at the first problem.
-    window.addEventListener('pageshow', () => {
+    on(window, 'pageshow', () => {
         // The browser "back" button may restore the locked button.
         submit.disabled = false;
         submit.innerHTML = submitHtml;

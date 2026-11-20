@@ -1,33 +1,39 @@
-// Back-office layout (layouts/admin): theme, sidebar, upload limit, unread chat badge.
+// Back-office layout (layouts/admin): navigation without reloads, theme, sidebar, upload limit, unread chat badge.
+// The <body> is swapped on every visit (lib/navigation.js): handlers here are delegated
+// to document, and elements are looked up when used, never kept from the first page.
 import './behaviors';
 import { appConfig, getJson, storage } from './lib/dom';
+import { startNavigation } from './lib/navigation';
+
+startNavigation();
 
 // ---- Light / dark theme
-const themeIcon = document.getElementById('darkModeIcon');
 function applyTheme(theme) {
     document.documentElement.setAttribute('data-bs-theme', theme);
-    if (themeIcon) themeIcon.className = theme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+    const icon = document.getElementById('darkModeIcon');
+    if (icon) icon.className = theme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
 }
 applyTheme(storage.get('theme') || 'light');
-document.getElementById('darkModeToggle')?.addEventListener('click', () => {
+document.addEventListener('page:load', () => applyTheme(document.documentElement.getAttribute('data-bs-theme') || 'light'));
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('#darkModeToggle')) return;
     const next = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
     applyTheme(next);
     storage.set('theme', next);
 });
 
 // ---- Sidebar on phones
-const sidebar = document.getElementById('sidebar');
-const sidebarToggle = document.getElementById('sidebarToggle');
 function toggleSidebar(force) {
+    const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
     const open = force !== undefined ? force : !sidebar.classList.contains('show');
     sidebar.classList.toggle('show', open);
     document.body.classList.toggle('sidebar-open', open);
-    sidebarToggle?.setAttribute('aria-expanded', String(open));
+    document.getElementById('sidebarToggle')?.setAttribute('aria-expanded', String(open));
 }
-sidebarToggle?.addEventListener('click', () => toggleSidebar());
 document.addEventListener('click', (e) => {
-    if (e.target.closest('#sidebarClose') || e.target.id === 'sidebarBackdrop') toggleSidebar(false);
+    if (e.target.closest('#sidebarToggle')) toggleSidebar();
+    else if (e.target.closest('#sidebarClose') || e.target.id === 'sidebarBackdrop') toggleSidebar(false);
     else if (e.target.closest('#sidebar .nav-link:not([data-bs-toggle])')) toggleSidebar(false);
 });
 document.addEventListener('keydown', (e) => {
@@ -59,14 +65,16 @@ document.addEventListener('change', (e) => {
     input.insertAdjacentElement('afterend', feedback);
 });
 
-// ---- Unread internal chat messages
-const chatBadge = document.getElementById('chatUnreadBadge');
-if (chatBadge?.dataset.url) {
+// ---- Unread internal chat messages (the badge is only there for chat users)
+const chatBadge = () => document.getElementById('chatUnreadBadge');
+if (chatBadge()?.dataset.url) {
     setInterval(async () => {
+        const badge = chatBadge();
+        if (!badge?.dataset.url || document.hidden) return;
         try {
-            const data = await getJson(chatBadge.dataset.url);
-            chatBadge.textContent = data.count;
-            chatBadge.classList.toggle('d-none', !data.count);
+            const data = await getJson(badge.dataset.url);
+            badge.textContent = data.count;
+            badge.classList.toggle('d-none', !data.count);
         } catch {
             /* transient */
         }

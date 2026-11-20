@@ -17,7 +17,8 @@
         'texts' => ['loading' => __('app.loading'), 'fileTooLarge' => __('app.file_too_large')],
     ]"/>
 </head>
-<body>
+{{-- data-nav-root: links and filters open without a full reload (resources/js/lib/navigation.js). --}}
+<body data-nav-root>
     @include("layouts.admin.sidebar")
     <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
@@ -34,7 +35,8 @@
                         <i class="bi bi-translate"></i>
                         {{ strtoupper(app()->getLocale()) }}
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
+                    {{-- data-no-nav: a new language (and maybe direction) needs the whole page. --}}
+                    <ul class="dropdown-menu dropdown-menu-end" data-no-nav>
                         @foreach(\App\Support\Languages::active() as $lang)
                             <li><a class="dropdown-item {{ app()->getLocale() == $lang->code ? 'active' : '' }}" href="{{ route('language.switch', $lang->code) }}">{{ $lang->label() }}</a></li>
                         @endforeach
