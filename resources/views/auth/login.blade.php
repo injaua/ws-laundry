@@ -1,7 +1,7 @@
 @extends("layouts.guest")
 @section("title", __('app.login'))
 @section("auth_title", __('app.welcome_back'))
-@section("auth_subtitle", __('app.login_subtitle'))
+@section("auth_subtitle", __('app.login_subtitle', ['company' => \App\Support\SystemSettings::companyName()]))
 
 @section("content")
 <form method="POST" action="{{ route("login") }}">

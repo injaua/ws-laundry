@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Traits\BelongsToStore;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Package extends Model
 {
@@ -22,7 +23,7 @@ class Package extends Model
         ];
     }
 
-    public function recipes()
+    public function recipes(): HasMany
     {
         return $this->hasMany(PackageRecipe::class);
     }

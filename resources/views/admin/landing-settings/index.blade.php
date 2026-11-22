@@ -43,11 +43,11 @@
                     <div class="mb-3">
                         <label class="form-label">Título</label>
                         <input type="text" name="about_title" class="form-control"
-                            value="{{ $settings["about_title"] ?? "About WS Clean & Laundry Serviços, Lda" }}">
+                            value="{{ $settings["about_title"] ?? __('app.landing_about_title_default', ['company' => \App\Support\SystemSettings::companyName()]) }}">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Conteúdo</label>
-                        <textarea name="about_content" class="form-control" rows="4">{{ $settings["about_content"] ?? "WS Clean & Laundry Serviços, Lda is a professional laundry service offering dry cleaning, ironing, and express wash." }}</textarea>
+                        <textarea name="about_content" class="form-control" rows="4">{{ $settings["about_content"] ?? __('app.landing_about_content_default', ['company' => \App\Support\SystemSettings::companyName()]) }}</textarea>
                     </div>
                 </div>
             </div>
@@ -100,7 +100,7 @@
                     <div class="mb-3">
                         <label class="form-label">Texto Rodapé</label>
                         <input type="text" name="footer_text" class="form-control"
-                            value="{{ $settings["footer_text"] ?? "© " . date("Y") . " WS Clean & Laundry Serviços, Lda. All rights reserved." }}">
+                            value="{{ $settings["footer_text"] ?? __('app.landing_footer_default', ['year' => date('Y'), 'company' => \App\Support\SystemSettings::legalName()]) }}">
                     </div>
                 </div>
             </div>

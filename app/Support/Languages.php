@@ -16,26 +16,24 @@ use Throwable;
  */
 class Languages
 {
-    private static ?Collection $all = null;
-
-    /** All languages (active or not), keyed by code. */
+    /** All languages (active or not), keyed by code; read once per request / job. */
     public static function all(): Collection
     {
-        if (self::$all === null) {
+        return RequestCache::instance()->remember("languages:all", function () {
             try {
-                self::$all = Language::orderByDesc("is_system")->orderBy("name")->get()->keyBy("code");
+                $all = Language::orderByDesc("is_system")->orderBy("name")->get()->keyBy("code");
             } catch (Throwable) {
-                self::$all = collect(); // table not migrated yet
+                $all = collect(); // table not migrated yet
             }
-            if (self::$all->isEmpty()) {
-                self::$all = collect([
+            if ($all->isEmpty()) {
+                $all = collect([
                     "pt" => new Language(["code" => "pt", "name" => "Português", "flag" => "🇵🇹", "direction" => "ltr", "base_locale" => "pt", "is_active" => true, "is_system" => true]),
                     "en" => new Language(["code" => "en", "name" => "English", "flag" => "🇬🇧", "direction" => "ltr", "base_locale" => "en", "is_active" => true, "is_system" => true]),
                 ]);
             }
-        }
 
-        return self::$all;
+            return $all;
+        });
     }
 
     /** Languages users can switch to. */
@@ -93,13 +91,13 @@ class Languages
 
     public static function flush(?string $locale = null): void
     {
-        self::$all = null;
+        RequestCache::instance()->forget("languages:");
         foreach ($locale ? [$locale] : self::all()->keys()->all() as $code) {
             foreach (Language::GROUPS as $group) {
                 Cache::forget(self::cacheKey($code, $group));
             }
         }
-        self::$all = null;
+        RequestCache::instance()->forget("languages:");
         if (app()->resolved("translator")) {
             app("translator")->setLoaded([]); // reload texts in this request too
         }

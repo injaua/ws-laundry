@@ -6,6 +6,7 @@ use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Service extends Model
 {
@@ -19,12 +20,12 @@ class Service extends Model
         return ['price' => 'decimal:2'];
     }
 
-    public function orderItems()
+    public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class);
     }
 
-    public function recipes()
+    public function recipes(): HasMany
     {
         return $this->hasMany(ServiceRecipe::class);
     }

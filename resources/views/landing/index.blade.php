@@ -12,7 +12,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ filled($settings["hero_title"] ?? null) ? $settings["hero_title"] . " · " : "" }}{{ \App\Support\SystemSettings::companyName() }}</title>
-    <meta name="description" content="{{ Str::limit(strip_tags($settings["hero_subtitle"] ?? "Jasa laundry profesional"), 160) }}">
+    <meta name="description" content="{{ Str::limit(strip_tags($settings["hero_subtitle"] ?? __('app.landing_meta_description_default')), 160) }}">
     @include("landing.partials.head")
 </head>
 <body>
@@ -177,8 +177,8 @@
         <div class="about-grid">
             <div class="about-text" data-reveal>
                 <div class="section-label">{{ __('app.about_section') }}</div>
-                <h2 class="section-title">{{ $settings["about_title"] ?? "About WS Clean & Laundry Serviços, Lda" }}</h2>
-                <p>{{ $settings["about_content"] ?? "WS Clean & Laundry Serviços, Lda is a professional laundry service offering dry cleaning, ironing, and express wash." }}</p>
+                <h2 class="section-title">{{ $settings["about_title"] ?? __('app.landing_about_title_default', ['company' => \App\Support\SystemSettings::companyName()]) }}</h2>
+                <p>{{ $settings["about_content"] ?? __('app.landing_about_content_default', ['company' => \App\Support\SystemSettings::companyName()]) }}</p>
                 <div class="about-chips">
                     <span class="chip"><i class="bi bi-boxes"></i>{{ $services->filter(fn($s) => $s->type == "by_weight")->count() }} {{ __('app.by_weight_services') }}</span>
                     <span class="chip"><i class="bi bi-tshirt"></i>{{ $services->filter(fn($s) => $s->type == "by_piece")->count() }} {{ __('app.by_piece_services') }}</span>

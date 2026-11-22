@@ -3,6 +3,7 @@
 namespace App\Services\Security;
 
 use App\Models\User;
+use App\Support\SystemSettings;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Milon\Barcode\DNS2D;
@@ -29,7 +30,7 @@ class TwoFactor
 
     public function otpauthUrl(User $user, string $secret): string
     {
-        $issuer = \App\Support\SystemSettings::companyName();
+        $issuer = SystemSettings::companyName();
 
         return "otpauth://totp/" . rawurlencode($issuer . ":" . $user->email)
             . "?secret={$secret}&issuer=" . rawurlencode($issuer) . "&algorithm=SHA1&digits=6&period=30";

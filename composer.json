@@ -6,7 +6,7 @@
     "keywords": ["laravel", "laundry", "pgc-nirf", "mozambique", "mysql"],
     "license": "MIT",
     "require": {
-        "php": "^8.3",
+        "php": "^8.4.1",
         "barryvdh/laravel-dompdf": "^3.1",
         "laravel/framework": "^13.43",
         "laravel/tinker": "^3.2",
@@ -14,7 +14,9 @@
         "milon/barcode": "^13.1"
     },
     "require-dev": {
+        "brianium/paratest": "^7.20",
         "fakerphp/faker": "^1.23",
+        "larastan/larastan": "^3.15",
         "laravel/breeze": "^2.4",
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",
@@ -53,7 +55,12 @@
         ],
         "test": [
             "@php artisan config:clear --ansi @no_additional_args",
-            "@php artisan test"
+            "@php artisan test --parallel"
+        ],
+        "analyse": "phpstan analyse --memory-limit=2G",
+        "lint": [
+            "pint --test",
+            "phpstan analyse --memory-limit=2G --no-progress"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

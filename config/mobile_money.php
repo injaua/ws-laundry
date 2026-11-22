@@ -6,6 +6,16 @@
  * details of each API.
  */
 return [
+    /*
+     * How the request reaches the operator once the cashier / courier confirms it:
+     *  - false (default): right after the page answers, in the same PHP process. Immediate,
+     *    and works with any hosting, including a worker started by the scheduler every minute;
+     *  - true: through the queue. Use it only with a permanent worker (Supervisor, systemd,
+     *    NSSM: php artisan queue:work); with a once-a-minute worker the customer would get the
+     *    prompt on the phone up to a minute late.
+     */
+    "queue" => (bool) env("MOBILE_MONEY_QUEUE", false),
+
     // Vodacom M-Pesa OpenAPI (developer.mpesa.vm.co.mz)
     "mpesa" => [
         "sandbox_host" => env("MPESA_SANDBOX_HOST", "api.sandbox.vm.co.mz"),

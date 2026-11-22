@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\ApplySystemSettings;
 use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\PublicStore;
@@ -20,6 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
+            // After StartSession: the user, hence the store, is known from here on.
+            ApplySystemSettings::class,
             SetLocale::class,
             EnsureUserIsActive::class,
             SessionIdleTimeout::class,

@@ -12,7 +12,8 @@ abstract class TestCase extends BaseTestCase
 {
     /**
      * RefreshDatabase empties the database: refuse to run on anything but a test database
-     * (phpunit.xml points DB_DATABASE at washly-lavandaria-testing).
+     * (phpunit.xml points DB_DATABASE at washly-lavandaria-testing). The database is built from
+     * database/schema/mysql-schema.sql (php artisan schema:snapshot), not migration by migration.
      */
     public function createApplication()
     {
@@ -20,7 +21,8 @@ abstract class TestCase extends BaseTestCase
 
         $connection = $app["config"]->get("database.default");
         $database = (string) $app["config"]->get("database.connections.{$connection}.database");
-        if (!preg_match('/[-_]testing$/', $database)) {
+        // "--parallel" gives each process its own copy: washly-lavandaria-testing_test_1, _2…
+        if (!preg_match('/[-_]testing(_test_\d+)?$/', $database)) {
             throw new RuntimeException("Tests must run on a test database (name ending in -testing), not on \"{$database}\".");
         }
 

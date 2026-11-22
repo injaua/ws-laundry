@@ -1,7 +1,7 @@
 @extends("layouts.guest")
 @section("title", __('app.register'))
 @section("auth_title", __('app.create_new_account'))
-@section("auth_subtitle", __('app.register_subtitle'))
+@section("auth_subtitle", __('app.register_subtitle', ['company' => \App\Support\SystemSettings::companyName()]))
 
 @section("content")
 <form method="POST" action="{{ route("register") }}">

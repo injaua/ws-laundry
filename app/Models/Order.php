@@ -8,6 +8,9 @@ use App\Support\Money;
 use App\Support\NumberSequence;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\URL;
@@ -106,37 +109,37 @@ class Order extends Model
         return URL::temporarySignedRoute("pay.show", now()->addDays(30), ["order" => $this->id]);
     }
 
-    public function mobileTransactions()
+    public function mobileTransactions(): HasMany
     {
         return $this->hasMany(MobileTransaction::class)->latest("id");
     }
 
-    public function stageLogs()
+    public function stageLogs(): HasMany
     {
         return $this->hasMany(OrderStageLog::class)->orderBy("created_at")->orderBy("id");
     }
 
-    public function photos()
+    public function photos(): HasMany
     {
         return $this->hasMany(OrderPhoto::class);
     }
 
-    public function reworks()
+    public function reworks(): HasMany
     {
         return $this->hasMany(OrderRework::class)->latest("created_at");
     }
 
-    public function machineLoads()
+    public function machineLoads(): BelongsToMany
     {
         return $this->belongsToMany(MachineLoad::class, "machine_load_order")->withPivot("weight_kg");
     }
 
-    public function reworkOf()
+    public function reworkOf(): BelongsTo
     {
         return $this->belongsTo(Order::class, "rework_of_order_id");
     }
 
-    public function qcUser()
+    public function qcUser(): BelongsTo
     {
         return $this->belongsTo(User::class, "qc_by");
     }
@@ -195,33 +198,33 @@ class Order extends Model
         return $log?->created_at;
     }
 
-    public function customer()
+    public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
     }
 
-    public function items()
+    public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
     }
 
     /** Payments undone because their cheque bounced (hidden from payments()). */
-    public function bouncedPayments()
+    public function bouncedPayments(): HasMany
     {
         return $this->hasMany(Payment::class)->withoutGlobalScope("not_bounced")->whereNotNull("bounced_at");
     }
 
-    public function creditNotes()
+    public function creditNotes(): HasMany
     {
         return $this->hasMany(CreditNote::class)->orderBy("id");
     }
 
-    public function abandoner()
+    public function abandoner(): BelongsTo
     {
         return $this->belongsTo(User::class, "abandoned_by");
     }
 
-    public function complaints()
+    public function complaints(): HasMany
     {
         return $this->hasMany(Complaint::class)->latest();
     }
@@ -232,12 +235,12 @@ class Order extends Model
         return $query->whereIn("status", ["ready", "delivering"])->whereNotNull("ready_at")->whereNull("abandoned_at");
     }
 
-    public function payments()
+    public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
     }
 
-    public function courierJobs()
+    public function courierJobs(): HasMany
     {
         return $this->hasMany(CourierJob::class);
     }
@@ -267,7 +270,7 @@ class Order extends Model
         return Money::sum($this->items()->pluck("subtotal"));
     }
 
-    public function invoice()
+    public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
     }
@@ -317,7 +320,7 @@ class Order extends Model
         return NumberSequence::format($prefix, $next, 3);
     }
 
-    public function pieces()
+    public function pieces(): HasMany
     {
         return $this->hasMany(OrderPiece::class)->orderBy("seq");
     }

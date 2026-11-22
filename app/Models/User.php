@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\Traits\Loggable;
+use App\Notifications\QueuedResetPassword;
+use App\Notifications\QueuedVerifyEmail;
 use App\Services\Security\SecuritySettings;
 use App\Services\Security\UserSessions;
 use App\Support\CurrentStore;
@@ -23,6 +25,17 @@ class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Loggable, Notifiable;
+
+    /** Account e-mails go through the queue (QUEUE_CONNECTION), not the web request. */
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $this->notify(new QueuedResetPassword($token));
+    }
+
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new QueuedVerifyEmail);
+    }
 
     /**
      * Get the attributes that should be cast.

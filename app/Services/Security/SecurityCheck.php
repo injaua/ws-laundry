@@ -21,11 +21,13 @@ class SecurityCheck
         $backup = Backups::supported() ? app(Backups::class)->latest() : null;
         $chain = ActivityLog::verifyChain();
         $required = SecuritySettings::twoFactorRoles();
+        $appUrlOk = self::appUrlMatches(app()->runningInConsole() ? null : request()->root());
 
         return [
             ["key" => "debug_off", "ok" => !config("app.debug"), "level" => $production ? "critical" : "warning", "detail" => null],
             ["key" => "env_production", "ok" => $production, "level" => "warning", "detail" => app()->environment()],
             ["key" => "https", "ok" => $https, "level" => $production ? "critical" : "warning", "detail" => config("app.url")],
+            ["key" => "app_url", "ok" => $appUrlOk, "level" => $production ? "critical" : "warning", "detail" => config("app.url")],
             ["key" => "secure_cookie", "ok" => (bool) config("session.secure") || !$https && !$production, "level" => "warning", "detail" => null],
             ["key" => "app_key", "ok" => filled(config("app.key")), "level" => "critical", "detail" => null],
             ["key" => "two_factor_admins", "ok" => $withoutTwoFactor->isEmpty(), "level" => "warning", "detail" => $withoutTwoFactor->pluck("name")->implode(", ") ?: null],
@@ -34,6 +36,30 @@ class SecurityCheck
             ["key" => "backup_recent", "ok" => $backup !== null && $backup->created_at->gt(now()->subDays(2)), "level" => "critical", "detail" => $backup?->created_at->format(datetime_fmt())],
             ["key" => "audit_chain", "ok" => $chain["ok"], "level" => "critical", "detail" => $chain["ok"] ? (string) $chain["checked"] : "#" . $chain["broken_id"]],
         ];
+    }
+
+    /**
+     * APP_URL is set, is not a local address in production, and (seen from a request) points
+     * at the host the browser is using. Pages work either way; links built outside a request
+     * (e-mails, WhatsApp messages, queued jobs) do not.
+     */
+    public static function appUrlMatches(?string $requestRoot): bool
+    {
+        $configured = parse_url((string) config("app.url"));
+        $host = strtolower($configured["host"] ?? "");
+        if ($host === "") {
+            return false;
+        }
+        if (app()->environment("production") && in_array($host, ["localhost", "127.0.0.1", "::1"], true)) {
+            return false;
+        }
+        if ($requestRoot === null) {
+            return true;
+        }
+        $actual = parse_url($requestRoot);
+
+        return $host === strtolower($actual["host"] ?? "")
+            && ($configured["port"] ?? null) === ($actual["port"] ?? null);
     }
 
     public function score(array $checks): array

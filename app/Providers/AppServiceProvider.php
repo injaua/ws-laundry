@@ -9,6 +9,7 @@ use App\Services\WhatsApp\WhatsAppGateway;
 use App\Services\WhatsApp\WhatsAppSettings;
 use App\Support\DatabaseTranslationLoader;
 use App\Support\Permissions;
+use App\Support\RequestCache;
 use App\Support\SettingsCache;
 use App\Support\StorePresenceVerifier;
 use App\Support\SystemSettings;
@@ -45,6 +46,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(WhatsAppChannels::class);
         // Settings rows, read once per request / queued job (reset between them).
         $this->app->scoped(SettingsCache::class);
+        // Current store, main store id, system settings and languages: per request / job too.
+        $this->app->scoped(RequestCache::class);
         // One count of the sidebar badges per request, however many times the layout renders.
         $this->app->singleton(AdminNavigationComposer::class);
 
@@ -67,14 +70,9 @@ class AppServiceProvider extends ServiceProvider
         // Who may do what (routes "can:…", @can in the views): App\Support\Permissions.
         Permissions::register();
 
-        // Uploaded files (logos, favicon, photos) are served from the host the browser is
-        // using, not APP_URL: with "php artisan serve" or a different port / domain the
-        // configured URL points elsewhere and every image breaks.
-        if (!$this->app->runningInConsole()) {
-            config(["filesystems.disks.public.url" => rtrim(request()->root(), "/") . "/storage"]);
-        }
-
-        // Admin → System settings: company name, time zone (read fresh on every boot).
+        // Admin → System settings: time zone and company name. Here the store is not known yet
+        // (company / main store view, enough for commands and workers); for web requests
+        // ApplySystemSettings applies them again once the user and their store are known.
         SystemSettings::flush();
         SystemSettings::apply();
         WhatsAppSettings::apply();

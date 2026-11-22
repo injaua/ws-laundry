@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Customer;
 use App\Models\MessageTemplate;
 use App\Models\Order;
+use App\Models\SiteSetting;
 use App\Models\User;
 use App\Models\WhatsAppMessage;
 use App\Services\WhatsApp\WhatsAppException;
@@ -156,7 +157,7 @@ class CustomerWhatsAppTest extends TestCase
 
     public function test_payment_template_carries_the_pay_link(): void
     {
-        \App\Models\SiteSetting::set("mm_mpesa_mode", "simulation");
+        SiteSetting::set("mm_mpesa_mode", "simulation");
         $cashier = User::factory()->cashier()->create();
         $customer = Customer::create(["name" => "Marta", "phone" => "+258860000000", "address" => "Matola"]);
         $template = MessageTemplate::create(["name" => "Pedido de pagamento", "body" => "Pague {amount}: {pay_link}"]);

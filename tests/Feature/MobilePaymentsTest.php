@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\ProcessMobileTransaction;
 use App\Models\Customer;
 use App\Models\JournalEntry;
 use App\Models\MessageTemplate;
@@ -18,6 +19,7 @@ use App\Services\WhatsApp\Messenger;
 use App\Services\WhatsApp\WhatsAppException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
@@ -137,6 +139,25 @@ class MobilePaymentsTest extends TestCase
         $this->actingAs($cashier)->getJson(route("mobile-payments.status", $tx))->assertOk()->assertJson(["status" => "success", "open" => false]);
         $this->actingAs($cashier)->get(route("mobile-payments.show", $tx))->assertOk()->assertSee($tx->reference);
         $this->actingAs($cashier)->get(route("mobile-payments.index"))->assertOk();
+    }
+
+    public function test_push_goes_out_after_the_response_unless_the_queue_is_chosen(): void
+    {
+        $this->simulate();
+        $admin = User::factory()->create(["role" => "admin"]);
+        config(["queue.default" => "database"]);
+
+        // Default: right after the response (works with a once-a-minute worker too).
+        Bus::fake();
+        $this->actingAs($admin)->post(route("mobile-payments.store"), ["order_id" => $this->order()->id, "provider" => "mpesa", "phone" => "841234567"]);
+        Bus::assertDispatchedAfterResponse(ProcessMobileTransaction::class);
+
+        // MOBILE_MONEY_QUEUE=true (permanent worker): through the queue.
+        config(["mobile_money.queue" => true]);
+        Bus::fake();
+        $this->actingAs($admin)->post(route("mobile-payments.store"), ["order_id" => $this->order(1500, "841234569")->id, "provider" => "mpesa", "phone" => "841234569"]);
+        Bus::assertDispatched(ProcessMobileTransaction::class);
+        Bus::assertNotDispatchedAfterResponse(ProcessMobileTransaction::class);
     }
 
     public function test_wrong_network_and_failed_and_expired_requests(): void

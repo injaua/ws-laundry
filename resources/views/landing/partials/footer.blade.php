@@ -48,7 +48,7 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <span>{{ $settings["footer_text"] ?? "© " . date("Y") . " " . \App\Support\SystemSettings::legalName() . "." }}</span>
+            <span>{{ $settings["footer_text"] ?? __('app.landing_footer_default', ['year' => date('Y'), 'company' => \App\Support\SystemSettings::legalName()]) }}</span>
             <span>{{ \App\Support\SystemSettings::legalName() }}</span>
         </div>
     </div>

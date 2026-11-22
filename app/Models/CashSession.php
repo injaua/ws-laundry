@@ -88,7 +88,7 @@ class CashSession extends Model
     }
 
     /** Credit notes refunded from this till (voided ones excluded). */
-    public function refunds()
+    public function refunds(): HasMany
     {
         return $this->hasMany(CreditNote::class)->whereNull("voided_at")->where("settlement", "refund");
     }

@@ -62,20 +62,18 @@ class SystemSettings
         "phone_country_code" => "+258",
     ];
 
-    /** @var array<string, array> per store ("" = company level) */
-    private static array $cache = [];
+    /** Keys of this class in the per-request cache (RequestCache). */
+    private const CACHE = "system-settings:";
 
-    private static ?Currency $currency = null;
-
+    /** Settings as seen from the current store (identity per store, localization company-wide). */
     public static function all(): array
     {
         // Pages without a store (login, public website, payment links) show the main store's
         // identity, so the name and logos saved in Admin → System settings appear there too.
         $storeId = CurrentStore::id() ?? self::fallbackStoreId();
-        $scope = (string) $storeId;
-        if (!isset(self::$cache[$scope])) {
+
+        return RequestCache::instance()->remember(self::CACHE . "values:" . $storeId, function () use ($storeId) {
             try {
-                // Identity (name, NUIT, logo…) can differ per store; localization is company-wide.
                 $stored = CurrentStore::run($storeId, fn () => SiteSetting::many(array_keys(self::DEFAULTS)));
             } catch (Throwable) {
                 $stored = []; // table not migrated yet
@@ -87,33 +85,27 @@ class SystemSettings
                     unset($stored[$k]);
                 }
             }
-            self::$cache[$scope] = array_merge(self::DEFAULTS, $stored);
-        }
 
-        // Titles, e-mails and 2FA use config("app.name"): keep it on the store being shown.
-        config(["app.name" => self::$cache[$scope]["company_name"]]);
-
-        return self::$cache[$scope];
+            return array_merge(self::DEFAULTS, $stored);
+        });
     }
 
-    private static int|false|null $fallbackStore = false;
-
     /**
-     * The main store, read on its own (not through Store::defaultId(), whose cached id would
-     * outlive a migrate:fresh run during boot and leak into older migrations).
+     * The main store, read on its own and not through Store::defaultId(): settings are read
+     * while the application boots, and in tests that id would outlive the migrate:fresh run
+     * that follows and be stamped on rows of older migrations.
      */
     private static function fallbackStoreId(): ?int
     {
-        if (self::$fallbackStore === false) {
+        return RequestCache::instance()->remember(self::CACHE . "fallback-store", function () {
             try {
                 $id = Store::query()->orderBy("id")->value("id");
-                self::$fallbackStore = $id ? (int) $id : null;
-            } catch (Throwable) {
-                self::$fallbackStore = null; // stores table not migrated yet
-            }
-        }
 
-        return self::$fallbackStore;
+                return $id ? (int) $id : null;
+            } catch (Throwable) {
+                return null; // stores table not migrated yet
+            }
+        });
     }
 
     public static function get(string $key): string
@@ -123,28 +115,25 @@ class SystemSettings
 
     public static function flush(): void
     {
-        self::$cache = [];
-        self::$currency = null;
-        self::$fallbackStore = false;
+        RequestCache::instance()->forget(self::CACHE);
     }
 
     /** The default currency; falls back to the stored symbol settings if the list is missing. */
     public static function currency(): Currency
     {
-        if (self::$currency === null) {
+        return RequestCache::instance()->remember(self::CACHE . "currency", function () {
             try {
-                self::$currency = Currency::where("code", self::get("currency_code"))->first();
+                $currency = Currency::where("code", self::get("currency_code"))->first();
             } catch (Throwable) {
-                self::$currency = null;
+                $currency = null;
             }
-            self::$currency ??= new Currency([
+
+            return $currency ?? new Currency([
                 "code" => self::get("currency_code"), "name" => self::get("currency_code"),
                 "symbol" => self::get("currency_symbol"), "position" => self::get("currency_position"),
                 "decimals" => (int) self::get("currency_decimals"), "is_active" => true,
             ]);
-        }
-
-        return self::$currency;
+        });
     }
 
     public static function save(array $values): void
@@ -157,7 +146,11 @@ class SystemSettings
         self::flush();
     }
 
-    /** Applies the settings to the running application (called at boot). */
+    /**
+     * Applies the settings to the running application: at boot (console, queue workers) and
+     * again by the ApplySystemSettings middleware once the store of the request is known.
+     * config("app.name") then carries the name of that store (e-mails, 2FA issuer…).
+     */
     public static function apply(): void
     {
         $tz = self::timezone();

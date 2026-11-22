@@ -8,6 +8,9 @@ use App\Support\Money;
 use App\Support\SystemSettings;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Customer extends Model
 {
@@ -38,27 +41,27 @@ class Customer extends Model
         ];
     }
 
-    public function orders()
+    public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
     }
 
-    public function latestOrder()
+    public function latestOrder(): HasOne
     {
         return $this->hasOne(Order::class)->latestOfMany();
     }
 
-    public function messageLogs()
+    public function messageLogs(): HasMany
     {
         return $this->hasMany(CustomerMessageLog::class);
     }
 
-    public function deliveryZone()
+    public function deliveryZone(): BelongsTo
     {
         return $this->belongsTo(DeliveryZone::class);
     }
 
-    public function courierJobs()
+    public function courierJobs(): HasMany
     {
         return $this->hasMany(CourierJob::class);
     }
@@ -77,12 +80,12 @@ class Customer extends Model
             ->first(fn (self $customer) => substr(preg_replace("/\D+/", "", (string) $customer->phone), -9) === $last9);
     }
 
-    public function invoices()
+    public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
     }
 
-    public function prices()
+    public function prices(): HasMany
     {
         return $this->hasMany(CustomerPrice::class);
     }
@@ -166,7 +169,7 @@ class Customer extends Model
         return $digits;
     }
 
-    public function whatsappMessages()
+    public function whatsappMessages(): HasMany
     {
         return $this->hasMany(WhatsAppMessage::class);
     }
@@ -192,7 +195,7 @@ class Customer extends Model
         return $found ?? static::whereNotNull("phone")->where("phone", "!=", "")->lazy()->first($matches);
     }
 
-    public function loyaltyPoints()
+    public function loyaltyPoints(): HasMany
     {
         return $this->hasMany(LoyaltyPoint::class);
     }

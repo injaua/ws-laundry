@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Traits\Loggable;
+use App\Support\RequestCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -34,25 +35,29 @@ class Store extends Model
         return ["is_active" => "boolean"];
     }
 
-    private static ?int $defaultId = null;
-
     /** The first store: owner of records created where no store applies (seeders, tests, public pages). */
     public static function defaultId(): ?int
     {
-        if (self::$defaultId === null) {
+        // Kept for the request / job only (RequestCache), and only once a store exists.
+        $cache = RequestCache::instance();
+        if (!$cache->has("store:default-id")) {
             try {
-                self::$defaultId = static::query()->orderBy("id")->value("id");
+                $id = static::query()->orderBy("id")->value("id");
             } catch (QueryException) {
                 return null; // earlier migrations seed data before the stores table exists
             }
+            if ($id === null) {
+                return null;
+            }
+            $cache->put("store:default-id", (int) $id);
         }
 
-        return self::$defaultId;
+        return $cache->get("store:default-id");
     }
 
     public static function forgetDefault(): void
     {
-        self::$defaultId = null;
+        RequestCache::instance()->forget("store:default-id");
     }
 
     public function scopeActive(Builder $query): Builder

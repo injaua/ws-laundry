@@ -15,6 +15,7 @@ use App\Models\OrderStageLog;
 use App\Models\Service;
 use App\Support\Money;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 /** Production indicators for a period: output, flow times, punctuality, quality, machines, people, materials. */
@@ -70,7 +71,7 @@ class ProductionReport
      * belongs to an order), so it is filtered through the store-scoped orders, deleted
      * ones included as before.
      */
-    private static function storeStageLogs(): \Illuminate\Database\Eloquent\Builder
+    private static function storeStageLogs(): Builder
     {
         return OrderStageLog::query()->whereIn("order_id", Order::withTrashed()->select("id"));
     }

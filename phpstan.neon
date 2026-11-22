@@ -1,0 +1,20 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - phpstan-baseline.neon
+
+parameters:
+    # Level 5: argument types, unknown methods / properties, dead code. Raise it step by step.
+    level: 5
+    paths:
+        - app
+        - routes
+        - database/migrations
+    tmpDir: storage/framework/phpstan
+    # Model columns come from the final schema (php artisan schema:snapshot): the migrations
+    # rename columns in loops Larastan cannot follow.
+    disableMigrationScan: true
+    squashedMigrationsPath:
+        - database/schema
+    # Existing findings are listed in phpstan-baseline.neon (fix them over time, never add to it
+    # by hand). New code must pass clean: composer analyse.
+    reportUnmatchedIgnoredErrors: false

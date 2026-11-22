@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Store;
 use App\Support\CurrentStore;
+use App\Support\SystemSettings;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -22,7 +23,7 @@ class PublicStore
     {
         foreach ($request->route()?->parameters() ?? [] as $parameter) {
             if ($parameter instanceof Model && $parameter->getAttribute("store_id")) {
-                return CurrentStore::run((int) $parameter->getAttribute("store_id"), fn () => $next($request));
+                return $this->runIn((int) $parameter->getAttribute("store_id"), $request, $next);
             }
         }
 
@@ -30,6 +31,16 @@ class PublicStore
         $store = ($chosen ? Store::active()->find($chosen) : null)
             ?? Store::active()->orderBy("id")->first();
 
-        return CurrentStore::run($store?->id ?? Store::defaultId(), fn () => $next($request));
+        return $this->runIn($store?->id ?? Store::defaultId(), $request, $next);
+    }
+
+    /** Runs the request in that store, with its name / settings applied (ApplySystemSettings). */
+    private function runIn(?int $storeId, Request $request, Closure $next): Response
+    {
+        return CurrentStore::run($storeId, function () use ($request, $next) {
+            SystemSettings::apply();
+
+            return $next($request);
+        });
     }
 }

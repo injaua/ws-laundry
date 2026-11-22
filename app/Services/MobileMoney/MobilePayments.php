@@ -86,7 +86,7 @@ class MobilePayments
             "status" => "pending",
         ]);
 
-        ProcessMobileTransaction::dispatchAfterResponse($tx->id);
+        $this->queue($tx);
 
         return $tx;
     }
@@ -127,7 +127,7 @@ class MobilePayments
             "status" => "pending",
         ]);
 
-        ProcessMobileTransaction::dispatchAfterResponse($tx->id);
+        $this->queue($tx);
 
         return $tx;
     }
@@ -164,6 +164,22 @@ class MobilePayments
         }
 
         return $this->apply($tx, $result);
+    }
+
+    /**
+     * Hands the request to the operator in the background (config mobile_money.queue): by
+     * default right after the response is sent, so the customer gets the prompt at once; with
+     * MOBILE_MONEY_QUEUE=true and a permanent worker, through the queue, so the call (up to two
+     * minutes) never holds a web worker.
+     */
+    private function queue(MobileTransaction $tx): void
+    {
+        if (!config("mobile_money.queue") || config("queue.default") === "sync") {
+            ProcessMobileTransaction::dispatchAfterResponse($tx->id);
+
+            return;
+        }
+        ProcessMobileTransaction::dispatch($tx->id)->afterCommit();
     }
 
     /** Asks the operator about a request without a final answer; expires old ones. */

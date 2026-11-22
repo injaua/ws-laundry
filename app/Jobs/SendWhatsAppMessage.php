@@ -8,6 +8,7 @@ use App\Services\WhatsApp\WhatsAppException;
 use App\Support\CurrentStore;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Throwable;
 
 /** Hands one queued outbound message to the provider and records the outcome. */
 class SendWhatsAppMessage implements ShouldQueue
@@ -15,6 +16,9 @@ class SendWhatsAppMessage implements ShouldQueue
     use Queueable;
 
     public int $tries = 4;
+
+    /** Provider calls time out after 15–20 s; leave room for one call and the bookkeeping. */
+    public int $timeout = 60;
 
     public function __construct(public int $messageId) {}
 
@@ -33,10 +37,19 @@ class SendWhatsAppMessage implements ShouldQueue
         }
     }
 
+    /** The job gave up (timeout, unexpected error): the message must not stay "queued" forever. */
+    public function failed(?Throwable $e): void
+    {
+        WhatsAppMessage::acrossStores()->whereKey($this->messageId)->where("status", "queued")->update([
+            "status" => "failed",
+            "error" => mb_substr($e?->getMessage() ?: __("app.wa_channel_unavailable"), 0, 500),
+            "status_at" => now(),
+        ]);
+    }
+
     private function send(WhatsAppMessage $message, WhatsAppChannels $channels): void
     {
-
-        if (!$message || $message->status !== "queued") {
+        if ($message->status !== "queued") {
             return; // already sent, or deleted
         }
 

@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\User;
+use App\Support\SystemSettings;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -24,7 +25,7 @@ class CustomerPrivacy
 
         $data = [
             "exported_at" => now()->toIso8601String(),
-            "business" => \App\Support\SystemSettings::companyName(),
+            "business" => SystemSettings::companyName(),
             "customer" => $customer->only(["id", "name", "type", "legal_name", "nuit", "phone", "email", "address", "address_reference", "billing_address", "contact_person", "points", "whatsapp_opt_out", "created_at"]),
             "orders" => $customer->orders->map(fn (Order $o) => [
                 "number" => $o->order_number,

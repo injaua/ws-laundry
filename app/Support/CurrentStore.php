@@ -23,13 +23,16 @@ final class CurrentStore
 {
     public const SESSION_KEY = "current_store_id";
 
-    /** @var array<int, int|null> stack of explicit stores (run()) */
-    private static array $stack = [];
+    /** RequestCache keys: the stack of explicit stores (run()) and the stores already looked up. */
+    private const STACK = "current-store:stack";
+
+    private const FOUND = "current-store:found:";
 
     public static function id(): ?int
     {
-        if (self::$stack !== []) {
-            return end(self::$stack);
+        $stack = RequestCache::instance()->get(self::STACK, []);
+        if ($stack !== []) {
+            return end($stack);
         }
 
         try {
@@ -60,11 +63,16 @@ final class CurrentStore
     /** Run $callback with $store as the current store (jobs, commands, consolidated reports). */
     public static function run(Store|int|null $store, Closure $callback): mixed
     {
-        self::$stack[] = $store instanceof Store ? $store->id : $store;
+        $cache = RequestCache::instance();
+        $stack = $cache->get(self::STACK, []);
+        $stack[] = $store instanceof Store ? $store->id : $store;
+        $cache->put(self::STACK, $stack);
         try {
             return $callback();
         } finally {
-            array_pop(self::$stack);
+            $stack = $cache->get(self::STACK, []);
+            array_pop($stack);
+            $cache->put(self::STACK, $stack);
         }
     }
 
@@ -99,22 +107,15 @@ final class CurrentStore
         return Store::whereKey($user->store_id)->get();
     }
 
-    /** @var array<int, Store|null> */
-    private static array $found = [];
-
     private static function find(int $id): ?Store
     {
-        if (!array_key_exists($id, self::$found)) {
-            self::$found[$id] = Store::find($id);
-        }
-
-        return self::$found[$id];
+        return RequestCache::instance()->remember(self::FOUND . $id, fn () => Store::find($id));
     }
 
+    /** Forgets the explicit stores and the stores looked up (start of a request / test). */
     public static function flush(): void
     {
-        self::$found = [];
-        self::$stack = [];
+        RequestCache::instance()->forget("current-store:");
         Store::forgetDefault();
     }
 

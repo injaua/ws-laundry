@@ -5,7 +5,7 @@
   <p>
     <a href="https://github.com/injaua/ws-laundry/actions/workflows/ci.yml"><img src="https://github.com/injaua/ws-laundry/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
     <img src="https://img.shields.io/badge/Laravel-13-FF2D20?logo=laravel" alt="Laravel 13">
-    <img src="https://img.shields.io/badge/PHP-8.3%2B-777BB4?logo=php" alt="PHP 8.3+">
+    <img src="https://img.shields.io/badge/PHP-8.4-777BB4?logo=php" alt="PHP 8.4">
     <img src="https://img.shields.io/badge/MySQL-8-4479A1?logo=mysql&logoColor=white" alt="MySQL 8">
     <img src="https://img.shields.io/badge/Bootstrap-5-7952B3?logo=bootstrap" alt="Bootstrap 5">
     <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License">
@@ -81,18 +81,18 @@ Access is enforced twice: role middleware on each route group, and policies (`ap
 
 **In the app.** The **Documentação** menu (sidebar, after the activity log, and the user menu) opens the user manual inside the platform, limited to what the signed-in role can do. Topics are Markdown files in `resources/help/pt`, mapped to roles in `app/Support/HelpCenter.php`.
 
-**User manual.** The full user manual (Portuguese, v1.1) — every module, step-by-step tasks, permission matrix, multiple stores, technical reference, chart of accounts and automatic journal entries — is in [`docs/Manual_do_Utilizador_WS_Laundry.docx`](docs/Manual_do_Utilizador_WS_Laundry.docx).
+**User manual.** The full user manual (Portuguese, v1.4) — every module, step-by-step tasks, permission matrix, multiple stores, technical reference, chart of accounts and automatic journal entries — is in [`docs/Manual_do_Utilizador_WS_Laundry.docx`](docs/Manual_do_Utilizador_WS_Laundry.docx).
 
-For developers, [`docs/Documentacao_Tecnica_WS_Laundry.docx`](docs/Documentacao_Tecnica_WS_Laundry.docx) covers the architecture, request pipeline, authorisation, multi-store data isolation, data model (every table), domain rules and where they live, accounting posting and period locks, WhatsApp / mobile-money integrations, queues and scheduler, front-end conventions, tests and step-by-step recipes (new module, new role, new notification).
+For developers, the technical documentation (v1.6) in [`docs/Documentacao_Tecnica_WS_Laundry.docx`](docs/Documentacao_Tecnica_WS_Laundry.docx) covers the architecture, request pipeline, authorisation, multi-store data isolation, data model (every table), domain rules and where they live, accounting posting and period locks, WhatsApp / mobile-money integrations, queues and scheduler, front-end conventions, tests and step-by-step recipes (new module, new role, new notification).
 
 ---
 
 ## 🚀 Requirements
 
-- **PHP** 8.3 or 8.4 with `bcmath`, `ctype`, `fileinfo`, `gd`, `mbstring`, `openssl`, `pdo_mysql`, `xml`, `zip`
+- **PHP** 8.4 (8.4.1 or later: the locked Symfony 8.1 components require it) with `bcmath`, `ctype`, `fileinfo`, `gd`, `mbstring`, `openssl`, `pdo_mysql`, `xml`, `zip`
 - **Composer** 2.x and **Node.js** 20+ (front-end build and the WhatsApp QR service)
 - **Database**: MySQL 8 / MariaDB, InnoDB only (tables are always created as InnoDB, whatever the server default). SQLite is not supported
-- **mysqldump** (comes with the MySQL client) for the backups
+- The **MySQL client** tools on the PATH: `mysql` loads `database/schema/mysql-schema.sql` when `migrate` runs on an empty database (install, tests), `mysqldump` makes the backups
 - A web server pointing at `public/` (HTTPS in production), the scheduler every minute and a queue worker
 
 > PHP 8.5 is not supported yet: the locked `phpoffice/phpspreadsheet` (used for Excel exports) requires PHP < 8.5.
@@ -112,7 +112,7 @@ php artisan storage:link
 php artisan serve
 ```
 
-For production, set `APP_ENV=production` and `APP_DEBUG=false` before seeding, then run `composer install --no-dev --optimize-autoloader` afterwards (the seeders use factories, which need the dev dependencies). Keep a queue worker running (`php artisan queue:work` under Supervisor, systemd or NSSM).
+For production, set `APP_ENV=production` and `APP_DEBUG=false` before seeding, then run `composer install --no-dev --optimize-autoloader` afterwards (the seeders use factories, which need the dev dependencies). Keep a queue worker running (`php artisan queue:work` under Supervisor, systemd or NSSM), or let the scheduler start one every minute (see Scheduled tasks). With a permanent worker you can set `MOBILE_MONEY_QUEUE=true`.
 
 ## 🔐 Default logins
 
@@ -132,6 +132,9 @@ Most settings are made in the app (Admin → System settings, Business settings,
 
 | Variable | Purpose |
 |----------|---------|
+| `APP_URL` | The address users open (e.g. `https://laundry.example.com`). Pages show images from the host the browser is using, but links in e-mails, WhatsApp messages and queued jobs are built from this value; Admin → Security → configuration review flags a mismatch |
+| `QUEUE_CONNECTION` | `database` (default): WhatsApp messages and account e-mails are sent by the queue worker |
+| `MOBILE_MONEY_QUEUE` | `false` (default): M-Pesa / e-Mola requests go to the operator right after the page answers. `true`: through the queue, only with a permanent worker (Supervisor, systemd, NSSM); with the once-a-minute worker of the scheduler the customer would get the prompt up to a minute late |
 | `APP_LOCALE` / `APP_FALLBACK_LOCALE` | Default language (`pt`) and fallback (`en`) |
 | `DB_CONNECTION`, `DB_*` | `mysql` (or `mariadb`), database `washly-lavandaria` |
 | `DB_ENGINE` | Storage engine for new tables, `InnoDB` by default (transactions, foreign keys and row locks depend on it) |
@@ -155,7 +158,7 @@ That is all the queue needs: the scheduler runs the worker below every minute.
 
 | Command | When | Purpose |
 |---------|------|---------|
-| `queue:work --stop-when-empty` | Every minute | Sends the queued jobs (WhatsApp messages…) without Supervisor; harmless next to a permanent worker |
+| `queue:work --stop-when-empty` | Every minute | Sends the queued jobs (WhatsApp messages, account e-mails…) without Supervisor; harmless next to a permanent worker |
 | `whatsapp:notify-scheduled` | Daily 09:00 | Credit due soon, overdue invoices, items not collected (each store) |
 | `whatsapp:web-service` | Every minute | Start the QR service when it is the chosen channel and not running |
 | `invoices:generate-monthly` | 1st of the month 07:00 | Draft consolidated invoices for monthly-billed customers (each store) |
@@ -177,14 +180,20 @@ gunzip < backup-YYYYMMDD-HHMMSS.sql.gz | mysql -u root -p washly-lavandaria
 
 ```bash
 composer dev            # server, queue, logs and Vite together
-php artisan test        # full test suite (MySQL database washly-lavandaria-testing)
-vendor/bin/pint         # code style (rules in pint.json)
-npm run build           # production front-end build
+php artisan test --parallel   # full test suite, one process per CPU core (~2 min)
+composer lint                 # code style (Pint, rules in pint.json) + static analysis (Larastan)
+vendor/bin/pint               # fix code style
+php artisan schema:snapshot   # after adding migrations: rebuild database/schema/mysql-schema.sql
+npm run build                 # production front-end build
 ```
 
-The tests run on MySQL like production, in their own database `washly-lavandaria-testing` (create it once, empty, like the main one). It is emptied and rebuilt on every run, and the suite refuses to start on a database whose name does not end in `-testing`.
+The tests run on MySQL like production, in their own database `washly-lavandaria-testing` (create it once, empty, like the main one; `--parallel` creates `washly-lavandaria-testing_test_1`, `_2`… by itself). It is emptied and rebuilt on every run, and the suite refuses to start on a database whose name does not end in `-testing`.
 
-The suite has 604 tests (Laravel 13.43). CI (`.github/workflows/ci.yml`) runs it on PHP 8.3 and 8.4 against a MySQL 8.4 service for every push and pull request, and checks code style on the files changed by a pull request.
+**Schema snapshot.** An empty database (tests, new installs) is built from `database/schema/mysql-schema.sql`: the final structure plus the rows the migrations insert (chart of accounts, currencies, languages, templates, main store), then only the migrations newer than the snapshot run. This takes seconds instead of ~90 s. Regenerate it with `php artisan schema:snapshot` after adding migrations (it rebuilds the scratch database `washly-lavandaria-testing`, never the one in use). Loading it needs the `mysql` client on the PATH.
+
+**Static analysis.** Larastan runs at level 5 (`phpstan.neon`; `composer analyse`). Findings that predate it are listed in `phpstan-baseline.neon`: fix them over time and regenerate the baseline with `vendor/bin/phpstan analyse --generate-baseline`, never add new code to it.
+
+The suite has 650+ tests (Laravel 13). CI (`.github/workflows/ci.yml`) runs on every push and pull request against a MySQL 8.4 service: code style (Pint, Prettier), static analysis and the tests in parallel.
 
 ## 🏗️ Architecture
 
@@ -198,6 +207,7 @@ The suite has 604 tests (Laravel 13.43). CI (`.github/workflows/ci.yml`) runs it
 | Policies | `app/Policies` | Per-record authorisation |
 | Routes | `routes/web.php`, `routes/web/*.php` | Public routes in `web.php`; signed-in routes split by area (sales, management, finance, operations, HR, messages, account, admin) |
 | Settings | `app/Models/SiteSetting.php`, `app/Support/SettingsCache.php`, `app/Support/StoreSettings.php` | Company / store settings, read once per request; WhatsApp and payments configured per store |
+| Request state | `app/Support/RequestCache.php`, `app/Http/Middleware/ApplySystemSettings.php` | Values computed once per request / queued job (current store, system settings, languages), in a scoped container instance instead of static properties; system settings applied once the user and their store are known |
 | Store readiness | `app/Support/StoreReadiness.php` | Whether a store can take payments and talk to customers (dashboard, Admin → Stores) |
 | Store scoping | `app/Support/CurrentStore.php`, `app/Models/Traits/BelongsToStore.php` | The store in use and the per-store filter on every business model |
 | Money | `app/Support/Money.php` | Exact decimal arithmetic for every amount (sums, differences, VAT, discounts, comparisons) |
