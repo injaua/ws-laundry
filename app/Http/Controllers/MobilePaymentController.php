@@ -31,8 +31,8 @@ class MobilePaymentController extends Controller
     {
         abort_if($request->user()->isCourier(), 403);
 
-        $from = $request->filled("from") ? Carbon::parse($request->input("from")) : today()->subDays(6);
-        $to = $request->filled("to") ? Carbon::parse($request->input("to")) : today();
+        $from = request_date("from", today()->subDays(6));
+        $to = request_date("to", today());
 
         $query = MobileTransaction::with(["order:id,order_number", "customer:id,name", "user:id,name", "creditNote:id,number"])
             ->whereDate("created_at", ">=", $from->toDateString())->whereDate("created_at", "<=", $to->toDateString())

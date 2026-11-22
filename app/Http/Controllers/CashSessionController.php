@@ -37,8 +37,8 @@ class CashSessionController extends Controller
             $query->where("status", $request->status);
         }
 
-        if ($request->filled("date")) {
-            $query->whereDate("opened_at", $request->date("date"));
+        if ($date = request_date("date")) {
+            $query->whereDate("opened_at", $date);
         }
 
         if ($request->boolean("with_difference")) {

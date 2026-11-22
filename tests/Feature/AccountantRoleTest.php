@@ -29,7 +29,7 @@ class AccountantRoleTest extends TestCase
 
         foreach ([
             "/accounting/accounts", "/accounting/journal-entries", "/accounting/trial-balance", "/accounting/balance-sheet",
-            "/accounting/income-statement", "/accounting/vat-settlement", "/accounting/period-close",
+            "/accounting/income-statement", "/accounting/vat-settlement", "/accounting/state-payments", "/accounting/period-close",
             "/expenses", "/expenses/create", "/expense-categories",
             "/receivables", "/invoices", "/invoices/create",
             "/treasury/cheques", "/treasury/deposits", "/wallet-reconciliation",

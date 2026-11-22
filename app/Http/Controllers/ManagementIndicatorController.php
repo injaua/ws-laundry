@@ -84,8 +84,8 @@ class ManagementIndicatorController extends Controller
             "this_quarter" => [today()->firstOfQuarter(), today()],
             "this_year" => [today()->startOfYear(), today()],
             "custom" => [
-                $request->filled("from") ? Carbon::parse($request->input("from")) : today()->startOfMonth(),
-                $request->filled("to") ? Carbon::parse($request->input("to")) : today(),
+                request_date("from", today()->startOfMonth()),
+                request_date("to", today()),
             ],
             default => [today()->startOfMonth(), today()],
         };

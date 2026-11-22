@@ -34,7 +34,7 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <input type="date" name="date" class="form-control" value="{{ request("date") }}">
+                    <input type="date" name="date" class="form-control" value="{{ request_date("date")?->toDateString() }}">
                 </div>
                 <div class="col-auto">
                     <div class="form-check">

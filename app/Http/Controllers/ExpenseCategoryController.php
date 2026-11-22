@@ -83,7 +83,7 @@ class ExpenseCategoryController extends Controller
 
     private function validateCategory(Request $request): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             "name" => "required|string|max:100",
             "color" => "required|in:".implode(",", ExpenseCategory::COLORS),
             "is_fixed" => "nullable|boolean",
@@ -92,6 +92,11 @@ class ExpenseCategoryController extends Controller
             "is_vat_applicable" => "nullable|boolean",
             "account_id" => ["required", Rule::exists("accounts", "id")->where("is_group", false)],
         ]);
+
+        // A coluna default_amount é NOT NULL; um campo vazio chega como null.
+        $validated["default_amount"] = $validated["default_amount"] ?? 0;
+
+        return $validated;
     }
 
     private function salaryTaken(array $validated, ?ExpenseCategory $except = null): bool

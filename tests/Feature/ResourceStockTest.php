@@ -89,7 +89,7 @@ class ResourceStockTest extends TestCase
         $this->assertNotNull($entry);
         $lines = $entry->lines()->get()->keyBy("account_id");
         $this->assertSame("21551.72", $lines[Account::findByCode("6.1.1")->id]->debit);
-        $this->assertSame("3448.28", $lines[Account::findByCode("4.4.3.1")->id]->debit);
+        $this->assertSame("3448.28", $lines[Account::findByCode("4.4.3.2")->id]->debit);
         $this->assertSame("25000.00", $lines[Account::findByCode("1.1")->id]->credit);
     }
 

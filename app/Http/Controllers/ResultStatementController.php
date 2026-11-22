@@ -14,8 +14,8 @@ class ResultStatementController extends Controller
 {
     public function index(Request $request)
     {
-        $from = $request->from ? Carbon::parse($request->from) : today()->startOfYear();
-        $to = $request->to ? Carbon::parse($request->to) : today();
+        $from = request_date("from", today()->startOfYear());
+        $to = request_date("to", today());
 
         $rows = DB::table("accounts")
             ->join("journal_lines", "journal_lines.account_id", "=", "accounts.id")

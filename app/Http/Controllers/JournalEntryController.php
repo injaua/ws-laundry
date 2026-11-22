@@ -53,12 +53,12 @@ class JournalEntryController extends Controller
             $query->whereHas("lines", fn ($q) => $q->where("account_id", $accountId));
         }
 
-        if ($from = $request->from) {
-            $query->whereDate("entry_date", ">=", $from);
+        if ($from = request_date("from")) {
+            $query->whereDate("entry_date", ">=", $from->toDateString());
         }
 
-        if ($to = $request->to) {
-            $query->whereDate("entry_date", "<=", $to);
+        if ($to = request_date("to")) {
+            $query->whereDate("entry_date", "<=", $to->toDateString());
         }
 
         return $query;
@@ -66,7 +66,7 @@ class JournalEntryController extends Controller
 
     private function journalTable($entries, Request $request): ReportTable
     {
-        $period = collect([$request->from, $request->to])->filter()->map(fn ($d) => Carbon::parse($d)->format(date_fmt()))->implode(" – ");
+        $period = collect([request_date("from"), request_date("to")])->filter()->map(fn ($d) => $d->format(date_fmt()))->implode(" – ");
         $table = new ReportTable(__("app.journal_entries"), $period ?: __("app.all"), [
             [__("app.date"), "date"], [__("app.entry_number"), "text"], [__("app.description"), "text"], [__("app.source"), "text"],
             [__("app.code"), "text"], [__("app.account_name"), "text"], [__("app.debit"), "money"], [__("app.credit"), "money"],

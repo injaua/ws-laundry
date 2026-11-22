@@ -76,7 +76,7 @@ class MonetaryPrecisionTest extends TestCase
         $this->assertEqualsWithDelta(1234.56, (float) $lines->sum("credit"), 0.001);
         $this->assertEqualsWithDelta(1234.56, (float) $lines->sum("debit"), 0.001);
         // 1234.56 × 16 / 116 = 170.28 VAT, 1064.28 net
-        $this->assertEqualsWithDelta(170.28, (float) $lines->firstWhere("account_id", Account::findByCode("4.4.3.1")->id)->debit, 0.001);
+        $this->assertEqualsWithDelta(170.28, (float) $lines->firstWhere("account_id", Account::findByCode("4.4.3.2")->id)->debit, 0.001);
     }
 
     public function test_net_salary_keeps_cents(): void

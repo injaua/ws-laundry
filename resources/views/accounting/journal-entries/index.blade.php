@@ -40,10 +40,10 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <input type="date" name="from" class="form-control" value="{{ request("from") }}">
+                    <input type="date" name="from" class="form-control" value="{{ request_date("from")?->toDateString() }}">
                 </div>
                 <div class="col-md-2">
-                    <input type="date" name="to" class="form-control" value="{{ request("to") }}">
+                    <input type="date" name="to" class="form-control" value="{{ request_date("to")?->toDateString() }}">
                 </div>
                 <div class="col-auto">
                     <button class="btn btn-outline-primary" type="submit">{{ __('app.search') }}</button>

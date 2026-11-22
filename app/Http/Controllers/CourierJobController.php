@@ -21,7 +21,7 @@ class CourierJobController extends Controller
 
     public function index(Request $request)
     {
-        $date = $request->filled("date") ? now()->parse($request->date)->startOfDay() : today();
+        $date = request_date("date", today())->startOfDay();
         $courierId = $request->integer("courier") ?: null;
 
         $jobs = CourierJob::with(["customer:id,name", "order:id,order_number,status,total_price,is_credit", "zone:id,name", "courier:id,name"])
@@ -148,7 +148,7 @@ class CourierJobController extends Controller
     /** Printable list of a day's trips for one courier (or everyone). */
     public function routeSheet(Request $request)
     {
-        $date = $request->filled("date") ? now()->parse($request->date)->startOfDay() : today();
+        $date = request_date("date", today())->startOfDay();
         $courier = $request->filled("courier") ? User::inStore()->find($request->courier) : null;
 
         $jobs = CourierJob::with(["customer:id,name", "order", "zone:id,name", "courier:id,name"])

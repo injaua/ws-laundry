@@ -9,11 +9,11 @@
         <form action="{{ route("reports") }}" method="GET" class="row g-2">
             <div class="col-md-3">
                 <label class="form-label">{{ __('app.from_date') }}</label>
-                <input type="date" name="from" class="form-control" value="{{ request("from", $from) }}">
+                <input type="date" name="from" class="form-control" value="{{ $from->toDateString() }}">
             </div>
             <div class="col-md-3">
                 <label class="form-label">{{ __('app.to_date') }}</label>
-                <input type="date" name="to" class="form-control" value="{{ request("to", $to) }}">
+                <input type="date" name="to" class="form-control" value="{{ $to->toDateString() }}">
             </div>
             <div class="col-md-3 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary me-2"><i class="bi bi-funnel"></i> {{ __('app.show') }}</button>

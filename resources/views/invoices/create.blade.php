@@ -15,6 +15,11 @@
                         <option value="{{ $c->id }}" @selected($customer?->id === $c->id)>{{ $c->name }}@if($c->billsMonthly()) · {{ __('app.billing_cycle_monthly') }}@endif</option>
                     @endforeach
                 </select>
+                @if($customers->isEmpty())
+                    <div class="form-text text-warning"><i class="bi bi-exclamation-triangle"></i> {{ __('app.invoice_no_credit_customers') }}</div>
+                @else
+                    <div class="form-text">{{ __('app.invoice_credit_customers_only') }}</div>
+                @endif
             </div>
             <div class="col-md-3">
                 <label class="form-label small">{{ __('app.period_start') }}</label>

@@ -46,8 +46,8 @@ class InvoiceController extends Controller
         $customers = Customer::where("is_credit_customer", true)->orderBy("name")->get();
         $customer = $request->integer("customer_id") ? Customer::find($request->integer("customer_id")) : null;
 
-        $start = $request->period_start ? Carbon::parse($request->period_start) : today()->subMonthNoOverflow()->startOfMonth();
-        $end = $request->period_end ? Carbon::parse($request->period_end) : $start->copy()->endOfMonth();
+        $start = request_date("period_start", today()->subMonthNoOverflow()->startOfMonth());
+        $end = request_date("period_end", $start->copy()->endOfMonth());
 
         $orders = $customer?->is_credit_customer
             ? $this->invoicing->eligibleOrders($customer, $end)->load(["payments", "creditNotes"])

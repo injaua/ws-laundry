@@ -16,20 +16,26 @@ use Illuminate\Support\Str;
 
 class VatSettlementController extends Controller
 {
+    /**
+     * Deductible input VAT: expenses post to 4.4.3.2 IVA dedutível; 4.4.3.1 IVA suportado
+     * still holds VAT booked before that account existed. Both offset 4.4.3.3 IVA liquidado.
+     */
+    private const INPUT_VAT = ["4.4.3.2", "4.4.3.1"];
+
     public function index(Request $request)
     {
         [$month, $year] = $this->period($request);
         $end = Carbon::create($year, $month, 1)->endOfMonth();
 
         $outputVat = $this->balance("4.4.3.3", $end, creditNatural: true);
-        $inputVat = $this->balance("4.4.3.1", $end, creditNatural: false);
+        $inputVat = $this->inputVat($end);
         $netVat = Money::sub($outputVat, $inputVat);
 
         $movements = DB::table("journal_lines")
             ->join("journal_entries", "journal_entries.id", "=", "journal_lines.journal_entry_id")
             ->where("journal_entries.store_id", CurrentStore::id())
             ->join("accounts", "accounts.id", "=", "journal_lines.account_id")
-            ->whereIn("accounts.code", ["4.4.3.3", "4.4.3.1"])
+            ->whereIn("accounts.code", ["4.4.3.3", ...self::INPUT_VAT])
             ->where("journal_entries.entry_date", "<=", $end->copy()->endOfDay()->toDateTimeString())
             ->orderByDesc("journal_entries.entry_date")
             ->orderByDesc("journal_entries.id")
@@ -68,7 +74,8 @@ class VatSettlementController extends Controller
         }
 
         $outputVat = $this->balance("4.4.3.3", $end, creditNatural: true);
-        $inputVat = $this->balance("4.4.3.1", $end, creditNatural: false);
+        $inputVatByCode = $this->inputVatByCode($end);
+        $inputVat = Money::sum($inputVatByCode);
 
         if (Money::isZero($outputVat) && Money::isZero($inputVat)) {
             return redirect()->route("accounting.vat-settlement", ["month" => $month, "year" => $year])
@@ -78,7 +85,6 @@ class VatSettlementController extends Controller
         $difference = Money::sub($outputVat, $inputVat);
         $accounts = [
             "4.4.3.3" => Account::findByCode("4.4.3.3"),
-            "4.4.3.1" => Account::findByCode("4.4.3.1"),
             "4.4.3.7" => Account::findByCode("4.4.3.7"),
         ];
 
@@ -89,7 +95,9 @@ class VatSettlementController extends Controller
 
         $lines = [];
         $this->addLine($lines, $accounts["4.4.3.3"], $outputVat, debitNatural: true);
-        $this->addLine($lines, $accounts["4.4.3.1"], $inputVat, debitNatural: false);
+        foreach ($inputVatByCode as $code => $balance) {
+            $this->addLine($lines, Account::findByCode($code), $balance, debitNatural: false);
+        }
         $this->addLine($lines, $accounts["4.4.3.7"], $difference, debitNatural: false);
 
         if ($lines === []) {
@@ -137,6 +145,22 @@ class VatSettlementController extends Controller
         $difference = Money::sub($sums->c, $sums->d);
 
         return round($creditNatural ? $difference : -$difference, 2);
+    }
+
+    /** @return array<string, float> deductible VAT balance per account code, up to $end */
+    private function inputVatByCode(Carbon $end): array
+    {
+        $balances = [];
+        foreach (self::INPUT_VAT as $code) {
+            $balances[$code] = $this->balance($code, $end, creditNatural: false);
+        }
+
+        return $balances;
+    }
+
+    private function inputVat(Carbon $end): float
+    {
+        return Money::sum($this->inputVatByCode($end));
     }
 
     /**

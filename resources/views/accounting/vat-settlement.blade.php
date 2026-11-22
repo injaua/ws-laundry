@@ -37,7 +37,7 @@
                     <td class="text-end">{{ money($outputVat) }}</td>
                 </tr>
                 <tr>
-                    <td class="fw-medium">4.4.3.1</td>
+                    <td class="fw-medium">4.4.3.2</td>
                     <td>{{ __('app.input_vat_pending') }}</td>
                     <td class="text-end">{{ money($inputVat) }}</td>
                 </tr>

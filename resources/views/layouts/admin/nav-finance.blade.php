@@ -65,6 +65,9 @@
     <a href="{{ route("accounting.vat-settlement") }}" class="nav-link ms-3 {{ request()->routeIs("accounting.vat-settlement*") ? "active" : "" }} nav-sub">
         <i class="bi bi-percent"></i> {{ __('app.vat_settlement') }}
     </a>
+    <a href="{{ route("accounting.state-payments") }}" class="nav-link ms-3 {{ request()->routeIs("accounting.state-payments") ? "active" : "" }} nav-sub">
+        <i class="bi bi-bank"></i> {{ __('app.state_payments') }}
+    </a>
     <a href="{{ route("accounting.period-close") }}" class="nav-link ms-3 {{ request()->routeIs("accounting.period-close*") ? "active" : "" }} nav-sub">
         <i class="bi bi-shield-lock"></i> {{ __('app.accounting_close') }}
     </a>

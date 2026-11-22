@@ -9,7 +9,6 @@ use App\Models\ExpenseCategory;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Support\Money;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -17,8 +16,8 @@ class ReportController extends Controller
 {
     public function index(Request $request)
     {
-        $from = $request->from ? Carbon::parse($request->from) : today()->startOfMonth();
-        $to = $request->to ? Carbon::parse($request->to) : today();
+        $from = request_date("from", today()->startOfMonth());
+        $to = request_date("to", today());
 
         $orders = Order::with("customer")
             ->whereBetween("received_at", [$from, $to])
@@ -62,16 +61,16 @@ class ReportController extends Controller
 
     public function export(Request $request)
     {
-        $from = $request->from ? Carbon::parse($request->from) : today()->startOfMonth();
-        $to = $request->to ? Carbon::parse($request->to) : today();
+        $from = request_date("from", today()->startOfMonth());
+        $to = request_date("to", today());
 
         return Excel::download(new OrderExport($from, $to), "report-laundry-{$from->format("Y-m-d")}-{$to->format("Y-m-d")}.xlsx");
     }
 
     public function profitLoss(Request $request)
     {
-        $from = $request->from ? Carbon::parse($request->from) : today()->startOfMonth();
-        $to = $request->to ? Carbon::parse($request->to) : today();
+        $from = request_date("from", today()->startOfMonth());
+        $to = request_date("to", today());
 
         // Revenue from orders within the range (net of VAT, like the accounting DR)
         $orders = Order::whereBetween("received_at", [$from, $to])->get();
@@ -120,8 +119,8 @@ class ReportController extends Controller
 
     public function paymentMethods(Request $request)
     {
-        $from = $request->from ? Carbon::parse($request->from) : today()->startOfMonth();
-        $to = $request->to ? Carbon::parse($request->to) : today();
+        $from = request_date("from", today()->startOfMonth());
+        $to = request_date("to", today());
 
         $payments = Payment::whereBetween("paid_at", [$from, $to])->get();
         $refunds = CreditNote::valid()->refunds()->whereDate("issued_at", ">=", $from->toDateString())->whereDate("issued_at", "<=", $to->toDateString())

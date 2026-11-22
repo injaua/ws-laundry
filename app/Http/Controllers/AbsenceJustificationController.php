@@ -46,7 +46,7 @@ class AbsenceJustificationController extends Controller
         $employees = Employee::working()->orderBy("name")->get();
         $prefill = [
             "employee_id" => $request->integer("employee_id") ?: "",
-            "date" => $request->filled("date") ? $request->date("date")->toDateString() : now()->toDateString(),
+            "date" => request_date("date", now())->toDateString(),
         ];
 
         return view("justifications.create", compact("employees", "prefill"));

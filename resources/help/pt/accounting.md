@@ -22,8 +22,16 @@ A contabilidade segue o **PGC-NIRF**. A maior parte dos lançamentos é **autom�
 ## Apuramento do IVA
 
 1. **Apuramento do IVA**: escolha o mês e o ano.
-2. Confira o **IVA liquidado** (4.4.3.3), o **IVA suportado** (4.4.3.1) e os movimentos.
+2. Confira o **IVA liquidado** (4.4.3.3), o **IVA dedutível** (4.4.3.2 — inclui saldos antigos de 4.4.3.1 IVA suportado) e os movimentos.
 3. **Apurar** transfere os saldos para **4.4.3.7 IVA a pagar** (ou a recuperar).
+
+## Pagamentos ao Estado
+
+**Contabilidade → Pagamentos ao Estado** mostra, para o mês escolhido:
+
+- **IVA a pagar**: IVA liquidado nas vendas menos IVA dedutível nas despesas do mês, e o saldo já apurado em 4.4.3.7 ainda por pagar. Prazo: último dia do mês seguinte.
+- **INSS a pagar**: calculado sobre os salários processados do mês (salário base + bónus − faltas), 3% do trabalhador + 4% da empresa, por funcionário. Prazo: dia 10 do mês seguinte.
+- **Pagamentos efectuados**: lançamentos que pagam 4.4.3.7 ou 4.4.9 a partir da Caixa ou do Banco (ex.: Débito 4.4.3.7, Crédito 1.1 Caixa).
 
 ## Fecho de período
 

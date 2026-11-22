@@ -90,8 +90,8 @@ class StoreController extends Controller
             "from" => ["nullable", "date"],
             "to" => ["nullable", "date", "after_or_equal:from"],
         ]);
-        $from = $request->filled("from") ? Carbon::parse($request->from) : now()->startOfMonth();
-        $to = $request->filled("to") ? Carbon::parse($request->to) : now();
+        $from = request_date("from", now()->startOfMonth());
+        $to = request_date("to", now());
 
         return view("admin.stores.overview", $overview->build($from, $to) + ["from" => $from, "to" => $to]);
     }

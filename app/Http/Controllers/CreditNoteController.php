@@ -25,8 +25,8 @@ class CreditNoteController extends Controller
         Gate::authorize("viewAny", CreditNote::class);
 
         $type = $request->query("type");
-        $from = $request->date("from") ?? now()->startOfMonth();
-        $to = $request->date("to") ?? now();
+        $from = request_date("from", now()->startOfMonth());
+        $to = request_date("to", now());
         $search = trim((string) $request->query("search"));
 
         $notes = CreditNote::with(["order:id,order_number", "customer:id,name", "user:id,name"])

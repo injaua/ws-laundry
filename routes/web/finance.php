@@ -10,6 +10,7 @@ use App\Http\Controllers\JournalEntryController;
 use App\Http\Controllers\MobilePaymentController;
 use App\Http\Controllers\PeriodCloseController;
 use App\Http\Controllers\ResultStatementController;
+use App\Http\Controllers\StatePaymentsController;
 use App\Http\Controllers\TreasuryController;
 use App\Http\Controllers\TrialBalanceController;
 use App\Http\Controllers\VatSettlementController;
@@ -36,6 +37,7 @@ Route::middleware("can:manage-finance")->prefix("accounting")->name("accounting.
     Route::get("/income-statement", [ResultStatementController::class, "index"])->name("income-statement");
     Route::get("/vat-settlement", [VatSettlementController::class, "index"])->name("vat-settlement");
     Route::post("/vat-settlement", [VatSettlementController::class, "store"])->name("vat-settlement.store");
+    Route::get("/state-payments", [StatePaymentsController::class, "index"])->name("state-payments");
     Route::get("/period-close", [PeriodCloseController::class, "index"])->name("period-close");
     Route::post("/period-close", [PeriodCloseController::class, "close"])->name("period-close.close");
     Route::patch("/period-close/{period}/reopen", [PeriodCloseController::class, "reopen"])->middleware("can:manage-store")->name("period-close.reopen");

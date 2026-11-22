@@ -14,7 +14,7 @@ class BalanceSheetController extends Controller
 {
     public function index(Request $request)
     {
-        $to = $request->to ? Carbon::parse($request->to) : today();
+        $to = request_date("to", today());
 
         $rows = DB::table("accounts")
             ->join("journal_lines", "journal_lines.account_id", "=", "accounts.id")

@@ -12,8 +12,8 @@ class TrialBalanceController extends Controller
 {
     public function index(Request $request, TrialBalanceService $trialBalance)
     {
-        $from = $request->from ? Carbon::parse($request->from) : today()->startOfMonth();
-        $to = $request->to ? Carbon::parse($request->to) : today();
+        $from = request_date("from", today()->startOfMonth());
+        $to = request_date("to", today());
 
         $rows = $trialBalance->rows($from, $to);
         $totals = $trialBalance->totals($rows);

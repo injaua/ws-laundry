@@ -40,8 +40,8 @@ class CustomerAccountController extends Controller
     {
         abort_unless($customer->is_credit_customer, 404);
 
-        $from = $request->from ? Carbon::parse($request->from)->startOfDay() : today()->startOfYear();
-        $to = $request->to ? Carbon::parse($request->to)->endOfDay() : today()->endOfDay();
+        $from = request_date("from", today()->startOfYear())->startOfDay();
+        $to = request_date("to", today())->endOfDay();
 
         $data = $statement->build($customer, $from, $to);
         $openInvoices = $customer->invoices()->issued()->with("orders.payments", "orders.creditNotes")->orderBy("due_date")->get()

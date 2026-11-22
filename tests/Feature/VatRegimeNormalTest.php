@@ -67,7 +67,7 @@ class VatRegimeNormalTest extends TestCase
         $lines = $entry->lines()->get();
         $this->assertCount(3, $lines);
 
-        $vatAccount = Account::findByCode("4.4.3.1");
+        $vatAccount = Account::findByCode("4.4.3.2");
         $caixa = Account::findByCode("1.1");
 
         $this->assertSame(
@@ -94,7 +94,7 @@ class VatRegimeNormalTest extends TestCase
 
         $entry = $expense->postToJournal();
         $this->assertCount(2, $entry->lines);
-        $this->assertSame(0, JournalEntry::whereHas("lines", fn ($q) => $q->where("account_id", Account::findByCode("4.4.3.1")->id))->count());
+        $this->assertSame(0, JournalEntry::whereHas("lines", fn ($q) => $q->where("account_id", Account::findByCode("4.4.3.2")->id))->count());
     }
 
     public function test_sync_payments_backfills_and_is_idempotent(): void
@@ -155,7 +155,7 @@ class VatRegimeNormalTest extends TestCase
         $this->assertTrue($settlement->isManual());
 
         $outputVatLine = $settlement->lines()->where("account_id", Account::findByCode("4.4.3.3")->id)->first();
-        $inputVatLine = $settlement->lines()->where("account_id", Account::findByCode("4.4.3.1")->id)->first();
+        $inputVatLine = $settlement->lines()->where("account_id", Account::findByCode("4.4.3.2")->id)->first();
         $aPagar = $settlement->lines()->where("account_id", Account::findByCode("4.4.3.7")->id)->first();
 
         $this->assertSame(160.0, (float) $outputVatLine->debit);
@@ -168,6 +168,100 @@ class VatRegimeNormalTest extends TestCase
             "year" => now()->year,
         ])->assertSessionHas("error");
         $this->assertSame(1, JournalEntry::where("source", "manual")->count());
+    }
+
+    public function test_expense_form_vat_rate_is_posted_as_deductible_vat(): void
+    {
+        $admin = $this->admin();
+        $category = $this->category("compras5", "6.3.2.9.9", vat: false);
+
+        $this->actingAs($admin)->post("/expenses", [
+            "title" => "Compra com IVA a 5%",
+            "category" => $category->key,
+            "amount" => 1050,
+            "vat_rate" => 5,
+            "expense_date" => now()->toDateString(),
+        ])->assertSessionHasNoErrors();
+
+        $expense = Expense::firstWhere("title", "Compra com IVA a 5%");
+        $this->assertSame("5.00", $expense->vat_rate);
+        $this->assertSame("50.00", $expense->vat_amount);
+
+        $lines = JournalEntry::where("source", "expense")->where("source_id", $expense->id)->first()->lines;
+        $this->assertSame(1000.0, (float) $lines->firstWhere("account_id", $category->account_id)->debit);
+        $this->assertSame(50.0, (float) $lines->firstWhere("account_id", Account::findByCode("4.4.3.2")->id)->debit);
+        $this->assertSame(1050.0, (float) $lines->firstWhere("account_id", Account::findByCode("1.1")->id)->credit);
+    }
+
+    public function test_zero_vat_rate_overrides_a_vat_category(): void
+    {
+        $admin = $this->admin();
+        $category = $this->category("semfactura", "6.3.2.9.9", vat: true);
+
+        $this->actingAs($admin)->post("/expenses", [
+            "title" => "Compra sem factura",
+            "category" => $category->key,
+            "amount" => 500,
+            "vat_rate" => 0,
+            "expense_date" => now()->toDateString(),
+        ])->assertSessionHasNoErrors();
+
+        $expense = Expense::firstWhere("title", "Compra sem factura");
+        $entry = JournalEntry::where("source", "expense")->where("source_id", $expense->id)->first();
+        $this->assertCount(2, $entry->lines);
+        $this->assertSame("0.00", $expense->vat_amount);
+    }
+
+    public function test_vat_rate_must_be_a_valid_percentage(): void
+    {
+        $admin = $this->admin();
+        $category = $this->category("invalida", "6.3.2.9.9", vat: true);
+
+        $this->actingAs($admin)->post("/expenses", [
+            "title" => "Taxa inválida",
+            "category" => $category->key,
+            "amount" => 500,
+            "vat_rate" => 150,
+            "expense_date" => now()->toDateString(),
+        ])->assertSessionHasErrors("vat_rate");
+    }
+
+    public function test_settlement_also_clears_legacy_input_vat(): void
+    {
+        $admin = $this->admin();
+        $category = $this->category("legado", "6.3.2.9.9", vat: true);
+
+        $order = $this->order(vatRate: 16);
+        Payment::create([
+            "order_id" => $order->id,
+            "paid_at" => now()->toDateString(),
+            "amount" => 1160,
+            "method" => "cash",
+        ])->postToJournal();
+
+        // 40 of VAT booked on 4.4.3.1 before 4.4.3.2 existed, 80 on 4.4.3.2.
+        JournalEntry::postLines([
+            ["account_id" => Account::findByCode("4.4.3.1")->id, "debit" => 40, "credit" => 0],
+            ["account_id" => Account::findByCode("1.1")->id, "debit" => 0, "credit" => 40],
+        ], now()->toDateString(), "IVA antigo", "expense", 999999);
+        Expense::create([
+            "title" => "Compra nova",
+            "category" => $category->key,
+            "amount" => 580,
+            "expense_date" => now()->toDateString(),
+        ])->postToJournal();
+
+        $this->actingAs($admin)->post("/accounting/vat-settlement", [
+            "month" => now()->month,
+            "year" => now()->year,
+        ])->assertSessionHas("success");
+
+        $settlement = JournalEntry::where("source", "manual")->latest("id")->first();
+        $credit = fn (string $code) => (float) $settlement->lines()->where("account_id", Account::findByCode($code)->id)->value("credit");
+
+        $this->assertSame(80.0, $credit("4.4.3.2"));
+        $this->assertSame(40.0, $credit("4.4.3.1"));
+        $this->assertSame(40.0, $credit("4.4.3.7")); // 160 liquidado − 120 dedutível
     }
 
     public function test_settlement_with_more_input_than_output_produces_recoverable_vat(): void

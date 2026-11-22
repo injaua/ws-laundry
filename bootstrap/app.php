@@ -5,6 +5,7 @@ use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\PublicStore;
 use App\Http\Middleware\RequireTwoFactor;
+use App\Http\Middleware\ScalarQueryFilters;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SessionIdleTimeout;
 use App\Http\Middleware\SetLocale;
@@ -20,6 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->web(prepend: [
+            // Filters such as ?search[]=x arrive as single values (see the class).
+            ScalarQueryFilters::class,
+        ]);
         $middleware->web(append: [
             // After StartSession: the user, hence the store, is known from here on.
             ApplySystemSettings::class,

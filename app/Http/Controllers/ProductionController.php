@@ -141,8 +141,8 @@ class ProductionController extends Controller
 
     public function report(Request $request, ProductionReport $report): View
     {
-        $from = $request->filled("from") ? Carbon::parse($request->input("from")) : today()->subDays(29);
-        $to = $request->filled("to") ? Carbon::parse($request->input("to")) : today();
+        $from = request_date("from", today()->subDays(29));
+        $to = request_date("to", today());
         if ($from->gt($to)) {
             [$from, $to] = [$to, $from];
         }

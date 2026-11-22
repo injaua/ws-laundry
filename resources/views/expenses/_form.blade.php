@@ -27,6 +27,7 @@
                                     data-fixed="{{ $category->is_fixed ? 1 : 0 }}"
                                     data-default="{{ (float) $category->default_amount }}"
                                     data-salary="{{ $category->is_salary ? 1 : 0 }}"
+                                    data-vat="{{ \App\Models\Expense::defaultVatRate($category) }}"
                                     data-name="{{ $category->name }}"
                                     {{ old("category", $expense->category ?? "") == $category->key ? "selected" : "" }}>
                                     {{ $category->name }}
@@ -76,6 +77,17 @@
                             <span class="input-group-text">{{ currency_symbol() }}</span>
                             @error("amount") <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
+                        <div class="form-text">{{ __('app.expense_amount_gross_hint') }}</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ __('app.expense_vat_rate') }} <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="number" step="0.01" name="vat_rate" id="expenseVatRate" class="form-control @error("vat_rate") is-invalid @enderror" value="{{ old("vat_rate", $isEdit ? (float) $expense->effectiveVatRate() : "") }}" required min="0" max="100">
+                            <span class="input-group-text">%</span>
+                            @error("vat_rate") <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="form-text" id="expenseVatPreview"></div>
                     </div>
 
                     <div class="mb-3">
@@ -101,6 +113,6 @@
 </div>
 
 @push("scripts")
-    <x-page-data name="expense-form" :data="['totalUrl' => route('expenses.salary-total'), 'isEdit' => (bool) $isEdit]"/>
+    <x-page-data name="expense-form" :data="['totalUrl' => route('expenses.salary-total'), 'isEdit' => (bool) $isEdit, 'vatLabel' => __('app.expense_vat_preview'), 'currency' => currency_symbol()]"/>
     @vite("resources/js/pages/expense-form.js")
 @endpush

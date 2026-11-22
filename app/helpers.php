@@ -52,6 +52,29 @@ if (!function_exists("datetime_fmt")) {
     }
 }
 
+if (!function_exists("request_date")) {
+    /**
+     * A date filter from the query string, or $default when it is missing or not a valid
+     * date (e.g. ?from=abc, ?to=2026-99-99, ?from[]=x) — a bad link must not crash the page.
+     */
+    function request_date(string $key, ?Carbon\Carbon $default = null): ?Carbon\Carbon
+    {
+        $value = request()->input($key);
+        if (!is_string($value) || trim($value) === "") {
+            return $default;
+        }
+
+        try {
+            $date = Carbon\Carbon::parse(trim($value));
+        } catch (Throwable) {
+            return $default;
+        }
+
+        // Out-of-range years usually come from typos and break date columns.
+        return $date->year >= 1900 && $date->year <= 2200 ? $date : $default;
+    }
+}
+
 if (!function_exists("is_rtl")) {
     function is_rtl(): bool
     {
