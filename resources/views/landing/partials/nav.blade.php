@@ -2,7 +2,7 @@
 <nav class="lp-nav {{ ($navOnDark ?? true) ? "on-dark" : "" }}" id="navbar">
     <div class="container">
         <a href="{{ route("home") }}" class="lp-brand">
-            <img src="{{ \App\Support\SystemSettings::logoUrl() }}" alt="{{ config("app.name") }}">
+            <img src="{{ \App\Support\SystemSettings::logoUrl() }}" alt="{{ \App\Support\SystemSettings::companyName() }}">
             <span>{{ \App\Support\SystemSettings::companyName() }}</span>
         </a>
         <button class="lp-nav-toggler" id="navToggler" aria-label="{{ __('app.menu') }}" aria-controls="navLinks" aria-expanded="false"><i class="bi bi-list"></i></button>

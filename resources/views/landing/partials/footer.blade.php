@@ -4,7 +4,7 @@
         <div class="footer-grid">
             <div>
                 <div class="footer-brand">
-                    <img src="{{ \App\Support\SystemSettings::logoUrl() }}" alt="{{ config("app.name") }}">
+                    <img src="{{ \App\Support\SystemSettings::logoUrl() }}" alt="{{ \App\Support\SystemSettings::companyName() }}">
                     <span>{{ \App\Support\SystemSettings::companyName() }}</span>
                 </div>
                 <p class="mw-320px">{{ __('app.footer_tagline') }}</p>

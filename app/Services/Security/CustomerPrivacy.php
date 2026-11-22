@@ -24,7 +24,7 @@ class CustomerPrivacy
 
         $data = [
             "exported_at" => now()->toIso8601String(),
-            "business" => config("app.name"),
+            "business" => \App\Support\SystemSettings::companyName(),
             "customer" => $customer->only(["id", "name", "type", "legal_name", "nuit", "phone", "email", "address", "address_reference", "billing_address", "contact_person", "points", "whatsapp_opt_out", "created_at"]),
             "orders" => $customer->orders->map(fn (Order $o) => [
                 "number" => $o->order_number,

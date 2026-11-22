@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Currency;
 use App\Models\SiteSetting;
+use App\Models\Store;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use DateTimeZone;
@@ -68,11 +69,14 @@ class SystemSettings
 
     public static function all(): array
     {
-        $scope = (string) CurrentStore::id();
+        // Pages without a store (login, public website, payment links) show the main store's
+        // identity, so the name and logos saved in Admin → System settings appear there too.
+        $storeId = CurrentStore::id() ?? self::fallbackStoreId();
+        $scope = (string) $storeId;
         if (!isset(self::$cache[$scope])) {
             try {
                 // Identity (name, NUIT, logo…) can differ per store; localization is company-wide.
-                $stored = SiteSetting::many(array_keys(self::DEFAULTS));
+                $stored = CurrentStore::run($storeId, fn () => SiteSetting::many(array_keys(self::DEFAULTS)));
             } catch (Throwable) {
                 $stored = []; // table not migrated yet
             }
@@ -86,7 +90,30 @@ class SystemSettings
             self::$cache[$scope] = array_merge(self::DEFAULTS, $stored);
         }
 
+        // Titles, e-mails and 2FA use config("app.name"): keep it on the store being shown.
+        config(["app.name" => self::$cache[$scope]["company_name"]]);
+
         return self::$cache[$scope];
+    }
+
+    private static int|false|null $fallbackStore = false;
+
+    /**
+     * The main store, read on its own (not through Store::defaultId(), whose cached id would
+     * outlive a migrate:fresh run during boot and leak into older migrations).
+     */
+    private static function fallbackStoreId(): ?int
+    {
+        if (self::$fallbackStore === false) {
+            try {
+                $id = Store::query()->orderBy("id")->value("id");
+                self::$fallbackStore = $id ? (int) $id : null;
+            } catch (Throwable) {
+                self::$fallbackStore = null; // stores table not migrated yet
+            }
+        }
+
+        return self::$fallbackStore;
     }
 
     public static function get(string $key): string
@@ -98,6 +125,7 @@ class SystemSettings
     {
         self::$cache = [];
         self::$currency = null;
+        self::$fallbackStore = false;
     }
 
     /** The default currency; falls back to the stored symbol settings if the list is missing. */
@@ -203,8 +231,12 @@ class SystemSettings
     private static function fileUrl(string $key): ?string
     {
         $path = self::get($key);
+        $disk = Storage::disk("public");
+        if ($path === "" || !$disk->exists($path)) {
+            return null; // nothing uploaded, or the file is gone: use the next fallback
+        }
 
-        return $path !== "" ? Storage::disk("public")->url($path) . "?v=" . substr(md5($path), 0, 8) : null;
+        return $disk->url($path) . "?v=" . substr(md5($path . $disk->lastModified($path)), 0, 8);
     }
 
     // ---------- Localization ----------

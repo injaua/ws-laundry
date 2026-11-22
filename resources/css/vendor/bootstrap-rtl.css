@@ -1,0 +1,3 @@
+/* Bootstrap + Bootstrap Icons from npm (right-to-left languages). Loaded by partials/bootstrap. */
+@import 'bootstrap/dist/css/bootstrap.rtl.min.css';
+@import 'bootstrap-icons/font/bootstrap-icons.min.css';

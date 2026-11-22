@@ -10,6 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Vite;
 use Tests\TestCase;
 
 class SystemSettingsTest extends TestCase
@@ -148,11 +149,24 @@ class SystemSettingsTest extends TestCase
 
     public function test_rtl_layout(): void
     {
+        // Vite as a dev server (no build needed): the tags show which Bootstrap entry was chosen.
+        $this->withVite();
+        $hot = tempnam(sys_get_temp_dir(), "vite-hot");
+        file_put_contents($hot, "http://vite.test");
+        $this->beforeApplicationDestroyed(fn () => @unlink($hot));
+        Vite::useHotFile($hot);
+
+        $user = User::factory()->create();
+        $this->actingAs($user)->get("/dashboard")->assertOk()
+            ->assertSee("resources/css/vendor/bootstrap.css", false)
+            ->assertDontSee("resources/css/vendor/bootstrap-rtl.css", false);
+
         SystemSettings::save(["text_direction" => "rtl"]);
 
-        $this->actingAs(User::factory()->create())->get("/dashboard")->assertOk()
+        $this->actingAs($user)->get("/dashboard")->assertOk()
             ->assertSee('dir="rtl"', false)
-            ->assertSee("bootstrap.rtl.min.css", false);
+            ->assertSee("resources/css/vendor/bootstrap-rtl.css", false)
+            ->assertDontSee("resources/css/vendor/bootstrap.css", false);
     }
 
     public function test_phone_country_code_in_whatsapp_links(): void

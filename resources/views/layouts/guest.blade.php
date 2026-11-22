@@ -4,11 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield("title", __('app.login')) - {{ config("app.name", "WS Clean & Laundry Serviços, Lda") }}</title>
+    <title>@yield("title", __('app.login')) - {{ \App\Support\SystemSettings::companyName() }}</title>
     <link rel="icon" href="{{ \App\Support\SystemSettings::faviconUrl() }}">
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap{{ is_rtl() ? '.rtl' : '' }}.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    @include("partials.bootstrap")
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     @vite(["resources/css/guest.css", "resources/js/guest.js"])
@@ -17,7 +16,7 @@
 <body>
     <div class="auth-wrapper">
         <div class="auth-side">
-            <img class="brand-logo" src="{{ \App\Support\SystemSettings::logoDarkUrl() }}" alt="{{ config("app.name", "WS Clean & Laundry") }}">
+            <img class="brand-logo" src="{{ \App\Support\SystemSettings::logoDarkUrl() }}" alt="{{ \App\Support\SystemSettings::companyName() }}">
             <h2>{{ \App\Support\SystemSettings::legalName() }}</h2>
             <p>{{ __('app.auth_sidebar_title') }}</p>
             <div class="features">
@@ -37,7 +36,7 @@
                     @endforeach
                 </ul>
             </div>
-            <img class="auth-logo" src="{{ \App\Support\SystemSettings::logoUrl() }}" alt="{{ config("app.name", "WS Clean & Laundry") }}">
+            <img class="auth-logo" src="{{ \App\Support\SystemSettings::logoUrl() }}" alt="{{ \App\Support\SystemSettings::companyName() }}">
             <div class="auth-header">
                 @hasSection("auth_title")
                     <h4>@yield("auth_title")</h4>
@@ -53,7 +52,6 @@
             @yield("content")
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     @stack("scripts")
 </body>
 </html>

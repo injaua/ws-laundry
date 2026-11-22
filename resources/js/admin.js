@@ -1,6 +1,7 @@
 // Back-office layout (layouts/admin): navigation without reloads, theme, sidebar, upload limit, unread chat badge.
 // The <body> is swapped on every visit (lib/navigation.js): handlers here are delegated
 // to document, and elements are looked up when used, never kept from the first page.
+import 'bootstrap'; // data-bs-* components (dropdowns, modals, collapse…), from npm
 import './behaviors';
 import { appConfig, getJson, storage } from './lib/dom';
 import { startNavigation } from './lib/navigation';

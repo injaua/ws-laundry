@@ -149,8 +149,13 @@ M-Pesa / e-Mola endpoints and field names are in `config/mobile_money.php`; cred
 
 Run the scheduler every minute (`* * * * * php artisan schedule:run`):
 
+On cPanel (no terminal): **Cron Jobs → Add New Cron Job**, "Once Per Minute", command
+`/usr/local/bin/php /home/<user>/<app>/artisan schedule:run >> /dev/null 2>&1` (check the PHP path in cPanel → *MultiPHP*).
+That is all the queue needs: the scheduler runs the worker below every minute.
+
 | Command | When | Purpose |
 |---------|------|---------|
+| `queue:work --stop-when-empty` | Every minute | Sends the queued jobs (WhatsApp messages…) without Supervisor; harmless next to a permanent worker |
 | `whatsapp:notify-scheduled` | Daily 09:00 | Credit due soon, overdue invoices, items not collected (each store) |
 | `whatsapp:web-service` | Every minute | Start the QR service when it is the chosen channel and not running |
 | `invoices:generate-monthly` | 1st of the month 07:00 | Draft consolidated invoices for monthly-billed customers (each store) |

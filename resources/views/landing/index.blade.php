@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $settings["hero_title"] ?? "WS Clean & Laundry Serviços, Lda" }} · Laundry Profesional</title>
+    <title>{{ filled($settings["hero_title"] ?? null) ? $settings["hero_title"] . " · " : "" }}{{ \App\Support\SystemSettings::companyName() }}</title>
     <meta name="description" content="{{ Str::limit(strip_tags($settings["hero_subtitle"] ?? "Jasa laundry profesional"), 160) }}">
     @include("landing.partials.head")
 </head>
@@ -240,7 +240,7 @@
         <div class="gallery-grid">
             @foreach($galleries as $gi => $g)
                 <div class="gallery-item {{ $gi === 0 && $galleries->count() > 2 ? "featured" : "" }}" data-reveal>
-                    <img src="{{ Storage::url($g->photo) }}" alt="{{ $g->caption ?? "WS Clean & Laundry Serviços, Lda" }}" loading="lazy">
+                    <img src="{{ Storage::url($g->photo) }}" alt="{{ $g->caption ?? \App\Support\SystemSettings::companyName() }}" loading="lazy">
                     @if($g->caption)
                         <div class="caption">{{ $g->caption }}</div>
                     @endif
@@ -286,6 +286,5 @@
 @endif
 
 @include("landing.partials.footer")
-@include("landing.partials.scripts")
 </body>
 </html>

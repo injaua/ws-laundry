@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\MessageTemplate;
+use App\Models\Order;
 use App\Models\WhatsAppMessage;
 use App\Services\WhatsApp\AutomaticNotifications;
 use App\Services\WhatsApp\Messenger;
@@ -105,7 +106,17 @@ class CustomerMessageController extends Controller
 
         $vars = $order
             ? $notifications->variables($order)
-            : ["customer" => $customer->name, "order" => "", "amount" => "", "due_date" => "", "delivery_date" => "", "days" => ""];
+            : ["customer" => $customer->name, "order" => "", "amount" => "", "due_date" => "", "delivery_date" => "", "days" => "", "pay_link" => ""];
+
+        // Pickup / delivery templates ({courier}, {task}, {address}…): the order's latest trip.
+        if ($order && ($job = $order->courierJobs()->latest("id")->first())) {
+            $vars += $notifications->courierJobVariables($job);
+        }
+
+        // Never send a placeholder as typed ("{pay_link}") or left blank ("aqui: ").
+        if ($error = $this->unfilledPlaceholders($template, $vars, $order)) {
+            return back()->with("error", $error);
+        }
 
         try {
             $this->messenger->sendTemplate($template, $customer, $vars, $request->user(), $order);
@@ -115,6 +126,27 @@ class CustomerMessageController extends Controller
 
         return redirect()->route("messages.clients.thread", $customer->normalizedWhatsapp())
             ->with("success", __("app.wa_message_queued"));
+    }
+
+    /** Why the template cannot be sent with these values, or null when every {placeholder} has one. */
+    private function unfilledPlaceholders(MessageTemplate $template, array $vars, ?Order $order): ?string
+    {
+        preg_match_all('/\{(\w+)\}/', (string) $template->body, $matches);
+        $missing = array_values(array_unique(array_filter($matches[1], fn ($name) => trim((string) ($vars[$name] ?? "")) === "")));
+
+        if ($missing === []) {
+            return null;
+        }
+
+        if ($order === null) {
+            return __("app.wa_template_needs_order");
+        }
+
+        if (in_array("pay_link", $missing, true)) {
+            return $order->remainingBalance() <= 0 ? __("app.order_fully_paid") : __("app.wa_pay_link_unavailable");
+        }
+
+        return __("app.wa_template_missing_values", ["fields" => implode(", ", array_map(fn ($n) => "{" . $n . "}", $missing))]);
     }
 
     public function unreadCount(): JsonResponse

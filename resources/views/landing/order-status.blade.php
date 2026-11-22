@@ -179,6 +179,5 @@
 
 
 @include("landing.partials.footer")
-@include("landing.partials.scripts")
 </body>
 </html>

@@ -9,6 +9,9 @@ export default defineConfig({
     plugins: [
         laravel({
             input: [
+                // Bootstrap + icons from npm (partials/bootstrap)
+                'resources/css/vendor/bootstrap.css',
+                'resources/css/vendor/bootstrap-rtl.css',
                 // Layouts
                 'resources/css/admin.css',
                 'resources/js/admin.js',

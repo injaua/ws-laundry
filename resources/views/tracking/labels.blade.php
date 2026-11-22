@@ -20,7 +20,7 @@
     <div class="sheet">
         @forelse($pieces as $piece)
             <div class="tag">
-                <div class="shop">{{ config("app.name") }}</div>
+                <div class="shop">{{ \App\Support\SystemSettings::companyName() }}</div>
                 <div class="barcode">
                     @if($barcodes[$piece->id])
                         {!! $barcodes[$piece->id] !!}

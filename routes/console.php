@@ -8,6 +8,15 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+// Queue worker without Supervisor (shared hosting / cPanel): each minute, process the jobs
+// waiting (WhatsApp messages, …) and stop. Harmless next to a permanent `queue:work`.
+// In the background so the other tasks of this minute do not wait for it; the lock expires
+// after 2 minutes so a crashed run never blocks the queue for long.
+Schedule::command("queue:work --stop-when-empty --max-time=50 --tries=4")
+    ->everyMinute()
+    ->withoutOverlapping(2)
+    ->runInBackground();
+
 // Daily WhatsApp reminders (needs the scheduler: `php artisan schedule:run` every minute via cron).
 Schedule::command("whatsapp:notify-scheduled")->dailyAt("09:00")->withoutOverlapping();
 

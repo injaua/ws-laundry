@@ -154,6 +154,49 @@ class CustomerWhatsAppTest extends TestCase
         $this->assertStringContainsString("131026", $out->error);
     }
 
+    public function test_payment_template_carries_the_pay_link(): void
+    {
+        \App\Models\SiteSetting::set("mm_mpesa_mode", "simulation");
+        $cashier = User::factory()->cashier()->create();
+        $customer = Customer::create(["name" => "Marta", "phone" => "+258860000000", "address" => "Matola"]);
+        $template = MessageTemplate::create(["name" => "Pedido de pagamento", "body" => "Pague {amount}: {pay_link}"]);
+        $order = Order::create(["order_number" => "ORD-PAY-1", "customer_id" => $customer->id, "status" => "ready", "received_at" => now(), "total_price" => 500]);
+
+        $this->actingAs($cashier)->post("/messages/clients/send-template", [
+            "customer_id" => $customer->id, "template_id" => $template->id, "order_id" => $order->id,
+        ])->assertRedirect("/messages/clients/258860000000");
+
+        $body = WhatsAppMessage::firstOrFail()->body;
+        $this->assertStringNotContainsString("{pay_link}", $body);
+        $this->assertStringContainsString("/pagar/encomenda/{$order->id}?expires=", $body);
+    }
+
+    public function test_template_with_placeholders_is_refused_without_an_order(): void
+    {
+        $cashier = User::factory()->cashier()->create();
+        $customer = Customer::create(["name" => "Marta", "phone" => "+258860000000", "address" => "Matola"]);
+        $template = MessageTemplate::create(["name" => "Pedido de pagamento", "body" => "O valor de {order} é {amount}: {pay_link}"]);
+
+        $this->actingAs($cashier)->post("/messages/clients/send-template", ["customer_id" => $customer->id, "template_id" => $template->id])
+            ->assertSessionHas("error", __("app.wa_template_needs_order"));
+
+        $this->assertSame(0, WhatsAppMessage::count());
+    }
+
+    public function test_pay_link_template_is_refused_when_mobile_money_is_off(): void
+    {
+        $cashier = User::factory()->cashier()->create();
+        $customer = Customer::create(["name" => "Marta", "phone" => "+258860000000", "address" => "Matola"]);
+        $template = MessageTemplate::create(["name" => "Pedido de pagamento", "body" => "Pague aqui: {pay_link}"]);
+        $order = Order::create(["order_number" => "ORD-PAY-2", "customer_id" => $customer->id, "status" => "ready", "received_at" => now(), "total_price" => 500]);
+
+        $this->actingAs($cashier)->post("/messages/clients/send-template", [
+            "customer_id" => $customer->id, "template_id" => $template->id, "order_id" => $order->id,
+        ])->assertSessionHas("error", __("app.wa_pay_link_unavailable"));
+
+        $this->assertSame(0, WhatsAppMessage::count());
+    }
+
     public function test_template_rejects_customer_without_phone(): void
     {
         $cashier = User::factory()->cashier()->create();

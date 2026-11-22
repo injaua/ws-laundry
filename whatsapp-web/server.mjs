@@ -158,16 +158,20 @@ async function start(s) {
         }
     });
 
-    sock.ev.on("messages.upsert", ({ messages, type }) => {
+    sock.ev.on("messages.upsert", async ({ messages, type }) => {
         for (const m of messages) {
-            if (m.key.fromMe) {
-                // Answered on the phone (or WhatsApp Web): keep it in the platform's conversation too.
-                if (s.sentByPlatform.has(m.key.id)) continue;
-                const echo = toMessage(s, m);
-                if (echo) forward(s.id, { echoes: [echo] });
-            } else if (type === "notify") {
-                const inbound = toMessage(s, m);
-                if (inbound) forward(s.id, { contacts: [{ wa_id: inbound.from, profile: { name: m.pushName || null } }], messages: [inbound] });
+            try {
+                if (m.key.fromMe) {
+                    // Answered on the phone (or WhatsApp Web): keep it in the platform's conversation too.
+                    if (s.sentByPlatform.has(m.key.id)) continue;
+                    const echo = await toMessage(s, m);
+                    if (echo) forward(s.id, { echoes: [echo] });
+                } else if (type === "notify") {
+                    const inbound = await toMessage(s, m);
+                    if (inbound) forward(s.id, { contacts: [{ wa_id: inbound.from, profile: { name: m.pushName || null } }], messages: [inbound] });
+                }
+            } catch (e) {
+                console.error(`[${s.id}] Could not read message ${m.key?.id}: ${e.message}`);
             }
         }
     });
@@ -199,12 +203,20 @@ function close(s) {
  * A message of a one-to-one chat in the same shape as the Meta Cloud API webhook.
  * "from" is the customer's number, also for the messages we sent from the phone.
  */
-function toMessage(s, m) {
+async function toMessage(s, m) {
     if (!m.message) return null;
 
     let jid = m.key.remoteJid;
     if (!jid || isJidGroup(jid) || isJidBroadcast(jid) || jid.endsWith("@newsletter")) return null;
-    if (isLidUser(jid)) jid = m.key.senderPn || m.key.remoteJidAlt; // privacy id: use the real number when WhatsApp gives it
+    if (isLidUser(jid)) {
+        // Privacy id (…@lid): WhatsApp hides the number; the platform works with numbers.
+        const lid = jid;
+        jid = m.key.remoteJidAlt || m.key.senderPn || (await s.sock.signalRepository.lidMapping.getPNForLID(lid).catch(() => null));
+        if (!jid) {
+            console.warn(`[${s.id}] Message ${m.key.id} from ${lid} ignored: WhatsApp did not give its phone number.`);
+            return null;
+        }
+    }
     const from = jidDecode(jid || undefined)?.user;
     if (!from || !/^\d{8,15}$/.test(from) || from === s.state.me) return null;
 

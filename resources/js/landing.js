@@ -1,4 +1,5 @@
 // Public site (landing/index, landing/order-status): navbar state, floating WhatsApp, scroll reveal, mobile menu.
+import 'bootstrap'; // data-bs-* components (navbar collapse, dropdowns…), from npm
 import './behaviors';
 
 const nav = document.getElementById('navbar');

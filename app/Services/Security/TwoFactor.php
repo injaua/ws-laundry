@@ -29,7 +29,7 @@ class TwoFactor
 
     public function otpauthUrl(User $user, string $secret): string
     {
-        $issuer = config("app.name");
+        $issuer = \App\Support\SystemSettings::companyName();
 
         return "otpauth://totp/" . rawurlencode($issuer . ":" . $user->email)
             . "?secret={$secret}&issuer=" . rawurlencode($issuer) . "&algorithm=SHA1&digits=6&period=30";

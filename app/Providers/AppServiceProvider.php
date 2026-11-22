@@ -67,6 +67,13 @@ class AppServiceProvider extends ServiceProvider
         // Who may do what (routes "can:…", @can in the views): App\Support\Permissions.
         Permissions::register();
 
+        // Uploaded files (logos, favicon, photos) are served from the host the browser is
+        // using, not APP_URL: with "php artisan serve" or a different port / domain the
+        // configured URL points elsewhere and every image breaks.
+        if (!$this->app->runningInConsole()) {
+            config(["filesystems.disks.public.url" => rtrim(request()->root(), "/") . "/storage"]);
+        }
+
         // Admin → System settings: company name, time zone (read fresh on every boot).
         SystemSettings::flush();
         SystemSettings::apply();
