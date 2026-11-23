@@ -44,7 +44,7 @@ class SearchFilterAndOrderNumberTest extends TestCase
     public function test_order_number_follows_highest_sequence_not_row_count(): void
     {
         $customer = Customer::create(["name" => "Seq", "phone" => "+258840000011", "address" => "Matola"]);
-        $prefix = "ORD" . now()->format("ymd");
+        $prefix = Order::orderNumberPrefix();
 
         // A gap (e.g. a force-deleted order) used to make count()+1 reuse 002.
         $this->order($customer, $prefix . "003", "received");
@@ -57,7 +57,7 @@ class SearchFilterAndOrderNumberTest extends TestCase
     public function test_order_number_rolls_past_999_without_collision(): void
     {
         $customer = Customer::create(["name" => "Big Day", "phone" => "+258840000012", "address" => "Matola"]);
-        $prefix = "ORD" . now()->format("ymd");
+        $prefix = Order::orderNumberPrefix();
         $this->order($customer, $prefix . "999", "received");
 
         $this->assertSame($prefix . "1000", Order::nextOrderNumber());
@@ -67,7 +67,7 @@ class SearchFilterAndOrderNumberTest extends TestCase
     {
         $customer = Customer::create(["name" => "Store", "phone" => "+258840000013", "address" => "Matola"]);
         $service = Service::create(["name" => "Lavar", "type" => "by_piece", "price" => 100, "estimated_days" => 1]);
-        $prefix = "ORD" . now()->format("ymd");
+        $prefix = Order::orderNumberPrefix();
         $this->order($customer, $prefix . "001", "received");
 
         $this->actingAs(User::factory()->create())->post("/orders", [

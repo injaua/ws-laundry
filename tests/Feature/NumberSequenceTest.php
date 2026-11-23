@@ -34,7 +34,7 @@ class NumberSequenceTest extends TestCase
 
     public function test_numbers_never_repeat_even_without_reading_the_records(): void
     {
-        $prefix = "ORD" . now()->format("ymd");
+        $prefix = Order::orderNumberPrefix();
 
         $numbers = collect(range(1, 25))->map(fn () => Order::nextOrderNumber());
 
@@ -74,19 +74,28 @@ class NumberSequenceTest extends TestCase
     {
         $main = Store::orderBy("id")->first();
         $second = Store::create(["name" => "Loja 2", "code" => "lj02", "is_active" => true]);
-        $prefix = "ORD" . now()->format("ymd");
+        $day = now()->format("dmY");
+        $mainCode = preg_replace("/[^A-Z0-9]/", "", mb_strtoupper($main->code));
 
         CurrentStore::run($main, fn () => Order::nextOrderNumber());
         CurrentStore::run($main, fn () => Order::nextOrderNumber());
 
-        $this->assertSame($prefix . "001", CurrentStore::run($second, fn () => Order::nextOrderNumber()));
-        $this->assertSame($prefix . "003", CurrentStore::run($main, fn () => Order::nextOrderNumber()));
+        $this->assertSame("ORDLJ02{$day}001", CurrentStore::run($second, fn () => Order::nextOrderNumber()));
+        $this->assertSame("ORD{$mainCode}{$day}003", CurrentStore::run($main, fn () => Order::nextOrderNumber()));
+    }
+
+    public function test_order_number_is_ord_store_code_day_month_year_and_sequence(): void
+    {
+        $store = Store::create(["name" => "Loja Baixa", "code" => "BX01", "is_active" => true]);
+        $date = \Illuminate\Support\Carbon::create(2026, 11, 5);
+
+        $this->assertSame("ORDBX0105112026001", CurrentStore::run($store, fn () => Order::nextOrderNumber($date)));
     }
 
     public function test_existing_orders_seed_the_day_counter(): void
     {
         $customer = Customer::create(["name" => "Seed", "phone" => "+258840000099", "address" => "Maputo"]);
-        $prefix = "ORD" . now()->format("ymd");
+        $prefix = Order::orderNumberPrefix();
         Order::create([
             "order_number" => $prefix . "017",
             "customer_id" => $customer->id,

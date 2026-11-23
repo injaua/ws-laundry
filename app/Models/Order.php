@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Traits\BelongsToStore;
 use App\Models\Traits\Loggable;
+use App\Support\CurrentStore;
 use App\Support\Money;
 use App\Support\NumberSequence;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -303,14 +304,15 @@ class Order extends Model
     }
 
     /**
-     * Next order number for the given day (ORDyymmddNNN), from the store's counter for
-     * that day (NumberSequence). Call it inside the transaction that creates the order:
-     * concurrent orders wait for each other instead of colliding. A new day's counter
-     * starts after the highest number already used, soft-deleted orders included.
+     * Next order number for the given day (ORD{storeCode}{ddmmyyyy}{NNN}, e.g.
+     * ORDLJ0123112026001), from the store's counter for that day (NumberSequence). Call it
+     * inside the transaction that creates the order: concurrent orders wait for each other
+     * instead of colliding. A new day's counter starts after the highest number already
+     * used, soft-deleted orders included.
      */
     public static function nextOrderNumber(?\DateTimeInterface $date = null): string
     {
-        $prefix = "ORD" . ($date ? $date->format("ymd") : now()->format("ymd"));
+        $prefix = static::orderNumberPrefix($date);
 
         $next = NumberSequence::next($prefix, fn () => NumberSequence::highestSuffix(
             static::withTrashed()->where("order_number", "like", $prefix . "%")->pluck("order_number"),
@@ -318,6 +320,16 @@ class Order extends Model
         ));
 
         return NumberSequence::format($prefix, $next, 3);
+    }
+
+    /** "ORD" + current store's code (upper-case, alphanumeric only) + day as ddmmyyyy. */
+    public static function orderNumberPrefix(?\DateTimeInterface $date = null): string
+    {
+        $storeId = CurrentStore::id() ?? Store::defaultId();
+        $code = $storeId ? (string) Store::whereKey($storeId)->value("code") : "";
+        $code = preg_replace("/[^A-Z0-9]/", "", mb_strtoupper($code));
+
+        return "ORD" . $code . ($date ?? now())->format("dmY");
     }
 
     public function pieces(): HasMany

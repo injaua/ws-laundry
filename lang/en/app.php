@@ -311,7 +311,7 @@ return [
     'enter_order_number_desc' => 'Enter the order number on your invoice and the last 4 digits of your phone to track progress.',
     'phone_last4_placeholder' => 'Last 4 digits of your phone',
     'phone_last4_label' => 'Last 4 digits of your phone',
-    'example_order_no' => 'E.g.: ORD-001 or ORD260718001',
+    'example_order_no' => 'E.g.: ORD-001 or ORDLJ0118072026001',
     'example_order_hint' => 'Example order number: :number',
     'order_found' => 'Order Found',
     'order_not_found' => 'Order not found',

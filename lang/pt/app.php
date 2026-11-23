@@ -311,7 +311,7 @@ return [
     'enter_order_number_desc' => 'Introduza o número de pedido presente na sua fatura e os últimos 4 dígitos do seu telefone para ver o progresso.',
     'phone_last4_placeholder' => 'Últimos 4 dígitos do telefone',
     'phone_last4_label' => 'Últimos 4 dígitos do telefone',
-    'example_order_no' => 'Ex: ORD-001 ou ORD260718001',
+    'example_order_no' => 'Ex: ORD-001 ou ORDLJ0118072026001',
     'example_order_hint' => 'Exemplo de número de pedido: :number',
     'order_found' => 'Pedido Encontrado',
     'order_not_found' => 'Pedido não encontrado',

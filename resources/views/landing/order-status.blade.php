@@ -31,7 +31,7 @@
             <input type="text" name="phone_last4" class="phone-last4" placeholder="{{ __('app.phone_last4_placeholder') }}" value="{{ request("phone_last4") }}" aria-label="{{ __('app.phone_last4_label') }}" inputmode="numeric" pattern="\d{4}" maxlength="4" autocomplete="off" required>
             <button class="btn-pill btn-solid" type="submit">{{ __('app.search') }}</button>
         </form>
-        <div class="search-hint">{{ __('app.example_order_hint', ['number' => 'ORD260718001']) }}</div>
+        <div class="search-hint">{{ __('app.example_order_hint', ['number' => 'ORDLJ0118072026001']) }}</div>
     </div>
 </section>
 
