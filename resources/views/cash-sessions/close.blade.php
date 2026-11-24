@@ -21,6 +21,7 @@
                             @if($method === "cash")<div class="form-text mt-0">{{ __('app.count_cash_help') }}</div>@endif
                             @if(\App\Models\Payment::isMobile($method))<div class="form-text mt-0">{{ __('app.verify_mobile_help') }}</div>@endif
                             @if($method === "transfer")<div class="form-text mt-0">{{ __('app.verify_transfer_help') }}</div>@endif
+                            @if($method === "pos")<div class="form-text mt-0">{{ __('app.verify_pos_help') }}</div>@endif
                             @if($method === "cheque")<div class="form-text mt-0">{{ __('app.count_cheques_help') }}</div>@endif
                         </label>
                         @if($method !== "cash")

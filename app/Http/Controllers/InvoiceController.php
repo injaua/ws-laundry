@@ -9,8 +9,10 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Services\Invoicing;
 use App\Support\Documents\DocumentResponse;
+use App\Support\Money;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
@@ -18,24 +20,110 @@ class InvoiceController extends Controller
 {
     public function __construct(private Invoicing $invoicing) {}
 
+    /** Filters of the invoice list: the first two list both kinds of invoice, the others consolidated invoices only. */
+    public const LIST_FILTERS = ["unpaid", "overdue", "draft", "paid", "void", "all"];
+
+    /**
+     * Unpaid invoices by default, of both kinds in one list, oldest first: the invoice of
+     * each order still owing (unless it is billed on an issued consolidated invoice) and
+     * the issued consolidated invoices (FT) with a balance.
+     */
     public function index(Request $request)
     {
         Gate::authorize("viewAny", Invoice::class);
 
-        $query = Invoice::with(["customer", "orders.payments", "orders.creditNotes"])->latest("id");
+        $filter = in_array($request->status, self::LIST_FILTERS, true) ? $request->status : "unpaid";
+        $customerId = $request->integer("customer_id") ?: null;
+        $kind = in_array($request->kind, ["order", "invoice"], true) ? $request->kind : null;
+        $unpaid = in_array($filter, ["unpaid", "overdue"], true);
 
-        if ($request->integer("customer_id")) {
-            $query->where("customer_id", $request->integer("customer_id"));
+        $rows = collect();
+
+        if ($kind !== "invoice" && $unpaid) {
+            $orders = Order::outstanding()
+                ->with(["customer", "payments", "creditNotes"])
+                ->where(fn ($q) => $q->whereNull("invoice_id")->orWhereHas("invoice", fn ($i) => $i->where("status", "!=", "issued")))
+                ->when($customerId, fn ($q) => $q->where("customer_id", $customerId))
+                ->when($filter === "overdue", fn ($q) => $q->whereDate("due_date", "<", today()->toDateString()))
+                ->get();
+            $rows = $rows->concat($orders->map(fn (Order $order) => $this->orderRow($order)));
         }
 
-        if (in_array($request->status, Invoice::STATUSES, true)) {
-            $query->where("status", $request->status);
+        if ($kind !== "order") {
+            $invoices = Invoice::with(["customer", "orders.payments", "orders.creditNotes"])
+                ->when($customerId, fn ($q) => $q->where("customer_id", $customerId))
+                ->when($unpaid, fn ($q) => $q->issued()->whereHas("orders", fn ($o) => $o->outstanding()))
+                ->when($filter === "overdue", fn ($q) => $q->whereDate("due_date", "<", today()->toDateString()))
+                ->when(in_array($filter, ["draft", "void"], true), fn ($q) => $q->where("status", $filter))
+                ->when($filter === "paid", fn ($q) => $q->issued()->whereDoesntHave("orders", fn ($o) => $o->outstanding()))
+                ->get();
+            $rows = $rows->concat($invoices->map(fn (Invoice $invoice) => $this->invoiceRow($invoice)));
         }
 
-        $invoices = $query->paginate(20)->withQueryString();
-        $customers = Customer::where("is_credit_customer", true)->orderBy("name")->get();
+        // Unpaid: what falls due first comes first. Otherwise the latest documents first.
+        $rows = $unpaid
+            ? $rows->sortBy(fn ($r) => ($r["due_date"] ?? $r["date"])?->format("Ymd") . sprintf("%010d", $r["id"]))->values()
+            : $rows->sortByDesc(fn ($r) => $r["date"]?->format("Ymd") . sprintf("%010d", $r["id"]))->values();
 
-        return view("invoices.index", compact("invoices", "customers"));
+        $totalOutstanding = $unpaid ? Money::sum($rows->pluck("balance")) : null;
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $paginated = new LengthAwarePaginator($rows->forPage($page, 20)->values(), $rows->count(), 20, $page, [
+            "path" => $request->url(),
+            "query" => $request->query(),
+        ]);
+        $customers = Customer::orderBy("name")->get(["id", "name"]);
+
+        return view("invoices.index", [
+            "rows" => $paginated,
+            "customers" => $customers,
+            "filter" => $filter,
+            "kind" => $kind,
+            "totalOutstanding" => $totalOutstanding,
+        ]);
+    }
+
+    /** The invoice of one order, as a row of the invoice list. */
+    private function orderRow(Order $order): array
+    {
+        $overdue = $order->due_date !== null && $order->due_date->lt(today());
+
+        return [
+            "id" => $order->id,
+            "kind" => "order",
+            "number" => $order->order_number,
+            "url" => route("orders.show", $order),
+            "print_url" => route("orders.document", $order),
+            "pay_url" => route("orders.payment", $order),
+            "customer" => $order->customer?->name,
+            "date" => $order->received_at,
+            "due_date" => $order->due_date,
+            "total" => $order->netTotal(),
+            "balance" => Money::max(0, $order->remainingBalance()),
+            "overdue" => $overdue,
+            "status" => $overdue ? "overdue" : "unpaid",
+            "color" => $overdue ? "danger" : "warning",
+        ];
+    }
+
+    /** A consolidated invoice (FT), as a row of the invoice list. */
+    private function invoiceRow(Invoice $invoice): array
+    {
+        return [
+            "id" => $invoice->id,
+            "kind" => "invoice",
+            "number" => $invoice->label(),
+            "url" => route("invoices.show", $invoice),
+            "print_url" => $invoice->isDraft() ? route("invoices.print", [$invoice, "preview" => 1]) : route("invoices.print", $invoice),
+            "pay_url" => $invoice->isIssued() && !$invoice->isPaid() ? route("invoices.show", $invoice) : null,
+            "customer" => $invoice->customer?->name,
+            "date" => $invoice->issue_date ?? $invoice->created_at,
+            "due_date" => $invoice->due_date,
+            "total" => (float) $invoice->total,
+            "balance" => $invoice->isVoid() ? null : $invoice->balance(),
+            "overdue" => $invoice->isOverdue(),
+            "status" => $invoice->displayStatus(),
+            "color" => $invoice->statusColor(),
+        ];
     }
 
     /** Pick customer and period, then tick the orders to bill. */
@@ -160,7 +248,8 @@ class InvoiceController extends Controller
         $result = $recorder->handle($invoice->customer, $data, $request->user(), $invoice);
 
         $redirect = redirect()->route("invoices.show", $invoice)
-            ->with("success", __("app.grouped_payment_recorded", ["ref" => $result["group_ref"], "count" => $result["payments"]->count()]));
+            ->with("success", __("app.grouped_payment_recorded", ["ref" => $result["group_ref"], "count" => $result["payments"]->count()])
+                . (($change = $result["payments"]->last()?->change()) > 0 ? " " . __("app.change_to_give", ["change" => money($change)]) : ""));
 
         return $result["journal_skipped"] ? $redirect->with("error", __("app.journal_skipped")) : $redirect;
     }

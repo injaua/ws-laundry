@@ -199,6 +199,69 @@ class PaymentMethodTest extends TestCase
             ->assertSee("0 Mts", false);
     }
 
+    public function test_pos_payment_requires_the_slip_number(): void
+    {
+        $order = $this->makeOrder();
+        $cashier = User::factory()->create(["role" => "cashier"]);
+        $this->openTill($cashier);
+        $payload = ["order_id" => $order->id, "paid_at" => now()->toDateString(), "amount" => 1000, "method" => "pos"];
+
+        $this->actingAs($cashier)->post("/payments", $payload)->assertSessionHasErrors("transaction_ref");
+
+        $this->actingAs($cashier)->post("/payments", $payload + ["transaction_ref" => "001234", "tendered" => 5000])
+            ->assertRedirect()->assertSessionHasNoErrors();
+
+        // Terminals restart their numbering: the same slip number may come back.
+        $this->actingAs($cashier)->post("/payments", ["transaction_ref" => "001234"] + $payload)->assertSessionHasNoErrors();
+
+        $payment = $order->payments()->first();
+        $this->assertSame("pos", $payment->method);
+        $this->assertSame("001234", $payment->transaction_ref);
+        $this->assertNull($payment->tendered, "Only cash gets change.");
+        $this->assertSame(2, $order->payments()->count());
+    }
+
+    public function test_cash_tendered_and_change_appear_on_invoice_and_receipt(): void
+    {
+        $order = $this->makeOrder();
+        $cashier = User::factory()->create(["role" => "cashier"]);
+        $this->openTill($cashier);
+
+        $this->actingAs($cashier)->post("/payments", [
+            "order_id" => $order->id,
+            "paid_at" => now()->toDateString(),
+            "amount" => 1500,
+            "method" => "cash",
+            "tendered" => 2000,
+        ])->assertSessionHasNoErrors();
+
+        $payment = $order->payments()->first();
+        $this->assertEquals(2000, $payment->tendered);
+        $this->assertEquals(500, $payment->change());
+
+        $admin = User::factory()->create();
+        foreach (["/orders/{$order->id}/invoice", "/orders/{$order->id}/document", "/payments/{$payment->id}/receipt"] as $url) {
+            $this->actingAs($admin)->get($url)->assertOk()
+                ->assertSee(__("app.tendered"))->assertSee("2,000")
+                ->assertSee(__("app.change_due"))->assertSee("500");
+        }
+    }
+
+    public function test_editing_a_cash_payment_keeps_the_tendered_amount(): void
+    {
+        $order = $this->makeOrder();
+        $payment = Payment::create(["order_id" => $order->id, "paid_at" => now()->toDateString(), "amount" => 1500, "tendered" => 2000, "method" => "cash"]);
+        $admin = User::factory()->create();
+
+        $this->actingAs($admin)->get("/orders/{$order->id}")->assertOk()->assertSee('name="tendered"', false)->assertSee('value="2000.00"', false);
+
+        $this->actingAs($admin)->patch("/payments/{$payment->id}", [
+            "paid_at" => now()->toDateString(), "amount" => 1800, "method" => "cash", "tendered" => 2000,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertEquals(200, $payment->fresh()->change());
+    }
+
     public function test_cashier_cannot_access_payment_method_report(): void
     {
         $cashier = User::factory()->create(["role" => "cashier"]);

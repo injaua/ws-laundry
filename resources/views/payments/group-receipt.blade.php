@@ -48,6 +48,12 @@
 
 <table class="totals">
     <tr class="grand"><td>{{ __('app.total') }}</td><td class="r">{{ money($payments->sum("amount")) }}</td></tr>
+    @php($withChange = $payments->first(fn ($p) => $p->change() !== null))
+    @if($withChange)
+        {{-- The change of the whole group is recorded on its last payment. --}}
+        <tr><td>{{ __('app.tendered') }}</td><td class="r">{{ money(\App\Support\Money::add($payments->sum("amount"), $withChange->change())) }}</td></tr>
+        <tr><td>{{ __('app.change_due') }}</td><td class="r">{{ money($withChange->change()) }}</td></tr>
+    @endif
 </table>
 
 <p class="muted">{{ __('app.received_by') }}: {{ $first->user?->name ?? "-" }}</p>

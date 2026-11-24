@@ -31,7 +31,8 @@ class CustomerAccountController extends Controller
         $result = $recorder->handle($customer, $data, $request->user());
 
         $redirect = redirect()->route("receivables.customer", $customer)
-            ->with("success", __("app.grouped_payment_recorded", ["ref" => $result["group_ref"], "count" => $result["payments"]->count()]));
+            ->with("success", __("app.grouped_payment_recorded", ["ref" => $result["group_ref"], "count" => $result["payments"]->count()])
+                . (($change = $result["payments"]->last()?->change()) > 0 ? " " . __("app.change_to_give", ["change" => money($change)]) : ""));
 
         return $result["journal_skipped"] ? $redirect->with("error", __("app.journal_skipped")) : $redirect;
     }

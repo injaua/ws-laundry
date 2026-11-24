@@ -150,7 +150,7 @@
                                 <button class="btn btn-sm btn-primary w-100">{{ __('app.save') }}</button>
                             </div>
                         </div>
-                        @include("payments._mobile-ref", ["sm" => true, "ref" => $pm->transaction_ref, "phone" => $pm->payer_phone, "cheque" => $pm->cheque])
+                        @include("payments._mobile-ref", ["sm" => true, "ref" => $pm->transaction_ref, "phone" => $pm->payer_phone, "tendered" => $pm->tendered, "cheque" => $pm->cheque])
                         <input type="text" name="note" class="form-control form-control-sm mt-1" placeholder="{{ __('app.notes') }}" value="{{ $pm->note }}">
                     </form>
                 </div>

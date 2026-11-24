@@ -14,7 +14,8 @@ const sync = (form) => {
     const nothingCollected = amountInput && amount <= 0;
     form.querySelectorAll('.js-pay-extra .js-for').forEach((el) => {
         const on = el.dataset.methods.split(',').includes(method) && !nothingCollected;
-        el.style.display = on ? '' : 'none';
+        // Bootstrap's d-none is !important: an inline style cannot override it, toggle the class.
+        el.classList.toggle('d-none', !on);
         el.querySelectorAll('input').forEach((i) => {
             i.disabled = !on;
         });
@@ -23,7 +24,7 @@ const sync = (form) => {
     if (ref) {
         const labels = JSON.parse(ref.dataset.labels);
         const label = labels[MOBILE.includes(method) ? 'mobile' : method] || labels.mobile;
-        ref.required = ['transfer', 'cheque', ...MOBILE].includes(method) && !nothingCollected;
+        ref.required = ['pos', 'transfer', 'cheque', ...MOBILE].includes(method) && !nothingCollected;
         const holder = form.querySelector('.js-ref-label');
         if (holder) holder.textContent = label;
         ref.placeholder = label;

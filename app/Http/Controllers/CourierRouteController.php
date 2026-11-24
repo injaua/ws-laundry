@@ -83,9 +83,12 @@ class CourierRouteController extends Controller
             $data["outcome_notes"] ?? null,
             $data["transaction_ref"] ?? null,
             $data["payer_phone"] ?? null,
+            isset($data["tendered"]) ? (float) $data["tendered"] : null,
         );
 
-        $redirect = $this->back($request, $courierJob, __("app.delivery_done_saved"));
+        $change = $result["payment"]?->change();
+        $redirect = $this->back($request, $courierJob, __("app.delivery_done_saved")
+            . ($change > 0 ? " " . __("app.change_to_give", ["change" => money($change)]) : ""));
 
         return $result["warnings"] ? $redirect->with("warning", implode(" ", $result["warnings"])) : $redirect;
     }

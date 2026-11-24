@@ -18,16 +18,21 @@ class Payment extends Model
     use BelongsToStore;
     use Loggable;
 
-    public const METHODS = ["cash", "transfer", "cheque", "mpesa", "emola", "mkesh"];
+    public const METHODS = ["cash", "pos", "transfer", "cheque", "mpesa", "emola", "mkesh"];
 
     /** Mobile wallets: the operator's transaction reference is mandatory and unique. */
     public const MOBILE_METHODS = ["mpesa", "emola", "mkesh"];
+
+    /*
+     * "pos": card on the store's POS terminal. The slip number is mandatory but not unique
+     * (terminals restart their numbering); the money waits in 1.2.5 until the bank settles it.
+     */
 
     /** Methods whose reference (operator ID / transfer proof number) is mandatory and unique. */
     public const UNIQUE_REF_METHODS = ["transfer", "mpesa", "emola", "mkesh"];
 
     /** Ledger account per method (PGC-NIRF class 1). Cheques wait in 1.3 until deposited. */
-    public const ACCOUNTS = ["cash" => "1.1", "transfer" => "1.2.1", "cheque" => "1.3", "mpesa" => "1.2.2", "emola" => "1.2.3", "mkesh" => "1.2.4"];
+    public const ACCOUNTS = ["cash" => "1.1", "pos" => "1.2.5", "transfer" => "1.2.1", "cheque" => "1.3", "mpesa" => "1.2.2", "emola" => "1.2.3", "mkesh" => "1.2.4"];
 
     protected $fillable = ["order_id", "user_id", "cash_session_id", "paid_at", "amount", "tendered", "method", "transaction_ref", "cheque_id", "payer_phone", "reconciled_at", "bounced_at", "note", "group_ref", "invoice_id", "courier_job_id", "handed_over_at", "handed_over_by"];
 
@@ -52,10 +57,10 @@ class Payment extends Model
         static::addGlobalScope("not_bounced", fn ($query) => $query->whereNull("payments.bounced_at"));
     }
 
-    /** Methods a refund can be paid with (the business does not issue cheques here). */
+    /** Methods a refund can be paid with (no cheques issued here; card refunds are done on the terminal itself). */
     public static function refundMethods(): array
     {
-        return array_values(array_diff(self::METHODS, ["cheque"]));
+        return array_values(array_diff(self::METHODS, ["cheque", "pos"]));
     }
 
     /** Methods a courier can collect on the road (cheques are taken at the counter), among those the store accepts. */
@@ -137,7 +142,7 @@ class Payment extends Model
     public static function referenceRules(): array
     {
         return [
-            "transaction_ref" => ["nullable", "required_if:method,transfer,cheque,mpesa,emola,mkesh", "string", "max:40", "regex:/^[A-Za-z0-9.\-\/\s]+$/"],
+            "transaction_ref" => ["nullable", "required_if:method,pos,transfer,cheque,mpesa,emola,mkesh", "string", "max:40", "regex:/^[A-Za-z0-9.\-\/\s]+$/"],
             "payer_phone" => ["nullable", "string", "max:20", "regex:/^[0-9+\s]+$/"],
             "cheque_bank" => ["nullable", "required_if:method,cheque", "string", "max:60"],
             "cheque_date" => ["nullable", "date", "before_or_equal:+180 days"],

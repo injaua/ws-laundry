@@ -234,7 +234,7 @@ class Logistics
      *
      * @return array{job: CourierJob, payment: ?Payment, warnings: string[]}
      */
-    public function completeDelivery(CourierJob $job, User $user, float $amount = 0, ?string $method = null, ?string $notes = null, ?string $transactionRef = null, ?string $payerPhone = null): array
+    public function completeDelivery(CourierJob $job, User $user, float $amount = 0, ?string $method = null, ?string $notes = null, ?string $transactionRef = null, ?string $payerPhone = null, ?float $tendered = null): array
     {
         $this->assertActionable($job, "delivery");
         $order = $job->order;
@@ -265,7 +265,7 @@ class Logistics
             throw ValidationException::withMessages(["amount" => __("app.cash_session_required")]);
         }
 
-        [$payment, $warnings] = DB::transaction(function () use ($job, $order, $user, $amount, $method, $notes, $session, $transactionRef, $payerPhone) {
+        [$payment, $warnings] = DB::transaction(function () use ($job, $order, $user, $amount, $method, $notes, $session, $transactionRef, $payerPhone, $tendered) {
             $payment = null;
 
             if ($amount > 0) {
@@ -276,6 +276,7 @@ class Logistics
                     "cash_session_id" => $intoTill ? $session->id : null,
                     "paid_at" => today()->toDateString(),
                     "amount" => $amount,
+                    "tendered" => $method === "cash" ? $tendered : null,
                     "method" => $method,
                     "transaction_ref" => $transactionRef,
                     "payer_phone" => $payerPhone,

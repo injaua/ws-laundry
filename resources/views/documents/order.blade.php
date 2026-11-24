@@ -76,4 +76,33 @@
         <tr><td><strong>{{ __('app.remaining_amount') }}</strong></td><td class="r"><strong>{{ money($order->remainingBalance()) }}</strong></td></tr>
     @endif
 </table>
+
+@if($order->payments->isNotEmpty())
+<table>
+    <thead>
+        <tr>
+            <th>{{ __('app.payments_received') }}</th>
+            <th>{{ __('app.payment_method') }}</th>
+            <th class="r">{{ __('app.amount_received') }}</th>
+            <th class="r">{{ __('app.tendered') }}</th>
+            <th class="r">{{ __('app.change_due') }}</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach($order->payments as $pm)
+            <tr>
+                <td>{{ $pm->paid_at->format(date_fmt()) }}</td>
+                <td>
+                    {{ __('app.' . $pm->method) }}
+                    @if($pm->cheque)<div class="muted">{{ $pm->cheque->label() }}</div>
+                    @elseif($pm->transaction_ref)<div class="muted">{{ $pm->transaction_ref }}</div>@endif
+                </td>
+                <td class="r">{{ money($pm->amount) }}</td>
+                <td class="r">{{ $pm->change() !== null ? money($pm->tendered) : '—' }}</td>
+                <td class="r">{{ $pm->change() !== null ? money($pm->change()) : '—' }}</td>
+            </tr>
+        @endforeach
+    </tbody>
+</table>
+@endif
 @endsection

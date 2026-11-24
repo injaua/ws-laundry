@@ -312,6 +312,58 @@ class BusinessCustomerTest extends TestCase
             ->assertOk()->assertSee("4,000")->assertSee($old->order_number)->assertSee($new->order_number);
     }
 
+    public function test_invoice_list_shows_unpaid_order_and_consolidated_invoices(): void
+    {
+        $admin = User::factory()->create();
+        $customer = $this->company(["billing_cycle" => "per_order"]);
+        $walkIn = Customer::create(["name" => "Cliente Balcão", "phone" => "+258840009999"]);
+
+        // An ordinary order still owing, one fully paid, and two credit orders billed on an FT.
+        $owing = $this->completedCreditOrder($walkIn, 800, today()->toDateString(), ["is_credit" => false, "status" => "received", "completed_at" => null]);
+        $paid = $this->completedCreditOrder($walkIn, 500, today()->toDateString(), ["is_credit" => false, "status" => "received", "completed_at" => null]);
+        Payment::create(["order_id" => $paid->id, "paid_at" => today()->toDateString(), "amount" => 500, "method" => "cash"]);
+        $billed = $this->completedCreditOrder($customer, 3000, "2026-10-05");
+        $invoice = app(Invoicing::class)->createDraft($customer, \Carbon\Carbon::parse("2026-10-01"), \Carbon\Carbon::parse("2026-10-31"), null, $admin);
+
+        // A draft FT is not an invoice yet: its order is listed with its own invoice.
+        $this->actingAs($admin)->get(route("invoices.index"))->assertOk()
+            ->assertSee($owing->order_number)->assertSee($billed->order_number)->assertDontSee($paid->order_number)
+            ->assertDontSee(route("invoices.create"));
+
+        app(Invoicing::class)->issue($invoice);
+
+        // Once issued, the order is billed on the FT and only the FT is listed for it.
+        $this->actingAs($admin)->get(route("invoices.index"))->assertOk()
+            ->assertSee($invoice->fresh()->number)->assertDontSee($billed->order_number)->assertSee($owing->order_number)
+            ->assertSee("3,800");
+
+        $this->actingAs($admin)->get(route("invoices.index", ["kind" => "order"]))->assertOk()->assertDontSee($invoice->fresh()->number);
+        $this->actingAs($admin)->get(route("invoices.index", ["status" => "draft"]))->assertOk()->assertDontSee($owing->order_number);
+    }
+
+    public function test_grouped_cash_payment_records_the_change_once(): void
+    {
+        $admin = User::factory()->create();
+        $customer = $this->company(["billing_cycle" => "per_order"]);
+        $this->completedCreditOrder($customer, 3000, "2026-09-01", ["due_date" => "2026-10-01"]);
+        $this->completedCreditOrder($customer, 2000, "2026-10-01", ["due_date" => "2026-10-31"]);
+
+        $this->actingAs($admin)->post(route("customers.payments.store", $customer), [
+            "paid_at" => today()->toDateString(), "amount" => 4000, "method" => "cash", "tendered" => 3000,
+        ])->assertSessionHasErrors("tendered");
+
+        $this->actingAs($admin)->post(route("customers.payments.store", $customer), [
+            "paid_at" => today()->toDateString(), "amount" => 4000, "method" => "cash", "tendered" => 5000,
+        ])->assertSessionHas("success", fn ($msg) => str_contains($msg, "1,000"));
+
+        $payments = Payment::orderBy("id")->get();
+        $this->assertNull($payments[0]->change());
+        $this->assertSame(1000.0, $payments[1]->change());
+
+        $this->actingAs($admin)->get(route("payments.group-receipt", $payments[0]->group_ref))
+            ->assertOk()->assertSee(__("app.tendered"))->assertSee("5,000")->assertSee(__("app.change_due"));
+    }
+
     public function test_invoice_payment_marks_it_paid_and_statement_balances(): void
     {
         $admin = User::factory()->create();

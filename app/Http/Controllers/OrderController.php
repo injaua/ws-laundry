@@ -170,7 +170,7 @@ class OrderController extends Controller
 
     public function invoice(Order $order)
     {
-        $order->load(["customer", "items.service", "items.package", "items.promotion", "payments"]);
+        $order->load(["customer", "items.service", "items.package", "items.promotion", "payments.cheque"]);
 
         return view("orders.invoice", compact("order"));
     }
@@ -178,7 +178,7 @@ class OrderController extends Controller
     /** A4 invoice of the order (HTML, or PDF with ?format=pdf). */
     public function document(Order $order)
     {
-        $order->load(["customer", "items.service", "items.package", "items.promotion", "payments"]);
+        $order->load(["customer", "items.service", "items.package", "items.promotion", "payments.cheque"]);
 
         return DocumentResponse::make("documents.order", compact("order"), __("app.invoice") . " " . $order->order_number);
     }

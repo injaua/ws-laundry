@@ -93,6 +93,13 @@ class RecordGroupedPayment
                 $left = Money::sub($left, $share);
             }
 
+            // Cash handed over for the whole group: the change is given once, so it is
+            // recorded on the last payment only (its receipt shows the change to hand back).
+            if (($data["method"] ?? null) === "cash" && isset($data["tendered"]) && $payments->isNotEmpty()) {
+                $last = $payments->last();
+                $last->update(["tendered" => Money::add($last->amount, Money::sub((float) $data["tendered"], $amount))]);
+            }
+
             // One cheque settling several orders: a single cheque shared by the payments.
             if (($data["method"] ?? null) === "cheque" && $payments->isNotEmpty()) {
                 app(Cheques::class)->attach($payments, $data, $customer, $user);

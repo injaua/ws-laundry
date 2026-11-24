@@ -439,8 +439,14 @@ class Order extends Model
     public function scopeOutstandingCredit($query)
     {
         return $query->where("is_credit", true)
-            ->whereNull("deleted_at")
             ->where("status", "completed")
+            ->outstanding();
+    }
+
+    /** Any order still owing something (after payments and deducted credit notes), not deleted. */
+    public function scopeOutstanding($query)
+    {
+        return $query->whereNull("orders.deleted_at")
             ->whereRaw("total_price - coalesce((select sum(amount) from payments where payments.order_id = orders.id and payments.bounced_at is null), 0)"
                 . " - coalesce((select sum(amount) from credit_notes where credit_notes.order_id = orders.id and credit_notes.voided_at is null and credit_notes.settlement = 'deduct'), 0) > 0");
     }

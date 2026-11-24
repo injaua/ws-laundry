@@ -97,6 +97,17 @@
             <div class="row"><span>{{ __('app.paid_amount') }}:</span><span class="val">{{ money($order->netPaid()) }}</span></div>
             <div class="row"><span>{{ __('app.remaining_amount') }}:</span><span class="val"><strong>{{ money($order->remainingBalance()) }}</strong></span></div>
         @endif
+        @if($order->payments->isNotEmpty())
+            <div class="divider"></div>
+            <div><strong>{{ __('app.payments_received') }}</strong></div>
+            @foreach($order->payments as $pm)
+                <div class="row"><span>{{ $pm->paid_at->format(date_fmt()) }} · {{ __('app.' . $pm->method) }}@if($pm->transaction_ref) {{ $pm->transaction_ref }}@endif:</span><span class="val">{{ money($pm->amount) }}</span></div>
+                @if($pm->change() !== null)
+                    <div class="row"><span>&nbsp;&nbsp;{{ __('app.tendered') }}:</span><span class="val">{{ money($pm->tendered) }}</span></div>
+                    <div class="row"><span>&nbsp;&nbsp;{{ __('app.change_due') }}:</span><span class="val">{{ money($pm->change()) }}</span></div>
+                @endif
+            @endforeach
+        @endif
         @if($order->is_credit)
             <div class="row"><span>{{ __('app.billed_on_credit') }}:</span><span class="val">{{ __('app.due_date') }} {{ $order->due_date?->format(date_fmt()) }}</span></div>
         @endif
