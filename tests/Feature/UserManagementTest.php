@@ -73,6 +73,30 @@ class UserManagementTest extends TestCase
         $this->assertDatabaseHas("users", ["email" => "store@test.local", "role" => "cashier"]);
     }
 
+    public function test_creating_a_user_also_creates_their_employee_record(): void
+    {
+        $admin = User::factory()->create();
+
+        $this->actingAs($admin)->post("/users", [
+            "name" => "New Cashier",
+            "email" => "cashier.employee@test.local",
+            "password" => "Password2026",
+            "password_confirmation" => "Password2026",
+            "role" => "cashier",
+        ])->assertRedirect(route("users.index"));
+
+        $user = User::where("email", "cashier.employee@test.local")->firstOrFail();
+        $employee = \App\Models\Employee::acrossStores()->where("user_id", $user->id)->firstOrFail();
+
+        $this->assertSame("New Cashier", $employee->name);
+        $this->assertSame(__("app.role_cashier"), $employee->position);
+        $this->assertSame($user->created_at->toDateString(), $employee->hire_date->toDateString());
+        $this->assertSame("full_time", $employee->contract_type);
+        $this->assertEquals(8755, $employee->base_salary);
+        $this->assertSame($user->store_id, $employee->store_id);
+        $this->assertSame($admin->id, $employee->created_by);
+    }
+
     public function test_cashier_cannot_access_users_and_owner_cannot_edit(): void
     {
         // A cashier of another store: the owner cannot manage it.

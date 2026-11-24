@@ -3,16 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UserRequest;
+use App\Models\Employee;
 use App\Models\Store;
 use App\Models\User;
 use App\Policies\UserPolicy;
 use App\Services\Security\UserSessions;
 use App\Support\CurrentStore;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 class UserController extends Controller
 {
+    /** Base salary of the employee record created together with a new account. */
+    private const DEFAULT_BASE_SALARY = 8755;
+
     public function index(Request $request)
     {
         $actor = auth()->user();
@@ -55,7 +60,13 @@ class UserController extends Controller
     public function store(UserRequest $request)
     {
         try {
-            $user = User::create(["store_id" => $this->storeFor($request->validated())] + $request->validated() + ["created_by" => auth()->id()]);
+            // The account and its employee record are created together or not at all.
+            $user = DB::transaction(function () use ($request) {
+                $user = User::create(["store_id" => $this->storeFor($request->validated())] + $request->validated() + ["created_by" => auth()->id()]);
+                $this->createEmployeeFor($user);
+
+                return $user;
+            });
         } catch (\Throwable $e) {
             // Validation passed but saving failed: say so on the form instead of an error page.
             report($e);
@@ -141,6 +152,21 @@ class UserController extends Controller
 
         return redirect()->route("users.index")
             ->with("success", __('app.user_deleted'));
+    }
+
+    /** Every new account is also a staff member: position from the role, hired today, full time. */
+    private function createEmployeeFor(User $user): Employee
+    {
+        return Employee::create([
+            "name" => $user->name,
+            "position" => __("app.role_".$user->role),
+            "hire_date" => $user->created_at ?? now(),
+            "contract_type" => "full_time",
+            "base_salary" => self::DEFAULT_BASE_SALARY,
+            "status" => "probation",
+            "user_id" => $user->id,
+            "created_by" => auth()->id(),
+        ] + ($user->store_id ? ["store_id" => $user->store_id] : []));
     }
 
     /** Admins work in every store; anyone else belongs to the chosen store (admin) or the owner's. */
