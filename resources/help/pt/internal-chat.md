@@ -5,3 +5,7 @@
 3. O menu mostra quantas mensagens tem por ler.
 
 > Use o chat interno para assuntos da equipa. As conversas com clientes são feitas na caixa de entrada WhatsApp.
+<!-- roles:admin,owner,accountant -->
+
+> Para enviar ficheiros (Word, Excel, PowerPoint, PDF) a um colega, use **Documentos → Enviar a um colega**: o destinatário recebe-os em **Recebidos** e vê quando foram lidos.
+<!-- /roles -->

@@ -1,0 +1,175 @@
+/* AI assistant, insights and AI settings pages. */
+.ai-page {
+    --ai-accent: #5b4bdb;
+    --ai-soft: rgba(91, 75, 219, 0.08);
+}
+[data-bs-theme="dark"] .ai-page {
+    --ai-accent: #a99cff;
+    --ai-soft: rgba(169, 156, 255, 0.12);
+}
+
+.ai-muted {
+    font-size: 0.75rem;
+    color: var(--bs-secondary-color);
+}
+
+.ai-conversations {
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+}
+.ai-conversations .list-group-item.active {
+    background: var(--ai-soft);
+    color: inherit;
+    border-color: var(--bs-list-group-border-color);
+    box-shadow: inset 3px 0 0 var(--ai-accent);
+}
+
+.ai-chat {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 170px);
+    min-height: 420px;
+}
+.ai-messages {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.ai-msg {
+    display: flex;
+}
+.ai-msg-user {
+    justify-content: flex-end;
+}
+.ai-bubble {
+    max-width: min(80ch, 88%);
+    padding: 0.6rem 0.9rem;
+    border-radius: 0.9rem;
+    background: var(--bs-tertiary-bg);
+    overflow-x: auto;
+}
+.ai-msg-user .ai-bubble {
+    background: var(--ai-accent);
+    color: #fff;
+    border-bottom-right-radius: 0.25rem;
+}
+.ai-msg-assistant .ai-bubble {
+    border-bottom-left-radius: 0.25rem;
+}
+.ai-msg-failed .ai-bubble {
+    background: var(--bs-warning-bg-subtle);
+    color: var(--bs-warning-text-emphasis);
+}
+.ai-bubble > :last-child {
+    margin-bottom: 0;
+}
+.ai-bubble table {
+    width: 100%;
+    margin: 0.5rem 0;
+    font-size: 0.875rem;
+    border-collapse: collapse;
+}
+.ai-bubble th,
+.ai-bubble td {
+    padding: 0.25rem 0.5rem;
+    border-bottom: 1px solid var(--bs-border-color);
+    text-align: left;
+}
+.ai-bubble ul,
+.ai-bubble ol {
+    padding-left: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.ai-welcome {
+    margin: auto;
+    max-width: 560px;
+    text-align: center;
+}
+.ai-welcome-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 0.75rem;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--ai-soft);
+    color: var(--ai-accent);
+    font-size: 1.6rem;
+}
+
+.ai-typing {
+    display: inline-flex;
+    gap: 3px;
+    vertical-align: middle;
+}
+.ai-typing span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.4;
+    animation: ai-blink 1.2s infinite;
+}
+.ai-typing span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+.ai-typing span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+@keyframes ai-blink {
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Insights */
+.ai-insight {
+    border-left: 4px solid var(--bs-info);
+}
+.ai-insight.sev-critical {
+    border-left-color: var(--bs-danger);
+}
+.ai-insight.sev-warning {
+    border-left-color: var(--bs-warning);
+}
+.ai-insight.kind-briefing {
+    border-left-color: var(--ai-accent);
+}
+.ai-insight.is-closed {
+    opacity: 0.65;
+}
+.ai-insight-body > :last-child {
+    margin-bottom: 0;
+}
+.ai-insight-body table {
+    width: 100%;
+    font-size: 0.875rem;
+}
+.ai-insight-body th,
+.ai-insight-body td {
+    padding: 0.2rem 0.4rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+.ai-recommendation {
+    background: var(--ai-soft);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+}
+
+/* The "not configured" warning, pointed at when the user tries to ask anyway. */
+.ai-attention {
+    animation: ai-shake 0.45s;
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-warning-rgb), 0.5);
+}
+@keyframes ai-shake {
+    25% {
+        transform: translateX(-4px);
+    }
+    75% {
+        transform: translateX(4px);
+    }
+}

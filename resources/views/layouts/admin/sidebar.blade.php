@@ -18,5 +18,6 @@
         @include("layouts.admin.nav-hr")
         @include("layouts.admin.nav-settings")
     @endif
+        @include("layouts.admin.nav-ai")
         @include("layouts.admin.nav-account")
 </nav>

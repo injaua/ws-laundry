@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AiInsight;
 use App\Models\CreditNote;
 use App\Models\Customer;
 use App\Models\Equipment;
@@ -123,8 +124,15 @@ class DashboardController extends Controller
         // Is the store ready to take payments and talk to customers? (admin / owner)
         $storeReadiness = auth()->user()->can("configure-store") ? StoreReadiness::for(CurrentStore::id()) : null;
 
+        // Latest open insights (admin / owner who receive them).
+        $user = auth()->user();
+        $aiInsights = $user->can("receive-insights") && $user->ai_insights_enabled
+            ? AiInsight::visibleTo($user, CurrentStore::id())->open()->latest("period_date")
+                ->orderByRaw("FIELD(severity, 'critical', 'warning', 'info')")->latest("id")->limit(4)->get()
+            : collect();
+
         return view("dashboard", compact(
-            "storeKpis", "kpiStore", "kpiComputedAt", "storeReadiness",
+            "aiInsights", "storeKpis", "kpiStore", "kpiComputedAt", "storeReadiness",
             "isManager", "totalCustomers", "newCustomers", "todayOrders", "processingOrders",
             "readyOrders", "todayRevenue", "monthRevenue",
             "latestOrders", "chartLabels", "chartData", "resourceAlerts", "receivablesAlerts"

@@ -8,8 +8,14 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
-/** Reclamação de cliente: registered, followed up within a deadline and resolved. */
+/**
+ * Reclamação de cliente: registered, followed up within a deadline and resolved.
+ *
+ * @property Carbon|null $due_at
+ * @property Carbon|null $resolved_at
+ */
 class Complaint extends Model
 {
     use BelongsToStore;

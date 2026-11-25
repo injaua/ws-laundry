@@ -52,6 +52,7 @@ final class HelpCenter
             "accounting" => ["bi-journal-text", self::FINANCE],
             "reports" => ["bi-graph-up", self::FINANCE],
             "payroll" => ["bi-cash-stack", self::FINANCE],
+            "documents" => ["bi-folder2-open", self::FINANCE],
         ],
         "people" => [
             "hr" => ["bi-person-badge", self::MANAGERS],

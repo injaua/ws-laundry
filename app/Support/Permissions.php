@@ -29,6 +29,8 @@ final class Permissions
         "view-reports" => ["admin", "owner", "accountant"],
         // Finance: expenses, accounting, receivables, wallets, treasury, business invoices, payroll, suppliers
         "manage-finance" => ["admin", "owner", "accountant"],
+        // Document archive: upload Word / Excel / PowerPoint / PDF files, folders and categories
+        "manage-documents" => ["admin", "owner", "accountant"],
         // Store management decisions: targets, activity log, prices, promotions, delivery zones,
         // resources (equipment, stock, purchases), data protection, period reopening, production report
         "manage-store" => ["admin", "owner"],
@@ -51,6 +53,12 @@ final class Permissions
         "answer-customers" => ["cashier"],
         // Own payslips and attendance
         "hr-self-service" => ["cashier"],
+        // AI assistant: questions answered with the data the user's role may see
+        "use-assistant" => ["admin", "owner", "cashier", "accountant", "courier"],
+        // Automatic AI insights (alerts and daily briefings) and their on/off switch
+        "receive-insights" => ["admin", "owner"],
+        // AI provider, model, credentials, budget and limits (company or store level)
+        "configure-ai" => ["admin", "owner"],
         // Company-wide: stores, security, system settings, languages, currencies, public website,
         // sending a store back to the company configuration, user activation
         "administer-company" => ["admin"],

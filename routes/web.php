@@ -56,6 +56,8 @@ Route::middleware(["auth", "verified"])->group(function () {
     require __DIR__ . "/web/sales.php";
     require __DIR__ . "/web/management.php";
     require __DIR__ . "/web/finance.php";
+    require __DIR__ . "/web/documents.php";
+    require __DIR__ . "/web/assistant.php";
     require __DIR__ . "/web/operations.php";
     require __DIR__ . "/web/hr.php";
     require __DIR__ . "/web/messages.php";

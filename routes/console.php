@@ -33,3 +33,7 @@ Schedule::command("mobile-money:refresh")->everyMinute()->withoutOverlapping();
 Schedule::command("backup:run")->dailyAt("01:30")->withoutOverlapping();
 // Weekly check that nobody changed the audit trail directly in the database.
 Schedule::command("audit:verify")->weeklyOn(1, "02:00");
+
+// Automatic insights: store alerts, the daily briefing (yesterday + forecast for tomorrow,
+// the week and the month) and the company briefing; weekly detectors on Mondays.
+Schedule::command("ai:insights")->dailyAt("06:00")->withoutOverlapping();

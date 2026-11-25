@@ -11,7 +11,7 @@
 </a>
 @endif
 @if(auth()->user()->can("configure-store"))
-@php($settingsActive = request()->routeIs("admin.landing-settings.*") || request()->routeIs("admin.business-settings.*") || request()->routeIs("admin.notifications.*") || request()->routeIs("admin.mobile-money.*") || request()->routeIs("admin.security.*") || request()->routeIs("admin.system-settings.*") || request()->routeIs("admin.languages.*") || request()->routeIs("admin.currencies.*"))
+@php($settingsActive = request()->routeIs("admin.landing-settings.*") || request()->routeIs("admin.business-settings.*") || request()->routeIs("admin.notifications.*") || request()->routeIs("admin.mobile-money.*") || request()->routeIs("admin.ai.*") || request()->routeIs("admin.security.*") || request()->routeIs("admin.system-settings.*") || request()->routeIs("admin.languages.*") || request()->routeIs("admin.currencies.*"))
 <a class="nav-link d-flex justify-content-between align-items-center {{ $settingsActive ? "" : "collapsed" }}" data-bs-toggle="collapse" href="#collapseSettings" role="button" aria-expanded="{{ $settingsActive ? "true" : "false" }}" aria-controls="collapseSettings">
     <span><i class="bi bi-sliders"></i> {{ __('app.settings') }}</span>
     <i class="bi bi-chevron-down chev"></i>
@@ -50,6 +50,11 @@
     <a href="{{ route("admin.mobile-money.edit") }}" class="nav-link ms-3 {{ request()->routeIs("admin.mobile-money.*") ? "active" : "" }} nav-sub">
         <i class="bi bi-phone"></i> {{ __('app.mm_settings') }}
     </a>
+    @can("configure-ai")
+    <a href="{{ route("admin.ai.edit") }}" class="nav-link ms-3 {{ request()->routeIs("admin.ai.*") ? "active" : "" }} nav-sub">
+        <i class="bi bi-cpu"></i> {{ __('app.ai_settings') }}
+    </a>
+    @endcan
     @if(auth()->user()->can("administer-company"))
     <a href="{{ route("admin.security.index") }}" class="nav-link ms-3 {{ request()->routeIs("admin.security.*") ? "active" : "" }} nav-sub">
         <i class="bi bi-shield-lock"></i> {{ __('app.security_compliance') }}

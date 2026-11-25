@@ -73,3 +73,10 @@
     </a>
 </div>
 @endif
+
+@if(auth()->user()->can("manage-documents"))
+<a href="{{ route("documents-archive.index") }}" class="nav-link d-flex justify-content-between align-items-center {{ request()->routeIs("documents-archive.*") ? "active" : "" }}">
+    <span><i class="bi bi-folder2-open"></i> {{ __('app.doc_archive_menu') }}</span>
+    @if($navBadges['documents_unread'] ?? 0)<span class="badge rounded-pill bg-primary nav-badge" title="{{ __('app.doc_unread_received') }}">{{ $navBadges['documents_unread'] }}</span>@endif
+</a>
+@endif

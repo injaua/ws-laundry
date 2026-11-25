@@ -108,6 +108,133 @@ CREATE TABLE `activity_logs` (
   KEY `activity_logs_store_id_index` (`store_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `ai_conversations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ai_conversations` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `store_id` bigint unsigned DEFAULT NULL,
+  `user_id` bigint unsigned NOT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `ai_conversations_store_id_foreign` (`store_id`),
+  KEY `ai_conversations_user_id_updated_at_index` (`user_id`,`updated_at`),
+  CONSTRAINT `ai_conversations_store_id_foreign` FOREIGN KEY (`store_id`) REFERENCES `stores` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `ai_conversations_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `ai_insight_feedback`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ai_insight_feedback` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `insight_id` bigint unsigned NOT NULL,
+  `user_id` bigint unsigned NOT NULL,
+  `useful` tinyint(1) NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ai_insight_feedback_insight_id_user_id_unique` (`insight_id`,`user_id`),
+  KEY `ai_insight_feedback_user_id_foreign` (`user_id`),
+  CONSTRAINT `ai_insight_feedback_insight_id_foreign` FOREIGN KEY (`insight_id`) REFERENCES `ai_insights` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `ai_insight_feedback_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `ai_insights`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ai_insights` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `store_id` bigint unsigned DEFAULT NULL,
+  `audience` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `kind` varchar(12) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `detector` varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `severity` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `body` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `recommendation` text COLLATE utf8mb4_unicode_ci,
+  `data` json DEFAULT NULL,
+  `link` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `fingerprint` varchar(120) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `period_date` date NOT NULL,
+  `status` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'new',
+  `ai_written` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `ai_insights_store_id_foreign` (`store_id`),
+  KEY `ai_insights_audience_store_id_status_created_at_index` (`audience`,`store_id`,`status`,`created_at`),
+  KEY `ai_insights_fingerprint_index` (`fingerprint`),
+  CONSTRAINT `ai_insights_store_id_foreign` FOREIGN KEY (`store_id`) REFERENCES `stores` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `ai_messages`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ai_messages` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `conversation_id` bigint unsigned NOT NULL,
+  `role` varchar(12) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `content` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tools` json DEFAULT NULL,
+  `failed` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `ai_messages_conversation_id_foreign` (`conversation_id`),
+  CONSTRAINT `ai_messages_conversation_id_foreign` FOREIGN KEY (`conversation_id`) REFERENCES `ai_conversations` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `ai_runs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ai_runs` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `store_id` bigint unsigned DEFAULT NULL,
+  `user_id` bigint unsigned DEFAULT NULL,
+  `purpose` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `provider` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `model` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `input_tokens` int unsigned NOT NULL DEFAULT '0',
+  `output_tokens` int unsigned NOT NULL DEFAULT '0',
+  `cost` decimal(12,6) NOT NULL DEFAULT '0.000000',
+  `succeeded` tinyint(1) NOT NULL DEFAULT '1',
+  `error` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `ai_runs_user_id_foreign` (`user_id`),
+  KEY `ai_runs_store_id_created_at_index` (`store_id`,`created_at`),
+  CONSTRAINT `ai_runs_store_id_foreign` FOREIGN KEY (`store_id`) REFERENCES `stores` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `ai_runs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `ai_tool_calls`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ai_tool_calls` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `conversation_id` bigint unsigned DEFAULT NULL,
+  `message_id` bigint unsigned DEFAULT NULL,
+  `user_id` bigint unsigned DEFAULT NULL,
+  `store_id` bigint unsigned DEFAULT NULL,
+  `tool` varchar(60) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `input` json DEFAULT NULL,
+  `status` varchar(12) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `duration_ms` int unsigned NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `ai_tool_calls_conversation_id_foreign` (`conversation_id`),
+  KEY `ai_tool_calls_message_id_foreign` (`message_id`),
+  KEY `ai_tool_calls_user_id_foreign` (`user_id`),
+  KEY `ai_tool_calls_store_id_foreign` (`store_id`),
+  CONSTRAINT `ai_tool_calls_conversation_id_foreign` FOREIGN KEY (`conversation_id`) REFERENCES `ai_conversations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `ai_tool_calls_message_id_foreign` FOREIGN KEY (`message_id`) REFERENCES `ai_messages` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `ai_tool_calls_store_id_foreign` FOREIGN KEY (`store_id`) REFERENCES `stores` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `ai_tool_calls_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `attendances`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -580,6 +707,107 @@ CREATE TABLE `delivery_zones` (
   CONSTRAINT `delivery_zones_store_id_foreign` FOREIGN KEY (`store_id`) REFERENCES `stores` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `document_categories`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `document_categories` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `store_id` bigint unsigned DEFAULT NULL,
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `color` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'secondary',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `document_categories_store_id_name_unique` (`store_id`,`name`),
+  CONSTRAINT `document_categories_store_id_foreign` FOREIGN KEY (`store_id`) REFERENCES `stores` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `document_favorites`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `document_favorites` (
+  `document_id` bigint unsigned NOT NULL,
+  `user_id` bigint unsigned NOT NULL,
+  PRIMARY KEY (`document_id`,`user_id`),
+  KEY `document_favorites_user_id_foreign` (`user_id`),
+  CONSTRAINT `document_favorites_document_id_foreign` FOREIGN KEY (`document_id`) REFERENCES `documents` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `document_favorites_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `document_folders`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `document_folders` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `store_id` bigint unsigned DEFAULT NULL,
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `color` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'primary',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `document_folders_store_id_name_unique` (`store_id`,`name`),
+  CONSTRAINT `document_folders_store_id_foreign` FOREIGN KEY (`store_id`) REFERENCES `stores` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `document_shares`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `document_shares` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `store_id` bigint unsigned DEFAULT NULL,
+  `document_id` bigint unsigned NOT NULL,
+  `sender_id` bigint unsigned DEFAULT NULL,
+  `recipient_id` bigint unsigned NOT NULL,
+  `message` text COLLATE utf8mb4_unicode_ci,
+  `read_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `document_shares_store_id_foreign` (`store_id`),
+  KEY `document_shares_recipient_id_read_at_index` (`recipient_id`,`read_at`),
+  KEY `document_shares_sender_id_created_at_index` (`sender_id`,`created_at`),
+  KEY `document_shares_document_id_recipient_id_index` (`document_id`,`recipient_id`),
+  CONSTRAINT `document_shares_document_id_foreign` FOREIGN KEY (`document_id`) REFERENCES `documents` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `document_shares_recipient_id_foreign` FOREIGN KEY (`recipient_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `document_shares_sender_id_foreign` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `document_shares_store_id_foreign` FOREIGN KEY (`store_id`) REFERENCES `stores` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `documents`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `documents` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `store_id` bigint unsigned DEFAULT NULL,
+  `folder_id` bigint unsigned DEFAULT NULL,
+  `category_id` bigint unsigned DEFAULT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reference` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `tags` json DEFAULT NULL,
+  `document_date` date DEFAULT NULL,
+  `expires_at` date DEFAULT NULL,
+  `path` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `original_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mime_type` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `extension` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `size` bigint unsigned NOT NULL DEFAULT '0',
+  `uploaded_by` bigint unsigned DEFAULT NULL,
+  `is_private` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `documents_folder_id_foreign` (`folder_id`),
+  KEY `documents_category_id_foreign` (`category_id`),
+  KEY `documents_uploaded_by_foreign` (`uploaded_by`),
+  KEY `documents_store_id_created_at_index` (`store_id`,`created_at`),
+  KEY `documents_store_id_expires_at_index` (`store_id`,`expires_at`),
+  CONSTRAINT `documents_category_id_foreign` FOREIGN KEY (`category_id`) REFERENCES `document_categories` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `documents_folder_id_foreign` FOREIGN KEY (`folder_id`) REFERENCES `document_folders` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `documents_store_id_foreign` FOREIGN KEY (`store_id`) REFERENCES `stores` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `documents_uploaded_by_foreign` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `employee_salaries`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -730,6 +958,8 @@ CREATE TABLE `expenses` (
   `category` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `period_type` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `amount` decimal(12,2) NOT NULL,
+  `vat_rate` decimal(5,2) DEFAULT NULL,
+  `vat_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
   `expense_date` date NOT NULL,
   `user_id` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -1365,7 +1595,7 @@ DROP TABLE IF EXISTS `orders`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `orders` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `order_number` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `order_number` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL,
   `customer_id` bigint unsigned NOT NULL,
   `received_at` date NOT NULL,
   `delivery_date` date DEFAULT NULL,
@@ -1805,6 +2035,7 @@ CREATE TABLE `users` (
   `store_id` bigint unsigned DEFAULT NULL,
   `created_by` bigint unsigned DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `ai_insights_enabled` tinyint(1) NOT NULL DEFAULT '1',
   `email_verified_at` timestamp NULL DEFAULT NULL,
   `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `two_factor_secret` text COLLATE utf8mb4_unicode_ci,
@@ -2034,6 +2265,12 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (84,'2026_11_29_100
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (85,'2026_11_30_100000_unique_delivery_zone_names_per_store',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (86,'2026_12_01_100000_create_activity_log_chain_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (87,'2026_12_01_110000_add_store_reporting_indexes',1);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (88,'2026_12_02_100000_add_vat_to_expenses',1);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (89,'2026_12_03_100000_widen_order_number_column',1);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (90,'2026_12_04_100000_add_pos_payment_account',1);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (91,'2026_12_05_100000_create_document_archive_tables',1);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (92,'2026_12_06_100000_create_ai_assistant_tables',1);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (93,'2026_12_07_100000_create_document_shares_table',1);
 
 -- Rows inserted by the migrations (schema:snapshot)
 
@@ -2049,7 +2286,7 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (87,'2026_12_01_110
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 /*!40000 ALTER TABLE `accounts` DISABLE KEYS */;
-INSERT INTO `accounts` (`id`, `code`, `name`, `type`, `is_group`, `is_active`, `parent_id`, `created_at`, `updated_at`, `store_id`) VALUES (29,'1','Meios financeiros','asset',1,1,NULL,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(30,'2','Inventários','asset',1,1,NULL,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(31,'3','Investimentos de capital','asset',1,1,NULL,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(32,'4','Contas a receber e a pagar, acréscimos e diferimentos','liability',1,1,NULL,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(33,'5','Capital próprio','equity',1,1,NULL,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(34,'6','Gastos e perdas','expense',1,1,NULL,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(35,'7','Rendimentos e ganhos','revenue',1,1,NULL,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(36,'8','Resultados','equity',1,1,NULL,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(37,'1.2','Bancos','asset',1,1,29,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(38,'1.1','Caixa','asset',0,1,29,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(39,'1.2.1','Depósitos à ordem','asset',0,1,37,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(40,'2.2','Mercadorias','asset',0,1,30,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(41,'2.6.2','Matérias-primas, auxiliares e materiais','asset',0,1,30,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(42,'3.2.2','Equipamento básico','asset',0,1,31,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(43,'3.2.3','Mobiliário e equipamento administrativo','asset',0,1,31,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(44,'3.2.4','Equipamento de transporte','asset',0,1,31,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(45,'3.2.9','Outros ativos tangíveis','asset',0,1,31,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(46,'3.3.5','Programas de computador','asset',0,1,31,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(47,'3.8.2','Amortizações acumuladas de ativos tangíveis','asset',0,1,31,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(48,'4.1.1','Clientes c/c','asset',0,1,32,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(49,'4.2.1','Fornecedores c/c','liability',0,1,32,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(50,'4.3.1','Empréstimos bancários','liability',0,1,32,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(51,'4.4.1','Imposto sobre o rendimento','liability',0,1,32,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(52,'4.4.2.1','Imposto retido — rendimentos de trabalho dependente','liability',0,1,32,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(53,'4.4.3.1','IVA suportado','asset',0,1,32,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(54,'4.4.3.3','IVA liquidado','liability',0,1,32,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(55,'4.4.3.7','IVA a pagar','liability',0,1,32,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(56,'4.4.9','Contribuições para o INSS','liability',0,1,32,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(57,'4.6.2.2','Remunerações a pagar aos trabalhadores','liability',0,1,32,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(58,'5.1','Capital','equity',0,1,33,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(59,'5.9','Resultados transitados','equity',0,1,33,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(60,'6.1.1','Custo das matérias e mercadorias consumidas','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(61,'6.2.2','Remunerações dos trabalhadores','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(62,'6.2.3','Encargos sobre as remunerações','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(63,'6.3.1','Subcontratos','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(64,'6.3.2.1.1','Água','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(65,'6.3.2.1.2','Eletricidade','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(66,'6.3.2.1.3','Combustíveis e lubrificantes','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(67,'6.3.2.1.6','Material de escritório','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(68,'6.3.2.2.2','Transportes de carga','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(69,'6.3.2.2.4','Comunicações','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(70,'6.3.2.2.5','Honorários','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(71,'6.3.2.2.7','Publicidade e propaganda','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(72,'6.3.2.2.9','Deslocações e estadias','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(73,'6.3.2.3.2','Rendas e alugueres','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(74,'6.3.2.3.3','Seguros','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(75,'6.3.2.9.9','Outros fornecimentos e serviços','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(76,'6.5.1','Amortizações do período','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(77,'6.8.2','Impostos e taxas','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(78,'6.8.9.6','Multas e penalidades','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(79,'6.9.8.1','Serviços bancários','expense',0,1,34,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(80,'7.1.1','Vendas de mercadorias','revenue',0,1,35,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(81,'7.2','Prestação de serviços','revenue',0,1,35,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(82,'7.6.9.9','Outros rendimentos e ganhos','revenue',0,1,35,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(83,'8.8','Resultado líquido do período','equity',0,1,36,'2026-11-22 03:20:46','2026-11-22 03:20:46',1),(84,'6.8.9.9','Outros gastos e perdas','expense',0,1,34,'2026-11-22 03:20:58','2026-11-22 03:20:58',1),(85,'1.2.2','Carteira móvel M-Pesa','asset',0,1,37,'2026-11-22 03:21:25','2026-11-22 03:21:25',1),(86,'1.2.3','Carteira móvel e-Mola','asset',0,1,37,'2026-11-22 03:21:25','2026-11-22 03:21:25',1),(87,'1.2.4','Carteira móvel mKesh','asset',0,1,37,'2026-11-22 03:21:26','2026-11-22 03:21:26',1),(88,'1.3','Cheques a depositar','asset',0,1,29,'2026-11-22 03:21:28','2026-11-22 03:21:28',1);
+INSERT INTO `accounts` (`id`, `code`, `name`, `type`, `is_group`, `is_active`, `parent_id`, `created_at`, `updated_at`, `store_id`) VALUES (29,'1','Meios financeiros','asset',1,1,NULL,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(30,'2','Inventários','asset',1,1,NULL,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(31,'3','Investimentos de capital','asset',1,1,NULL,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(32,'4','Contas a receber e a pagar, acréscimos e diferimentos','liability',1,1,NULL,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(33,'5','Capital próprio','equity',1,1,NULL,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(34,'6','Gastos e perdas','expense',1,1,NULL,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(35,'7','Rendimentos e ganhos','revenue',1,1,NULL,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(36,'8','Resultados','equity',1,1,NULL,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(37,'1.2','Bancos','asset',1,1,29,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(38,'1.1','Caixa','asset',0,1,29,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(39,'1.2.1','Depósitos à ordem','asset',0,1,37,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(40,'2.2','Mercadorias','asset',0,1,30,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(41,'2.6.2','Matérias-primas, auxiliares e materiais','asset',0,1,30,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(42,'3.2.2','Equipamento básico','asset',0,1,31,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(43,'3.2.3','Mobiliário e equipamento administrativo','asset',0,1,31,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(44,'3.2.4','Equipamento de transporte','asset',0,1,31,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(45,'3.2.9','Outros ativos tangíveis','asset',0,1,31,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(46,'3.3.5','Programas de computador','asset',0,1,31,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(47,'3.8.2','Amortizações acumuladas de ativos tangíveis','asset',0,1,31,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(48,'4.1.1','Clientes c/c','asset',0,1,32,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(49,'4.2.1','Fornecedores c/c','liability',0,1,32,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(50,'4.3.1','Empréstimos bancários','liability',0,1,32,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(51,'4.4.1','Imposto sobre o rendimento','liability',0,1,32,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(52,'4.4.2.1','Imposto retido — rendimentos de trabalho dependente','liability',0,1,32,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(53,'4.4.3.1','IVA suportado','asset',0,1,32,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(54,'4.4.3.3','IVA liquidado','liability',0,1,32,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(55,'4.4.3.7','IVA a pagar','liability',0,1,32,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(56,'4.4.9','Contribuições para o INSS','liability',0,1,32,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(57,'4.6.2.2','Remunerações a pagar aos trabalhadores','liability',0,1,32,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(58,'5.1','Capital','equity',0,1,33,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(59,'5.9','Resultados transitados','equity',0,1,33,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(60,'6.1.1','Custo das matérias e mercadorias consumidas','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(61,'6.2.2','Remunerações dos trabalhadores','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(62,'6.2.3','Encargos sobre as remunerações','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(63,'6.3.1','Subcontratos','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(64,'6.3.2.1.1','Água','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(65,'6.3.2.1.2','Eletricidade','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(66,'6.3.2.1.3','Combustíveis e lubrificantes','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(67,'6.3.2.1.6','Material de escritório','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(68,'6.3.2.2.2','Transportes de carga','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(69,'6.3.2.2.4','Comunicações','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(70,'6.3.2.2.5','Honorários','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(71,'6.3.2.2.7','Publicidade e propaganda','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(72,'6.3.2.2.9','Deslocações e estadias','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(73,'6.3.2.3.2','Rendas e alugueres','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(74,'6.3.2.3.3','Seguros','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(75,'6.3.2.9.9','Outros fornecimentos e serviços','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(76,'6.5.1','Amortizações do período','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(77,'6.8.2','Impostos e taxas','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(78,'6.8.9.6','Multas e penalidades','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(79,'6.9.8.1','Serviços bancários','expense',0,1,34,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(80,'7.1.1','Vendas de mercadorias','revenue',0,1,35,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(81,'7.2','Prestação de serviços','revenue',0,1,35,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(82,'7.6.9.9','Outros rendimentos e ganhos','revenue',0,1,35,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(83,'8.8','Resultado líquido do período','equity',0,1,36,'2026-11-25 07:59:13','2026-11-25 07:59:13',1),(84,'6.8.9.9','Outros gastos e perdas','expense',0,1,34,'2026-11-25 07:59:16','2026-11-25 07:59:16',1),(85,'1.2.2','Carteira móvel M-Pesa','asset',0,1,37,'2026-11-25 07:59:23','2026-11-25 07:59:23',1),(86,'1.2.3','Carteira móvel e-Mola','asset',0,1,37,'2026-11-25 07:59:23','2026-11-25 07:59:23',1),(87,'1.2.4','Carteira móvel mKesh','asset',0,1,37,'2026-11-25 07:59:23','2026-11-25 07:59:23',1),(88,'1.3','Cheques a depositar','asset',0,1,29,'2026-11-25 07:59:24','2026-11-25 07:59:24',1),(89,'4.4.3.2','IVA dedutível','asset',0,1,32,'2026-11-25 07:59:33','2026-11-25 07:59:33',1),(90,'1.2.5','Pagamentos POS (cartões)','asset',0,1,37,'2026-11-25 07:59:33','2026-11-25 07:59:33',1);
 /*!40000 ALTER TABLE `accounts` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `activity_log_chain` DISABLE KEYS */;
@@ -2057,23 +2294,23 @@ INSERT INTO `activity_log_chain` (`id`, `last_id`, `last_hash`) VALUES (1,NULL,N
 /*!40000 ALTER TABLE `activity_log_chain` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `currencies` DISABLE KEYS */;
-INSERT INTO `currencies` (`id`, `code`, `name`, `symbol`, `position`, `decimals`, `is_active`, `created_at`, `updated_at`) VALUES (1,'MZN','Metical','Mts','after',0,1,'2026-11-22 03:21:31','2026-11-22 03:21:31'),(2,'USD','Dólar americano','$','before',2,0,'2026-11-22 03:21:31','2026-11-22 03:21:31'),(3,'ZAR','Rand sul-africano','R','before',2,0,'2026-11-22 03:21:31','2026-11-22 03:21:31'),(4,'EUR','Euro','€','after',2,0,'2026-11-22 03:21:31','2026-11-22 03:21:31');
+INSERT INTO `currencies` (`id`, `code`, `name`, `symbol`, `position`, `decimals`, `is_active`, `created_at`, `updated_at`) VALUES (1,'MZN','Metical','Mts','after',0,1,'2026-11-25 07:59:25','2026-11-25 07:59:25'),(2,'USD','Dólar americano','$','before',2,0,'2026-11-25 07:59:25','2026-11-25 07:59:25'),(3,'ZAR','Rand sul-africano','R','before',2,0,'2026-11-25 07:59:25','2026-11-25 07:59:25'),(4,'EUR','Euro','€','after',2,0,'2026-11-25 07:59:25','2026-11-25 07:59:25');
 /*!40000 ALTER TABLE `currencies` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `expense_categories` DISABLE KEYS */;
-INSERT INTO `expense_categories` (`id`, `key`, `name`, `color`, `is_fixed`, `default_amount`, `is_salary`, `is_vat_applicable`, `created_at`, `updated_at`, `account_id`, `store_id`) VALUES (1,'detergent','Detergente','info',0,0.00,0,1,'2026-11-22 03:20:45','2026-11-22 03:20:47',60,1),(2,'electricity','Eletricidade','warning',0,0.00,0,1,'2026-11-22 03:20:45','2026-11-22 03:20:47',65,1),(3,'water','Água','primary',0,0.00,0,1,'2026-11-22 03:20:45','2026-11-22 03:20:47',64,1),(4,'salary','Salário','success',0,0.00,1,0,'2026-11-22 03:20:45','2026-11-22 03:20:46',61,1),(5,'other','Outros','secondary',0,0.00,0,0,'2026-11-22 03:20:45','2026-11-22 03:20:46',75,1),(6,'cleaning_products','Produtos de limpeza','info',0,0.00,0,1,'2026-11-22 03:20:49','2026-11-22 03:20:49',60,1),(7,'maintenance','Manutenção e assistência','warning',0,0.00,0,0,'2026-11-22 03:20:49','2026-11-22 03:20:49',75,1);
+INSERT INTO `expense_categories` (`id`, `key`, `name`, `color`, `is_fixed`, `default_amount`, `is_salary`, `is_vat_applicable`, `created_at`, `updated_at`, `account_id`, `store_id`) VALUES (1,'detergent','Detergente','info',0,0.00,0,1,'2026-11-25 07:59:12','2026-11-25 07:59:13',60,1),(2,'electricity','Eletricidade','warning',0,0.00,0,1,'2026-11-25 07:59:12','2026-11-25 07:59:13',65,1),(3,'water','Água','primary',0,0.00,0,1,'2026-11-25 07:59:12','2026-11-25 07:59:13',64,1),(4,'salary','Salário','success',0,0.00,1,0,'2026-11-25 07:59:12','2026-11-25 07:59:13',61,1),(5,'other','Outros','secondary',0,0.00,0,0,'2026-11-25 07:59:12','2026-11-25 07:59:13',75,1),(6,'cleaning_products','Produtos de limpeza','info',0,0.00,0,1,'2026-11-25 07:59:13','2026-11-25 07:59:13',60,1),(7,'maintenance','Manutenção e assistência','warning',0,0.00,0,0,'2026-11-25 07:59:13','2026-11-25 07:59:13',75,1);
 /*!40000 ALTER TABLE `expense_categories` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `languages` DISABLE KEYS */;
-INSERT INTO `languages` (`id`, `code`, `name`, `flag`, `direction`, `base_locale`, `is_active`, `is_system`, `created_at`, `updated_at`) VALUES (1,'pt','Português','🇵🇹','ltr','pt',1,1,'2026-11-22 03:21:31','2026-11-22 03:21:31'),(2,'en','English','🇬🇧','ltr','en',1,1,'2026-11-22 03:21:31','2026-11-22 03:21:31');
+INSERT INTO `languages` (`id`, `code`, `name`, `flag`, `direction`, `base_locale`, `is_active`, `is_system`, `created_at`, `updated_at`) VALUES (1,'pt','Português','🇵🇹','ltr','pt',1,1,'2026-11-25 07:59:25','2026-11-25 07:59:25'),(2,'en','English','🇬🇧','ltr','en',1,1,'2026-11-25 07:59:25','2026-11-25 07:59:25');
 /*!40000 ALTER TABLE `languages` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `message_templates` DISABLE KEYS */;
-INSERT INTO `message_templates` (`id`, `name`, `body`, `wa_template_name`, `wa_language`, `wa_params`, `is_active`, `created_by`, `created_at`, `updated_at`, `store_id`) VALUES (1,'Encomenda recebida','Olá {customer}! Recebemos a sua encomenda {order}. Entrega prevista: {delivery_date}. Obrigado pela preferência!',NULL,NULL,NULL,1,NULL,'2026-11-22 03:21:00','2026-11-22 03:21:00',1),(2,'Pagamento recebido','Olá {customer}, confirmamos o pagamento de {amount} Mts referente à encomenda {order}. Obrigado!',NULL,NULL,NULL,1,NULL,'2026-11-22 03:21:00','2026-11-22 03:21:00',1),(3,'Peças por levantar','Olá {customer}, a sua encomenda {order} está pronta há {days} dias e aguarda levantamento na WS Clean & Laundry. Esperamos por si!',NULL,NULL,NULL,1,NULL,'2026-11-22 03:21:00','2026-11-22 03:21:00',1),(4,'Recolha agendada','Olá {customer}! A sua recolha está agendada para {date} ({window}). Morada: {address}. Obrigado pela preferência!',NULL,NULL,NULL,1,NULL,'2026-11-22 03:21:15','2026-11-22 03:21:15',1),(5,'Estafeta a caminho','Olá {customer}, o nosso estafeta {courier} está a caminho para {task}. Até já!',NULL,NULL,NULL,1,NULL,'2026-11-22 03:21:15','2026-11-22 03:21:15',1),(6,'Encomenda atrasada','Olá {customer}, pedimos desculpa: a sua encomenda {order} vai atrasar. Nova data prevista: {delivery_date}. Obrigado pela compreensão!',NULL,NULL,NULL,1,NULL,'2026-11-22 03:21:23','2026-11-22 03:21:23',1),(7,'Pedido de pagamento','Olá {customer}, o valor da sua encomenda {order} é {amount}. Pode pagar por M-Pesa ou e-Mola aqui: {pay_link}',NULL,NULL,NULL,1,NULL,'2026-11-22 03:21:26','2026-11-22 03:21:26',1);
+INSERT INTO `message_templates` (`id`, `name`, `body`, `wa_template_name`, `wa_language`, `wa_params`, `is_active`, `created_by`, `created_at`, `updated_at`, `store_id`) VALUES (1,'Encomenda recebida','Olá {customer}! Recebemos a sua encomenda {order}. Entrega prevista: {delivery_date}. Obrigado pela preferência!',NULL,NULL,NULL,1,NULL,'2026-11-25 07:59:17','2026-11-25 07:59:17',1),(2,'Pagamento recebido','Olá {customer}, confirmamos o pagamento de {amount} Mts referente à encomenda {order}. Obrigado!',NULL,NULL,NULL,1,NULL,'2026-11-25 07:59:17','2026-11-25 07:59:17',1),(3,'Peças por levantar','Olá {customer}, a sua encomenda {order} está pronta há {days} dias e aguarda levantamento na WS Clean & Laundry. Esperamos por si!',NULL,NULL,NULL,1,NULL,'2026-11-25 07:59:17','2026-11-25 07:59:17',1),(4,'Recolha agendada','Olá {customer}! A sua recolha está agendada para {date} ({window}). Morada: {address}. Obrigado pela preferência!',NULL,NULL,NULL,1,NULL,'2026-11-25 07:59:21','2026-11-25 07:59:21',1),(5,'Estafeta a caminho','Olá {customer}, o nosso estafeta {courier} está a caminho para {task}. Até já!',NULL,NULL,NULL,1,NULL,'2026-11-25 07:59:21','2026-11-25 07:59:21',1),(6,'Encomenda atrasada','Olá {customer}, pedimos desculpa: a sua encomenda {order} vai atrasar. Nova data prevista: {delivery_date}. Obrigado pela compreensão!',NULL,NULL,NULL,1,NULL,'2026-11-25 07:59:23','2026-11-25 07:59:23',1),(7,'Pedido de pagamento','Olá {customer}, o valor da sua encomenda {order} é {amount}. Pode pagar por M-Pesa ou e-Mola aqui: {pay_link}',NULL,NULL,NULL,1,NULL,'2026-11-25 07:59:23','2026-11-25 07:59:23',1);
 /*!40000 ALTER TABLE `message_templates` ENABLE KEYS */;
 
 /*!40000 ALTER TABLE `stores` DISABLE KEYS */;
-INSERT INTO `stores` (`id`, `name`, `code`, `address`, `phone`, `email`, `nuit`, `is_active`, `created_at`, `updated_at`) VALUES (1,'Loja principal','LJ01',NULL,NULL,NULL,NULL,1,'2026-11-22 03:21:31','2026-11-22 03:21:31');
+INSERT INTO `stores` (`id`, `name`, `code`, `address`, `phone`, `email`, `nuit`, `is_active`, `created_at`, `updated_at`) VALUES (1,'Loja principal','LJ01',NULL,NULL,NULL,NULL,1,'2026-11-25 07:59:25','2026-11-25 07:59:25');
 /*!40000 ALTER TABLE `stores` ENABLE KEYS */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

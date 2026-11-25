@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\SiteSetting;
 use App\Models\Store;
+use App\Services\Ai\AiSettings;
 use App\Services\MobileMoney\MobileMoneySettings;
 use App\Services\WhatsApp\WhatsAppSettings;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,8 @@ use InvalidArgumentException;
  *
  *  - "whatsapp": conversation / notification channels and the official API credentials
  *    (a store with its own configuration also gets its own QR-code session, i.e. its own number);
- *  - "payments": accepted payment methods and the M-Pesa / e-Mola credentials and modes.
+ *  - "payments": accepted payment methods and the M-Pesa / e-Mola credentials and modes;
+ *  - "ai": the AI provider, model, credentials and limits of the assistant and the insights.
  *
  * The group is all-or-nothing, so a store never mixes its own values with the company's
  * (e.g. its own shortcode with the company's API key). Taking a group over copies the company
@@ -22,7 +24,7 @@ use InvalidArgumentException;
  */
 final class StoreSettings
 {
-    public const GROUPS = ["whatsapp", "payments"];
+    public const GROUPS = ["whatsapp", "payments", "ai"];
 
     /** @return string[] keys of a group */
     public static function keys(string $group): array
@@ -30,6 +32,7 @@ final class StoreSettings
         return match ($group) {
             "whatsapp" => WhatsAppSettings::KEYS,
             "payments" => ["payment_methods", ...MobileMoneySettings::keys()],
+            "ai" => AiSettings::KEYS,
             default => throw new InvalidArgumentException("Unknown settings group {$group}"),
         };
     }

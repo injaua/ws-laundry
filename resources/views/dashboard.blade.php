@@ -82,6 +82,10 @@
     @include('partials.store-readiness', ['readiness' => $storeReadiness])
 @endif
 
+@if($aiInsights->isNotEmpty())
+    @include('partials.ai-insights-card', ['insights' => $aiInsights])
+@endif
+
 @if($storeKpis)
 {{-- Management indicators of the store worked in (this month). --}}
 <div class="card mb-4">
