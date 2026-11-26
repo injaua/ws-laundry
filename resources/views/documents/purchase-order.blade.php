@@ -40,8 +40,8 @@
     <tbody>
         @foreach($purchase->items as $line)
             <tr>
-                <td>{{ $line->item?->name }}</td>
-                <td class="r">{{ qty($line->quantity) }} {{ $line->item ? __('app.unit_' . $line->item->unit) : "" }}</td>
+                <td>{{ $line->displayName() }}</td>
+                <td class="r">{{ qty($line->quantity) }} {{ $line->unitLabel() }}</td>
                 <td class="r">{{ num($line->unit_cost) }}</td>
                 <td class="r">{{ num($line->subtotal) }}</td>
             </tr>

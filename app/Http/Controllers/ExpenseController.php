@@ -2,15 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Expenses\RaisePurchaseOrder;
 use App\Http\Requests\ExpenseRequest;
 use App\Models\AccountingPeriod;
 use App\Models\EmployeeSalary;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
+use App\Models\InventoryItem;
 use App\Models\InventoryMovement;
 use App\Models\JournalEntry;
 use App\Models\MaintenanceJob;
+use App\Models\PurchaseOrder;
+use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 class ExpenseController extends Controller
@@ -43,11 +48,16 @@ class ExpenseController extends Controller
         Gate::authorize("create", Expense::class);
 
         $categories = ExpenseCategory::orderBy("name")->get();
+        $suppliers = Supplier::where("is_active", true)->orderBy("name")->get();
+        // Existing resources by kind, suggested as the names of the purchase-order lines.
+        $resourceNames = InventoryItem::where("is_active", true)->orderBy("name")->get(["kind", "name", "unit"])
+            ->groupBy("kind")
+            ->map(fn ($items) => $items->map(fn ($i) => ["name" => $i->name, "unit" => $i->unit])->values());
 
-        return view("expenses.create", compact("categories"));
+        return view("expenses.create", compact("categories", "suppliers", "resourceNames"));
     }
 
-    public function store(ExpenseRequest $request)
+    public function store(ExpenseRequest $request, RaisePurchaseOrder $raise)
     {
         Gate::authorize("create", Expense::class);
 
@@ -56,7 +66,19 @@ class ExpenseController extends Controller
 
         $validated["user_id"] = auth()->id();
 
-        Expense::create($validated)->postToJournal();
+        $order = DB::transaction(function () use ($validated, $request, $raise) {
+            $expense = Expense::create($validated);
+            $expense->postToJournal();
+
+            return $request->wantsPurchaseOrder()
+                ? $raise->handle($expense, $request->purchaseSupplier(), $request->purchaseLines(), $request->user())
+                : null;
+        });
+
+        if ($order) {
+            return redirect()->route("resources.purchases.show", $order)
+                ->with("success", __('app.expense_recorded_with_po', ["number" => $order->po_number]));
+        }
 
         return redirect()->route("expenses.index")
             ->with("success", __('app.expense_recorded'));
@@ -100,6 +122,7 @@ class ExpenseController extends Controller
         // a movement/job referencing a missing row.
         InventoryMovement::where("expense_id", $expense->id)->update(["expense_id" => null]);
         MaintenanceJob::where("expense_id", $expense->id)->update(["expense_id" => null]);
+        PurchaseOrder::where("expense_id", $expense->id)->update(["expense_id" => null]);
 
         $expense->delete();
         JournalEntry::forget("expense", $expense->id);

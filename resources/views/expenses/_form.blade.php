@@ -102,6 +102,86 @@
                         @error("description") <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
 
+                    @unless($isEdit)
+                    @php($poOn = (bool) old("create_purchase_order"))
+                    @php($poLines = old("po_lines", [["kind" => "product", "name" => "", "unit" => "un", "quantity" => 1, "unit_cost" => ""]]))
+                    <div class="border rounded p-3 mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" name="create_purchase_order" value="1" id="createPurchaseOrder" {{ $poOn ? "checked" : "" }}>
+                            <label class="form-check-label fw-semibold" for="createPurchaseOrder">{{ __('app.expense_create_po') }}</label>
+                        </div>
+                        <div class="form-text">{{ __('app.expense_create_po_hint') }}</div>
+
+                        <div id="purchaseOrderBox" class="mt-3 {{ $poOn ? "" : "d-none" }}">
+                            <div class="mb-3">
+                                <label class="form-label">{{ __('app.supplier') }} <span class="text-danger">*</span></label>
+                                <select name="po_supplier_id" class="form-select @error("po_supplier_id") is-invalid @enderror" data-po-required>
+                                    <option value="">{{ __('app.choose') }}</option>
+                                    @foreach($suppliers as $supplier)
+                                        <option value="{{ $supplier->id }}" {{ old("po_supplier_id") == $supplier->id ? "selected" : "" }}>{{ $supplier->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error("po_supplier_id") <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                @if($suppliers->isEmpty())
+                                    <div class="form-text text-warning">{{ __('app.expense_po_no_suppliers') }}</div>
+                                @endif
+                            </div>
+
+                            <label class="form-label">{{ __('app.lines') }} <span class="text-danger">*</span></label>
+                            @error("po_lines") <div class="text-danger small mb-1">{{ $message }}</div> @enderror
+                            <div id="poLines">
+                                @foreach($poLines as $i => $line)
+                                <div class="po-line border rounded p-2 mb-2">
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <select name="po_lines[{{ $i }}][kind]" class="form-select form-select-sm po-kind" data-po-required>
+                                                @foreach(\App\Actions\Expenses\RaisePurchaseOrder::KINDS as $kind)
+                                                    <option value="{{ $kind }}" {{ ($line["kind"] ?? "product") === $kind ? "selected" : "" }}>{{ __('app.po_line_kind_' . $kind) }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="text" name="po_lines[{{ $i }}][name]" class="form-control form-control-sm po-name @error("po_lines.$i.name") is-invalid @enderror" value="{{ $line["name"] ?? "" }}" maxlength="150" placeholder="{{ __('app.name') }}" autocomplete="off" data-po-required>
+                                        </div>
+                                        <div class="col-4">
+                                            <select name="po_lines[{{ $i }}][unit]" class="form-select form-select-sm po-unit">
+                                                @foreach(\App\Models\InventoryItem::UNITS as $unit)
+                                                    <option value="{{ $unit }}" {{ ($line["unit"] ?? "un") === $unit ? "selected" : "" }}>{{ __('app.unit_' . $unit) }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-3">
+                                            <input type="number" name="po_lines[{{ $i }}][quantity]" class="form-control form-control-sm po-qty @error("po_lines.$i.quantity") is-invalid @enderror" value="{{ $line["quantity"] ?? 1 }}" min="0.01" step="0.01" placeholder="{{ __('app.quantity') }}" title="{{ __('app.quantity') }}" data-po-required>
+                                        </div>
+                                        <div class="col-4">
+                                            <input type="number" name="po_lines[{{ $i }}][unit_cost]" class="form-control form-control-sm po-cost @error("po_lines.$i.unit_cost") is-invalid @enderror" value="{{ $line["unit_cost"] ?? "" }}" min="0" step="0.01" placeholder="{{ __('app.unit_cost') }}" title="{{ __('app.unit_cost') }}" data-po-required>
+                                        </div>
+                                        <div class="col-1 text-end">
+                                            <button type="button" class="btn btn-sm btn-outline-danger po-remove" title="{{ __('app.remove') }}"><i class="bi bi-x"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="small mt-1 po-status"></div>
+                                    @foreach(["name", "quantity", "unit_cost", "kind"] as $f)
+                                        @error("po_lines.$i.$f") <div class="text-danger small">{{ $message }}</div> @enderror
+                                    @endforeach
+                                </div>
+                                @endforeach
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <button type="button" id="poAddLine" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus"></i> {{ __('app.add_line') }}</button>
+                                <span class="small text-muted">{{ __('app.total') }}: <strong id="poTotal">0.00</strong> {{ currency_symbol() }}</span>
+                            </div>
+                            @foreach(\App\Actions\Expenses\RaisePurchaseOrder::KINDS as $kind)
+                                <datalist id="poNames-{{ $kind }}">
+                                    @foreach($resourceNames[$kind] ?? [] as $resource)
+                                        <option value="{{ $resource["name"] }}"></option>
+                                    @endforeach
+                                </datalist>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endunless
+
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> {{ $isEdit ? __('app.update') : __('app.save') }}</button>
                         <a href="{{ route("expenses.index") }}" class="btn btn-outline-secondary">{{ __('app.cancel') }}</a>
@@ -113,6 +193,6 @@
 </div>
 
 @push("scripts")
-    <x-page-data name="expense-form" :data="['totalUrl' => route('expenses.salary-total'), 'isEdit' => (bool) $isEdit, 'vatLabel' => __('app.expense_vat_preview'), 'currency' => currency_symbol()]"/>
+    <x-page-data name="expense-form" :data="['totalUrl' => route('expenses.salary-total'), 'isEdit' => (bool) $isEdit, 'vatLabel' => __('app.expense_vat_preview'), 'currency' => currency_symbol(), 'resources' => $resourceNames ?? [], 'existingLabel' => __('app.po_line_existing'), 'newLabel' => __('app.po_line_new'), 'newEquipmentLabel' => __('app.po_line_new_equipment')]"/>
     @vite("resources/js/pages/expense-form.js")
 @endpush

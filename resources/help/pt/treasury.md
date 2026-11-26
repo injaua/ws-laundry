@@ -15,6 +15,10 @@
 2. Indique o valor em **numerário** e escolha os **cheques** a depositar.
 3. Escreva o número do talão e confirme. O sistema faz o lançamento (Depósitos à ordem ← Caixa / Cheques a depositar).
 
+## Pagamentos POS (cartão)
+
+Os pagamentos por cartão no terminal POS ficam na conta **1.2.5 Pagamentos POS (cartões)** até o banco liquidar o lote. Quando o valor entrar no extrato, registe o lançamento que o passa para **Depósitos à ordem** (Débito 1.2.1, Crédito 1.2.5), descontando a comissão do banco, se houver.
+
 ## Reconciliação de carteiras móveis
 
 1. Exporte o extrato da carteira (M-Pesa, e-Mola) no portal do operador.

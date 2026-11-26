@@ -63,14 +63,14 @@ class PurchaseOrderController extends Controller
     /** Purchase order for the supplier (HTML, or PDF with ?format=pdf). */
     public function document(PurchaseOrder $purchase)
     {
-        $purchase->load(["supplier", "user", "items.item"]);
+        $purchase->load(["supplier", "user", "expense", "items.item", "items.equipment"]);
 
         return DocumentResponse::make("documents.purchase-order", compact("purchase"), __("app.purchase_order") . " " . $purchase->po_number);
     }
 
     public function show(PurchaseOrder $purchase)
     {
-        $purchase->load(["supplier", "user", "items.item"]);
+        $purchase->load(["supplier", "user", "expense", "items.item", "items.equipment"]);
 
         return view("resources.purchases.show", compact("purchase"));
     }

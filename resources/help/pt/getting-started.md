@@ -19,6 +19,10 @@
 - As ações que apagam ou anulam pedem sempre confirmação.
 <!-- /roles -->
 
+## Assistente IA
+
+Se a inteligência artificial estiver configurada, o **Assistente IA** (menu **Inteligência artificial**) responde a perguntas sobre os dados que o seu perfil pode ver e sobre como usar o sistema. Consulte **Assistente IA**.
+
 ## Idioma
 
 Mude entre **Português** e **Inglês** no seletor da barra superior.

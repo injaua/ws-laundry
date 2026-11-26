@@ -17,7 +17,10 @@ class Equipment extends Model
 
     public const TYPES = ["washer", "dryer", "iron", "ironing_table", "vehicle", "other"];
 
-    public const STATUSES = ["operational", "faulty", "in_maintenance", "retired"];
+    public const STATUSES = ["operational", "faulty", "in_maintenance", "retired", "awaiting_delivery"];
+
+    /** Ordered on a purchase order (raised from an expense) and not yet received. */
+    public const AWAITING_DELIVERY = "awaiting_delivery";
 
     protected $fillable = [
         "name", "code", "type", "brand", "model", "serial_number",
@@ -63,6 +66,7 @@ class Equipment extends Model
             "operational" => "success",
             "faulty" => "danger",
             "in_maintenance" => "warning",
+            "awaiting_delivery" => "info",
             default => "secondary",
         };
     }

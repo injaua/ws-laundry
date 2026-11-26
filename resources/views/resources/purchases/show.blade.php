@@ -44,6 +44,19 @@
                         <tr><td class="text-muted">{{ __('app.expected_date') }}</td><td>{{ $purchase->expected_date?->format(date_fmt()) ?? "—" }}</td></tr>
                         <tr><td class="text-muted">{{ __('app.created_by') }}</td><td class="small">{{ $purchase->user->name ?? "—" }}</td></tr>
                         <tr><td class="text-muted">{{ __('app.total') }}</td><td class="fw-semibold">{{ money($purchase->total) }}</td></tr>
+                        @if($purchase->expense)
+                        <tr>
+                            <td class="text-muted">{{ __('app.expense') }}</td>
+                            <td class="small">
+                                @can("update", $purchase->expense)
+                                <a href="{{ route("expenses.edit", $purchase->expense) }}" class="text-decoration-none">{{ $purchase->expense->title }}</a>
+                                @else
+                                {{ $purchase->expense->title }}
+                                @endcan
+                                <span class="text-muted">· {{ money($purchase->expense->amount) }}</span>
+                            </td>
+                        </tr>
+                        @endif
                     </tbody>
                 </table>
                 @if($purchase->notes)
@@ -73,12 +86,13 @@
                             @foreach($purchase->items as $line)
                             <tr>
                                 <td>
-                                    @if(auth()->user()->isManager())
-                                    <a href="{{ route("resources.items.show", $line->item) }}" class="text-decoration-none">{{ $line->item->name }}</a>
+                                    @php($resourceUrl = $line->item ? route("resources.items.show", $line->item) : ($line->equipment ? route("resources.equipments.show", $line->equipment) : null))
+                                    @if(auth()->user()->isManager() && $resourceUrl)
+                                    <a href="{{ $resourceUrl }}" class="text-decoration-none">{{ $line->displayName() }}</a>
                                     @else
-                                    {{ $line->item->name }}
+                                    {{ $line->displayName() }}
                                     @endif
-                                    <small class="text-muted">({{ __('app.unit_' . $line->item->unit) }})</small>
+                                    <small class="text-muted">({{ $line->isEquipment() ? __('app.equipment') : $line->unitLabel() }})</small>
                                 </td>
                                 <td class="text-end small">{{ qty($line->quantity) }}</td>
                                 <td class="text-end small">{{ num($line->unit_cost) }}</td>
@@ -100,33 +114,43 @@
 <div class="card mt-3">
     <div class="card-header"><i class="bi bi-box-arrow-in-down"></i> {{ __('app.po_receive_goods') }}</div>
     <div class="card-body">
-        <form action="{{ route("resources.purchases.receive", [$purchase, $pendingLines->first()->id]) }}" method="POST" id="receive-form" class="row g-2 align-items-end">
+        @php($positions = $purchase->items->pluck("id")->flip())
+        @php($selectedLine = $pendingLines->firstWhere("id", (int) old("line_id")) ?? $pendingLines->first())
+        <form action="{{ route("resources.purchases.receive", [$purchase, $selectedLine->id]) }}" method="POST" id="receive-form" class="row g-2 align-items-end">
             @csrf
+            <input type="hidden" name="line_id" id="receive-line-id" value="{{ $selectedLine->id }}">
             <div class="col-md-3">
                 <label class="form-label small">{{ __('app.line') }} <span class="text-danger">*</span></label>
                 <select id="receive-line" class="form-select form-select-sm" required>
                     @foreach($pendingLines as $line)
-                        <option value="{{ route("resources.purchases.receive", [$purchase, $line->id]) }}">
-                            {{ $line->item->name }} — {{ __('app.pending') }}: {{ qty($line->pendingQty()) }} {{ __('app.unit_' . $line->item->unit) }}
+                        <option value="{{ route("resources.purchases.receive", [$purchase, $line->id]) }}"
+                            data-id="{{ $line->id }}"
+                            data-qty="{{ (float) $line->pendingQty() }}"
+                            data-cost="{{ (float) $line->unit_cost }}"
+                            data-lot="{{ $line->isEquipment() ? "" : $line->suggestedLotNumber($positions[$line->id] + 1) }}"
+                            data-equipment="{{ $line->isEquipment() ? 1 : 0 }}"
+                            {{ $line->id === $selectedLine->id ? "selected" : "" }}>
+                            {{ $line->displayName() }} — {{ __('app.pending') }}: {{ qty($line->pendingQty()) }} {{ $line->unitLabel() }}
                         </option>
                     @endforeach
                 </select>
             </div>
             <div class="col-md-2">
                 <label class="form-label small">{{ __('app.quantity') }} <span class="text-danger">*</span></label>
-                <input type="number" name="quantity" class="form-control form-control-sm @error('quantity') is-invalid @enderror" min="0.01" step="0.01" value="{{ old("quantity", 1) }}" required>
+                <input type="number" name="quantity" id="receive-quantity" class="form-control form-control-sm @error('quantity') is-invalid @enderror" min="0.01" step="0.01" value="{{ old("quantity", (float) $selectedLine->pendingQty()) }}" required>
                 @error('quantity')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-2">
                 <label class="form-label small">{{ __('app.unit_cost') }}</label>
-                <input type="number" name="unit_cost" class="form-control form-control-sm" min="0" step="0.01" placeholder="{{ __('app.po_cost_default') }}">
+                <input type="number" name="unit_cost" id="receive-unit-cost" class="form-control form-control-sm @error('unit_cost') is-invalid @enderror" min="0" step="0.01" value="{{ old("unit_cost", (float) $selectedLine->unit_cost) }}" placeholder="{{ __('app.po_cost_default') }}">
+                @error('unit_cost')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-            <div class="col-md-2">
+            <div class="col-md-2 receive-stock-only">
                 <label class="form-label small">{{ __('app.lot_number') }}</label>
-                <input type="text" name="lot_number" class="form-control form-control-sm @error('lot_number') is-invalid @enderror" value="{{ old("lot_number") }}" maxlength="60">
+                <input type="text" name="lot_number" id="receive-lot" class="form-control form-control-sm @error('lot_number') is-invalid @enderror" value="{{ old("lot_number", $selectedLine->isEquipment() ? "" : $selectedLine->suggestedLotNumber($positions[$selectedLine->id] + 1)) }}" maxlength="60">
                 @error('lot_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-            <div class="col-md-2">
+            <div class="col-md-2 receive-stock-only">
                 <label class="form-label small">{{ __('app.expiry_date') }}</label>
                 <input type="date" name="expires_at" class="form-control form-control-sm" value="{{ old("expires_at") }}">
             </div>
@@ -134,10 +158,14 @@
                 <button class="btn btn-sm btn-primary w-100" title="{{ __('app.receive') }}"><i class="bi bi-download"></i></button>
             </div>
             <div class="col-12">
+                @if($purchase->isPaidByExpense())
+                    <div class="small text-success"><i class="bi bi-check2-circle"></i> {{ __('app.po_paid_by_expense') }}</div>
+                @else
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" name="register_expense" value="1" id="receive-register-expense" {{ old("register_expense", true) ? "checked" : "" }}>
                     <label class="form-check-label small" for="receive-register-expense">{{ __('app.register_expense') }}</label>
                 </div>
+                @endif
             </div>
         </form>
         <div class="small text-muted mt-2"><i class="bi bi-info-circle"></i> {{ __('app.po_receive_hint') }}</div>

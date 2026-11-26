@@ -5,5 +5,6 @@ Como **Administrador** tem acesso a **todo o sistema**: balcão, produção, log
 - Pode criar utilizadores de qualquer perfil, em qualquer loja.
 - Troca documentos com os proprietários e contabilistas no **arquivo de documentos** (recebidos e enviados). Os documentos pertencem à loja: vê os que lhe enviaram a partir da loja que tem escolhida no topo.
 - Pode **reabrir** períodos contabilísticos fechados (fica registado).
+- Configura a **inteligência artificial** da empresa ou de cada loja (fornecedor, modelo, chave, orçamento e limites), usa o **Assistente IA** e recebe os **Insights**: o resumo diário da empresa e os alertas da loja em que trabalha.
 
 > Ações com impacto fiscal ou irreversíveis (anular faturas, anonimizar clientes, reabrir períodos) ficam no registo de atividades.

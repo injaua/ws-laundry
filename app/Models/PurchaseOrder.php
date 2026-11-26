@@ -21,7 +21,7 @@ class PurchaseOrder extends Model
     public const STATUSES = ["draft", "ordered", "partial", "received", "cancelled"];
 
     protected $fillable = [
-        "po_number", "supplier_id", "user_id", "order_date", "expected_date", "status", "total", "notes",
+        "po_number", "supplier_id", "user_id", "expense_id", "order_date", "expected_date", "status", "total", "notes",
     ];
 
     protected function casts(): array
@@ -41,6 +41,18 @@ class PurchaseOrder extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** The expense the order was raised from: the purchase is already paid. */
+    public function expense(): BelongsTo
+    {
+        return $this->belongsTo(Expense::class);
+    }
+
+    /** Receiving an order raised from an expense never records the cost again. */
+    public function isPaidByExpense(): bool
+    {
+        return $this->expense_id !== null;
     }
 
     public function items(): HasMany
@@ -120,14 +132,20 @@ class PurchaseOrder extends Model
             ]);
         }
 
-        $this->update(["status" => "cancelled"]);
+        DB::transaction(function () {
+            // Equipment created for this order and never delivered leaves the register.
+            $equipmentIds = $this->items()->whereNotNull("equipment_id")->pluck("equipment_id");
+            Equipment::whereIn("id", $equipmentIds)->where("status", Equipment::AWAITING_DELIVERY)->delete();
+
+            $this->update(["status" => "cancelled"]);
+        });
     }
 
     /**
      * Receive goods on one line: creates the inbound movement (lot + expense +
      * journal posting through the standard ledger path) and advances the PO status.
      */
-    public function receiveLine(User $user, PurchaseOrderItem $line, float $quantity, ?int $unitCost, ?array $lot, bool $registerExpense = true): InventoryMovement
+    public function receiveLine(User $user, PurchaseOrderItem $line, float $quantity, ?float $unitCost, ?array $lot, bool $registerExpense = true): InventoryMovement|Equipment
     {
         if (!$this->canReceive() || $line->purchase_order_id !== $this->id) {
             throw ValidationException::withMessages([
@@ -143,8 +161,14 @@ class PurchaseOrder extends Model
             ]);
         }
 
-        $item = $line->item;
         $cost = $unitCost ?? (float) $line->unit_cost;
+        $registerExpense = $registerExpense && !$this->isPaidByExpense();
+
+        if ($line->isEquipment()) {
+            return $this->receiveEquipment($user, $line, $cost, $registerExpense);
+        }
+
+        $item = $line->item;
 
         return DB::transaction(function () use ($user, $line, $item, $quantity, $cost, $lot, $registerExpense) {
             $movement = InventoryMovement::record(
@@ -165,12 +189,58 @@ class PurchaseOrder extends Model
                 $lot,
             );
 
-            $line->update(["received_qty" => (float) $line->received_qty + $quantity]);
-
-            $allReceived = $this->items()->whereRaw("received_qty < quantity - 0.001")->doesntExist();
-            $this->update(["status" => $allReceived ? "received" : "partial"]);
+            $this->advanceLine($line, $quantity);
 
             return $movement;
         });
+    }
+
+    /**
+     * Equipment arrives as one unit: it enters service (operational) with the purchase
+     * date, price and supplier. No stock moves; the cost is recorded as an expense only
+     * when the order was not raised from one.
+     */
+    private function receiveEquipment(User $user, PurchaseOrderItem $line, float $cost, bool $registerExpense): Equipment
+    {
+        $equipment = $line->equipment;
+
+        if (!$equipment) {
+            throw ValidationException::withMessages([
+                "quantity" => __("app.po_cannot_receive"),
+            ]);
+        }
+
+        return DB::transaction(function () use ($user, $line, $equipment, $cost, $registerExpense) {
+            $equipment->update([
+                "status" => $equipment->status === Equipment::AWAITING_DELIVERY ? "operational" : $equipment->status,
+                "purchase_date" => today()->toDateString(),
+                "purchase_price" => $cost,
+                "supplier" => $this->supplier?->name ?? $equipment->supplier,
+            ]);
+
+            if ($registerExpense) {
+                Expense::create([
+                    "title" => $equipment->name." — ".__("app.movement_reason_purchase"),
+                    "category" => ExpenseCategory::where("key", "other")->exists() ? "other" : ExpenseCategory::value("key"),
+                    "amount" => $cost,
+                    "expense_date" => today()->toDateString(),
+                    "user_id" => $user->id,
+                    "source_type" => "purchase_order",
+                    "source_id" => $this->id,
+                ])->postToJournal();
+            }
+
+            $this->advanceLine($line, (float) $line->pendingQty());
+
+            return $equipment;
+        });
+    }
+
+    private function advanceLine(PurchaseOrderItem $line, float $quantity): void
+    {
+        $line->update(["received_qty" => (float) $line->received_qty + $quantity]);
+
+        $allReceived = $this->items()->whereRaw("received_qty < quantity - 0.001")->doesntExist();
+        $this->update(["status" => $allReceived ? "received" : "partial"]);
     }
 }

@@ -49,6 +49,29 @@ O **proprietário** configura os pagamentos **da sua loja** (métodos aceites e 
 - **Métodos de pagamento aceites**: só os métodos marcados aparecem nos pagamentos, na entrega e no faturamento. Os pagamentos já registados mantêm o seu método.
 - **Pagamentos móveis**: credenciais de M-Pesa e e-Mola e modo — desligado, **simulação** (formação, sem dinheiro), sandbox (testes do operador) ou produção. Os pedidos de pagamento só funcionam se o método (M-Pesa ou e-Mola) também estiver aceite.
 
+## Inteligência artificial
+
+**Definições → Inteligência artificial** configura o fornecedor de IA usado pelo **Assistente IA** e pela redação dos **Insights**.
+
+<!-- roles:admin -->
+Como no WhatsApp, escolha no topo **Empresa** (vale para as lojas sem configuração própria) ou **Loja**. Ao gravar na loja, ela passa a ter configuração própria, **preenchida de raiz** (a chave da empresa não é copiada). **Voltar a usar a configuração da empresa** apaga a configuração própria da loja.
+<!-- /roles -->
+<!-- roles:owner -->
+O **proprietário** configura a IA **da sua loja**. Enquanto não gravar, a loja usa a configuração da empresa (se existir); ao gravar, passa a ter configuração própria, preenchida de raiz. Voltar à configuração da empresa só o administrador pode fazer.
+<!-- /roles -->
+
+1. Marque **Activar inteligência artificial**.
+2. Escolha o **fornecedor**: Anthropic (Claude), OpenAI, Google Gemini, DeepSeek, Groq, Mistral, OpenRouter, Ollama (servidor local) ou outro compatível com OpenAI. O **endereço da API** é preenchido sozinho; altere-o só para um servidor próprio ou um proxy.
+3. Cole a **chave de API**. Fica guardada cifrada e nunca é mostrada de volta; deixe em branco para manter a que está guardada, ou marque **Apagar a chave guardada**.
+4. Escolha o **modelo** da lista de sugeridos, clique em **Carregar modelos** para ver os disponíveis na sua conta, ou escreva o nome exato. O modelo tem de suportar **chamadas de ferramentas** (tool / function calling).
+5. Em **Custos e limites**: preço de entrada e de saída (US$ por milhão de tokens, para estimar o custo), **orçamento mensal** (US$; vazio ou 0 = sem limite) e **perguntas por utilizador/dia** (0 = sem limite; 30 por omissão).
+6. Deixe ligado **Ocultar dados pessoais enviados à IA**: telefones e emails dos clientes vão mascarados (•••1234).
+7. **Guardar** e depois **Testar ligação** para confirmar a chave e o modelo.
+
+O estado aparece no topo: **Activo**, **Incompleto** (com o que falta) ou **Desligado**. Em **Uso este mês** vê as chamadas, os tokens de entrada / saída e o **custo estimado**. Ao atingir o orçamento, o assistente deixa de responder até ao mês seguinte.
+
+> A IA só lê dados através de ferramentas limitadas ao perfil de cada utilizador e à loja em que trabalha; não pode alterar nada. Cada consulta fica registada. Sem IA configurada, os alertas dos Insights continuam a ser criados com texto padrão.
+
 <!-- roles:admin -->
 ## Site público
 

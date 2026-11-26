@@ -6,7 +6,7 @@
 4. Opcional: marque **Expresso**, indique **cuidados especiais** (delicado, separar cores, sem amaciador…) e notas de recepção.
 5. Confirme a **data de entrega** proposta (calculada pela capacidade da lavandaria).
 6. Para clientes com crédito, escolha se é **venda a crédito**.
-7. Guarde. O pedido fica no estado **Recebido** com um número único.
+7. Guarde. O pedido fica no estado **Recebido** com um número único, no formato **ORD** + código da loja + data (ddmmaaaa) + sequência do dia — por exemplo **ORDLJ0125112026004** é o 4.º pedido de 25/11/2026 da loja LJ01.
 
 ### Como o preço é calculado
 

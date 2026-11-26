@@ -5,10 +5,14 @@ Antes de receber numerário, abra a sua caixa: **A minha caixa**, indique o **fu
 ## Receber um pagamento
 
 1. Na ficha do pedido, clique em **Pagar**.
-2. Escolha o método: numerário, transferência, cheque, M-Pesa, e-Mola ou mKesh.
-3. Indique o montante (pode ser parcial). Para transferências e carteiras móveis, escreva a **referência** — o sistema recusa referências repetidas.
-4. Para cheques: banco, número e data.
-5. Guarde e imprima ou envie o **recibo**.
+2. Escolha o método: numerário, **POS (cartão)**, transferência, cheque, M-Pesa, e-Mola ou mKesh. Só aparecem os métodos aceites pela loja.
+3. Indique o montante (pode ser parcial). Em numerário pode escrever o **valor entregue**: o sistema mostra o **troco a entregar**.
+4. Para transferências e carteiras móveis, escreva a **referência** — o sistema recusa referências repetidas.
+5. Para **POS (cartão)**, escreva o **Nº do talão POS** (ou o código de autorização) impresso pelo terminal. É obrigatório, mas pode repetir-se, porque os terminais reiniciam a numeração.
+6. Para cheques: banco, número e data.
+7. Guarde e imprima ou envie o **recibo**.
+
+> Os reembolsos não podem ser feitos por POS nem por cheque: um reembolso de cartão faz-se no próprio terminal.
 
 ## Cobrar por M-Pesa / e-Mola
 
@@ -28,7 +32,8 @@ Antes de receber numerário, abra a sua caixa: **A minha caixa**, indique o **fu
 
 1. **A minha caixa → Fechar**.
 2. Conte e declare o que tem **por método de pagamento**. Não verá os valores esperados (contagem cega).
-3. Confirme. O sistema compara com o esperado e regista a **quebra** ou **sobra**.
+3. Para **POS (cartão)**, some os talões do terminal; confira depois com o fecho do terminal e o extrato bancário.
+4. Confirme. O sistema compara com o esperado e regista a **quebra** ou **sobra**.
 
 <!-- roles:admin,owner -->
 ## Histórico de caixas e correções

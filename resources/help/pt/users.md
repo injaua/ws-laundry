@@ -9,6 +9,8 @@
 4. Escreva a palavra-passe e a confirmação. As três regras por baixo (pelo menos 10 caracteres, maiúsculas e minúsculas, um número) ficam **verdes** à medida que são cumpridas; a confirmação fica verde quando coincide. O botão com o olho mostra o que escreveu.
 5. Clique em **Guardar** (o botão passa a «A guardar…» até o sistema responder) e entregue as credenciais pessoalmente; peça ao utilizador que mude a palavra-passe no primeiro acesso.
 
+> **Ficha de funcionário criada automaticamente.** Cada utilizador novo fica também registado em **Recursos humanos → Funcionários**, ligado à conta: com o nome, a **função** igual ao perfil, admissão na data de hoje, contrato a tempo inteiro, estado **período experimental** e o salário base por omissão. Complete depois a ficha (BI, telefone, salário, fim do período experimental…).
+
 > **Se algo estiver errado**, o formulário não é enviado: aparece no topo a lista do que corrigir e cada campo com problema fica a vermelho, com a explicação por baixo. A lista encolhe à medida que corrige, e o que já escreveu mantém-se (exceto as palavras-passe). Na edição, deixe a palavra-passe em branco para manter a atual.
 
 <!-- roles:admin -->

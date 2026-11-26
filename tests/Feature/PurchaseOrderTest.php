@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Equipment;
 use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\InventoryItem;
 use App\Models\InventoryLot;
 use App\Models\InventoryMovement;
@@ -228,5 +230,130 @@ class PurchaseOrderTest extends TestCase
             "quantity" => 1,
             "lot_number" => "L-SAME",
         ])->assertSessionHasErrors("lot_number");
+    }
+
+    public function test_receive_form_prefills_quantity_cost_and_lot_from_line(): void
+    {
+        $po = $this->makePo(qty: 10, cost: 2500);
+        $admin = $this->admin();
+        $this->actingAs($admin)->patch("/resources/purchases/{$po->id}/order");
+        $line = $po->items()->first();
+
+        $this->actingAs($admin)->get("/resources/purchases/{$po->id}")
+            ->assertOk()
+            ->assertSee('data-qty="10"', false)
+            ->assertSee('data-cost="2500"', false)
+            ->assertSee('data-lot="'.$po->po_number.'-1"', false)
+            ->assertSee('name="lot_number" id="receive-lot" class="form-control form-control-sm " value="'.$po->po_number.'-1"', false);
+
+        // A second receipt on the same line suggests a lot number not yet taken.
+        $this->actingAs($admin)->post("/resources/purchases/{$po->id}/items/{$line->id}/receive", [
+            "quantity" => 4,
+            "lot_number" => $po->po_number."-1",
+        ])->assertSessionHasNoErrors();
+
+        $this->actingAs($admin)->get("/resources/purchases/{$po->id}")
+            ->assertSee('data-qty="6"', false)
+            ->assertSee('data-lot="'.$po->po_number.'-1-2"', false);
+    }
+
+    private function expenseCategory(): ExpenseCategory
+    {
+        return ExpenseCategory::firstOrCreate(["key" => "other"], ["name" => "Outros", "color" => "secondary"]);
+    }
+
+    public function test_expense_can_raise_purchase_order_creating_missing_resources(): void
+    {
+        $admin = $this->admin();
+        $supplier = $this->supplier();
+        $existing = $this->item();
+        $this->expenseCategory();
+
+        $this->actingAs($admin)->post("/expenses", [
+            "title" => "Compra mensal",
+            "category" => "other",
+            "amount" => 9500,
+            "vat_rate" => 0,
+            "expense_date" => now()->toDateString(),
+            "create_purchase_order" => 1,
+            "po_supplier_id" => $supplier->id,
+            "po_lines" => [
+                ["kind" => "product", "name" => "detergente AZUL", "unit" => "kg", "quantity" => 2, "unit_cost" => 500],
+                ["kind" => "material", "name" => "Cabides de arame", "unit" => "un", "quantity" => 100, "unit_cost" => 15],
+                ["kind" => "equipment", "name" => "Máquina de lavar 12kg", "quantity" => 1, "unit_cost" => 7000],
+            ],
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $expense = Expense::firstWhere("title", "Compra mensal");
+        $po = PurchaseOrder::firstWhere("expense_id", $expense->id);
+        $this->assertNotNull($po);
+        $this->assertSame("ordered", $po->status);
+        $this->assertSame(3, $po->items()->count());
+        $this->assertEquals(9500, (float) $po->total);
+
+        // The existing product is reused; the material and the equipment are created.
+        $this->assertSame(1, InventoryItem::where("kind", "product")->count());
+        $this->assertTrue($po->items()->where("inventory_item_id", $existing->id)->exists());
+        $material = InventoryItem::where("kind", "material")->firstWhere("name", "Cabides de arame");
+        $this->assertNotNull($material);
+        $this->assertSame("un", $material->unit);
+        $equipment = Equipment::firstWhere("name", "Máquina de lavar 12kg");
+        $this->assertSame(Equipment::AWAITING_DELIVERY, $equipment->status);
+
+        // Receiving does not record the cost again: only the original expense exists.
+        $productLine = $po->items()->where("inventory_item_id", $existing->id)->first();
+        $equipmentLine = $po->items()->whereNotNull("equipment_id")->first();
+        $this->actingAs($admin)->post("/resources/purchases/{$po->id}/items/{$productLine->id}/receive", [
+            "quantity" => 2,
+            "register_expense" => 1,
+        ])->assertSessionHasNoErrors();
+        $this->actingAs($admin)->post("/resources/purchases/{$po->id}/items/{$equipmentLine->id}/receive", [
+            "quantity" => 1,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(1, Expense::count());
+        $this->assertEquals(2, (float) $existing->fresh()->stock_qty);
+        $this->assertSame("operational", $equipment->fresh()->status);
+        $this->assertSame("partial", $po->fresh()->status);
+    }
+
+    public function test_cancelling_expense_order_removes_undelivered_equipment(): void
+    {
+        $admin = $this->admin();
+        $supplier = $this->supplier();
+        $this->expenseCategory();
+
+        $this->actingAs($admin)->post("/expenses", [
+            "title" => "Ferro industrial",
+            "category" => "other",
+            "amount" => 3000,
+            "vat_rate" => 0,
+            "expense_date" => now()->toDateString(),
+            "create_purchase_order" => 1,
+            "po_supplier_id" => $supplier->id,
+            "po_lines" => [["kind" => "equipment", "name" => "Ferro industrial", "quantity" => 1, "unit_cost" => 3000]],
+        ])->assertSessionHasNoErrors();
+
+        $po = PurchaseOrder::latest("id")->first();
+        $this->actingAs($admin)->patch("/resources/purchases/{$po->id}/cancel")->assertSessionHasNoErrors();
+
+        $this->assertSame("cancelled", $po->fresh()->status);
+        $this->assertSame(0, Equipment::count());
+    }
+
+    public function test_expense_purchase_order_requires_supplier_and_lines(): void
+    {
+        $this->expenseCategory();
+
+        $this->actingAs($this->admin())->post("/expenses", [
+            "title" => "Sem linhas",
+            "category" => "other",
+            "amount" => 100,
+            "vat_rate" => 0,
+            "expense_date" => now()->toDateString(),
+            "create_purchase_order" => 1,
+        ])->assertSessionHasErrors(["po_supplier_id", "po_lines"]);
+
+        $this->assertSame(0, Expense::count());
     }
 }

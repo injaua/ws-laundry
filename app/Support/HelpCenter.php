@@ -68,6 +68,10 @@ final class HelpCenter
             "settings" => ["bi-sliders", self::MANAGERS],
             "security" => ["bi-shield-lock", ["admin"]],
         ],
+        "ai" => [
+            "assistant" => ["bi-stars", self::ALL],
+            "insights" => ["bi-lightbulb", self::MANAGERS],
+        ],
         "communication" => [
             "internal-chat" => ["bi-chat-dots", self::STAFF],
         ],
